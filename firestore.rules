@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthed() {
+      return request.auth != null;
+    }
+
+    function isTeacher() {
+      return isAuthed() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    function isOwner(userId) {
+      return isAuthed() && request.auth.uid == userId;
+    }
+
+    // Users
+    match /users/{userId} {
+      // Owner can read and update their own profile, but cannot change role
+      allow read: if isOwner(userId) || isTeacher();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+
+      // Teachers can manage student docs
+      allow create, update, delete: if isTeacher() &&
+        (
+          (request.resource != null && request.resource.data.role == 'student') ||
+          (resource != null && resource.data.role == 'student')
+        );
+    }
+
+    // Attendance
+    match /attendance/{docId} {
+      // Students can read their own; teachers can read all
+      allow read: if isTeacher() || (isAuthed() && resource.data.studentId == request.auth.uid);
+
+      // Students can create only their own
+      allow create: if isAuthed() && request.resource.data.studentId == request.auth.uid;
+
+      // Teachers can update/delete any attendance
+      allow update, delete: if isTeacher();
+    }
+  }
+}
