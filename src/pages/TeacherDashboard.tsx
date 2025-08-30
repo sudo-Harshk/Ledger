@@ -61,6 +61,7 @@ export default function TeacherDashboard() {
   const [showSetup, setShowSetup] = useState(false)
   const enableAdminSetup = import.meta.env.VITE_ENABLE_ADMIN_SETUP === 'true'
   const [existingAttendance, setExistingAttendance] = useState<Set<string>>(new Set())
+  const [existingAbsentAttendance, setExistingAbsentAttendance] = useState<Set<string>>(new Set())
   const [refreshAttendanceLoading, setRefreshAttendanceLoading] = useState(false)
   
   // New state for enhanced bulk attendance
@@ -278,7 +279,8 @@ export default function TeacherDashboard() {
       console.log('Found approved attendance records:', approvedAttendanceSnapshot.size)
       console.log('Found absent attendance records:', absentAttendanceSnapshot.size)
       
-      const attendanceDates = new Set<string>()
+      const presentDates = new Set<string>()
+      const absentDates = new Set<string>()
       
       // Process approved records
       approvedAttendanceSnapshot.forEach((doc) => {
@@ -291,7 +293,7 @@ export default function TeacherDashboard() {
         // Check if the date falls within the current month
         if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
           console.log('Adding approved attendance date:', data.date, 'for student:', data.studentName)
-          attendanceDates.add(data.date)
+          presentDates.add(data.date)
         }
       })
       
@@ -306,12 +308,14 @@ export default function TeacherDashboard() {
         // Check if the date falls within the current month
         if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
           console.log('Adding absent attendance date:', data.date, 'for student:', data.studentName)
-          attendanceDates.add(data.date)
+          absentDates.add(data.date)
         }
       })
       
-      console.log('Setting attendance dates:', Array.from(attendanceDates))
-      setExistingAttendance(attendanceDates)
+      console.log('Setting present dates:', Array.from(presentDates))
+      console.log('Setting absent dates:', Array.from(absentDates))
+      setExistingAttendance(presentDates)
+      setExistingAbsentAttendance(absentDates)
     } catch (error) {
       console.error('Error loading existing attendance:', error)
     } finally {
@@ -557,6 +561,7 @@ export default function TeacherDashboard() {
     
     // Clear toggled dates when changing months
     setToggledDates(new Set())
+    setExistingAbsentAttendance(new Set())
     
     // Refresh existing attendance for the new month
     if (showBulkAttendance) {
@@ -634,7 +639,8 @@ export default function TeacherDashboard() {
     const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
     const selected = isSelected(dateStr)
     const inRange = isInRange(dateStr)
-    const hasAttendance = existingAttendance.has(dateStr)
+    const hasPresentAttendance = existingAttendance.has(dateStr)
+    const hasAbsentAttendance = existingAbsentAttendance.has(dateStr)
     const isToggled = toggledDates.has(dateStr)
     
     if (selected) return 'bg-blue-600 text-white'
@@ -643,10 +649,13 @@ export default function TeacherDashboard() {
       return 'bg-red-100 text-red-800 border-red-300'
     }
     if (inRange) return 'bg-blue-100 text-blue-800'
-    if (hasAttendance) {
-      // For now, we'll show all existing attendance as green
-      // In the future, we could differentiate between present/absent records
+    if (hasPresentAttendance) {
+      // Present attendance shows as green
       return 'bg-green-100 text-green-800 border-green-300'
+    }
+    if (hasAbsentAttendance) {
+      // Absent attendance shows as light red
+      return 'bg-red-50 text-red-700 border-red-200'
     }
     return 'bg-gray-50'
   }
@@ -807,6 +816,7 @@ export default function TeacherDashboard() {
                       setBulkEndDate('')
                       setToggledDates(new Set())
                       setDefaultAttendanceStatus('present')
+                      setExistingAbsentAttendance(new Set())
                     }
                     setShowBulkAttendance(!showBulkAttendance)
                   }}
@@ -1104,11 +1114,15 @@ export default function TeacherDashboard() {
               <div className="mb-3 flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                  <span className="text-green-800">Attendance Marked (Present)</span>
+                  <span className="text-green-800">Present Attendance</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-50 border border-red-200 rounded"></div>
+                  <span className="text-red-700">Absent Attendance</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-                  <span className="text-red-800">Marked as Absent</span>
+                  <span className="text-red-800">Toggled to Absent</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-600 rounded"></div>
@@ -1135,7 +1149,8 @@ export default function TeacherDashboard() {
                   {getDaysInMonth().map((day, idx) => {
                     const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
                     const selected = day && isSelected(dateStr)
-                    const hasAttendance = day && existingAttendance.has(dateStr)
+                    const hasPresentAttendance = day && existingAttendance.has(dateStr)
+                    const hasAbsentAttendance = day && existingAbsentAttendance.has(dateStr)
                     return (
                       <div
                         key={idx}
@@ -1147,12 +1162,17 @@ export default function TeacherDashboard() {
                             <span className="font-medium select-none">{day}</span>
                             {selected && (
                               <span className="pointer-events-none absolute bottom-1 right-1">
-                                <span className="inline-block w-2 h-2 rounded-full bg-white"></span>
+                                <span className="inline-block w-2 h-1 rounded-full bg-white"></span>
                               </span>
                             )}
-                            {hasAttendance && !selected && (
+                            {hasPresentAttendance && !selected && (
                               <span className="pointer-events-none absolute bottom-1 right-1">
                                 <span className="inline-block w-2 h-2 rounded-full bg-green-600"></span>
+                              </span>
+                            )}
+                            {hasAbsentAttendance && !selected && (
+                              <span className="pointer-events-none absolute bottom-1 right-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
                               </span>
                             )}
                           </>
@@ -1351,6 +1371,7 @@ export default function TeacherDashboard() {
                     setBulkEndDate('')
                     setToggledDates(new Set())
                     setDefaultAttendanceStatus('present')
+                    setExistingAbsentAttendance(new Set())
                   }}
                 >
                   Cancel
