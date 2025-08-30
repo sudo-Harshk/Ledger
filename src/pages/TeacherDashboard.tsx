@@ -1193,7 +1193,7 @@ export default function TeacherDashboard() {
                       name="attendanceStatus"
                       value="present"
                       checked={defaultAttendanceStatus === 'present'}
-                      onChange={(e) => {
+                      onChange={() => {
                         setDefaultAttendanceStatus('present')
                         clearToggledDates()
                       }}
@@ -1207,7 +1207,7 @@ export default function TeacherDashboard() {
                       name="attendanceStatus"
                       value="absent"
                       checked={defaultAttendanceStatus === 'absent'}
-                      onChange={(e) => {
+                      onChange={() => {
                         setDefaultAttendanceStatus('absent')
                         clearToggledDates()
                       }}
