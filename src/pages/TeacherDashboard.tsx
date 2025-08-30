@@ -24,6 +24,7 @@ interface StudentFee {
   studentName: string
   monthlyFee: number
   approvedDays: number
+  absentDays: number
   totalAmount: number
 }
 
@@ -61,6 +62,10 @@ export default function TeacherDashboard() {
   const enableAdminSetup = import.meta.env.VITE_ENABLE_ADMIN_SETUP === 'true'
   const [existingAttendance, setExistingAttendance] = useState<Set<string>>(new Set())
   const [refreshAttendanceLoading, setRefreshAttendanceLoading] = useState(false)
+  
+  // New state for enhanced bulk attendance
+  const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
+  const [toggledDates, setToggledDates] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (user) {
@@ -159,15 +164,25 @@ export default function TeacherDashboard() {
       const fees: StudentFee[] = []
       for (const studentDoc of studentsSnapshot.docs) {
         const studentData = studentDoc.data()
-        const attendanceQuery = query(
-          collection(db, 'attendance'),
-          where('studentId', '==', studentDoc.id),
-          where('status', '==', 'approved'),
-          where('date', '>=', formatLocalDate(monthStart)),
-          where('date', '<=', formatLocalDate(monthEnd))
-        )
-        const attendanceSnapshot = await getDocs(attendanceQuery)
-        const approvedDays = attendanceSnapshot.size
+        const [approvedAttendanceSnapshot, absentAttendanceSnapshot] = await Promise.all([
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', studentDoc.id),
+            where('status', '==', 'approved'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          )),
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', studentDoc.id),
+            where('status', '==', 'absent'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          ))
+        ])
+        
+        const approvedDays = approvedAttendanceSnapshot.size
+        const absentDays = absentAttendanceSnapshot.size
         const totalDaysInMonth = monthEnd.getDate()
         const dailyRate = (studentData.monthlyFee || 0) / totalDaysInMonth
         const totalAmount = approvedDays * dailyRate
@@ -176,6 +191,7 @@ export default function TeacherDashboard() {
           studentName: studentData.displayName || 'Unknown Student',
           monthlyFee: studentData.monthlyFee || 0,
           approvedDays,
+          absentDays,
           totalAmount: Math.round(totalAmount * 100) / 100
         })
       }
@@ -243,17 +259,28 @@ export default function TeacherDashboard() {
         index++
       })
       
-      // Get all approved attendance records and filter by date in JavaScript to avoid index requirements
+      // Get all approved and absent attendance records and filter by date in JavaScript to avoid index requirements
       const approvedAttendanceQuery = query(
         collection(db, 'attendance'),
         where('status', '==', 'approved')
       )
       
-      const approvedAttendanceSnapshot = await getDocs(approvedAttendanceQuery)
+      const absentAttendanceQuery = query(
+        collection(db, 'attendance'),
+        where('status', '==', 'absent')
+      )
+      
+      const [approvedAttendanceSnapshot, absentAttendanceSnapshot] = await Promise.all([
+        getDocs(approvedAttendanceQuery),
+        getDocs(absentAttendanceQuery)
+      ])
+      
       console.log('Found approved attendance records:', approvedAttendanceSnapshot.size)
+      console.log('Found absent attendance records:', absentAttendanceSnapshot.size)
       
       const attendanceDates = new Set<string>()
       
+      // Process approved records
       approvedAttendanceSnapshot.forEach((doc) => {
         const data = doc.data()
         const recordDate = new Date(data.date)
@@ -263,7 +290,22 @@ export default function TeacherDashboard() {
         
         // Check if the date falls within the current month
         if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
-          console.log('Adding attendance date:', data.date, 'for student:', data.studentName)
+          console.log('Adding approved attendance date:', data.date, 'for student:', data.studentName)
+          attendanceDates.add(data.date)
+        }
+      })
+      
+      // Process absent records (these will be shown differently in the UI)
+      absentAttendanceSnapshot.forEach((doc) => {
+        const data = doc.data()
+        const recordDate = new Date(data.date)
+        const monthStartTime = monthStart.getTime()
+        const monthEndTime = monthEnd.getTime()
+        const recordTime = recordDate.getTime()
+        
+        // Check if the date falls within the current month
+        if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
+          console.log('Adding absent attendance date:', data.date, 'for student:', data.studentName)
           attendanceDates.add(data.date)
         }
       })
@@ -395,9 +437,16 @@ export default function TeacherDashboard() {
       }
       const batch = writeBatch(db)
       let totalRecords = 0
+      let presentRecords = 0
+      let absentRecords = 0
       const currentDate = new Date(startDate)
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate)
+        const isDateToggled = toggledDates.has(dateStr)
+        const finalStatus = isDateToggled 
+          ? (defaultAttendanceStatus === 'present' ? 'absent' : 'present')
+          : defaultAttendanceStatus
+        
         studentsSnapshot.docs.forEach((studentDoc) => {
           const studentData = studentDoc.data()
           const attendanceId = `${studentDoc.id}_${dateStr}`
@@ -405,7 +454,7 @@ export default function TeacherDashboard() {
             studentId: studentDoc.id,
             studentName: studentData.displayName || 'Unknown Student',
             date: dateStr,
-            status: 'approved',
+            status: finalStatus === 'present' ? 'approved' : 'absent',
             timestamp: new Date(),
             month: currentDate.getMonth() + 1,
             year: currentDate.getFullYear(),
@@ -413,15 +462,22 @@ export default function TeacherDashboard() {
             approvedAt: new Date()
           })
           totalRecords++
+          if (finalStatus === 'present') {
+            presentRecords++
+          } else {
+            absentRecords++
+          }
         })
         currentDate.setDate(currentDate.getDate() + 1)
       }
       await batch.commit()
       const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
       const studentsCount = studentsSnapshot.size
-      alert(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecords}\n• Days: ${daysCount}`)
+      alert(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecords}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
       setBulkStartDate('')
       setBulkEndDate('')
+      setToggledDates(new Set())
+      setDefaultAttendanceStatus('present')
       setShowBulkAttendance(false)
       await loadPendingRequests()
       await loadStudentFees()
@@ -499,6 +555,9 @@ export default function TeacherDashboard() {
       return newMonth
     })
     
+    // Clear toggled dates when changing months
+    setToggledDates(new Set())
+    
     // Refresh existing attendance for the new month
     if (showBulkAttendance) {
       setTimeout(() => loadExistingAttendance(), 100)
@@ -519,10 +578,29 @@ export default function TeacherDashboard() {
 
   const toDateStr = (d: Date) => formatLocalDate(d)
 
+  // Clear toggled dates when date range changes
+  const clearToggledDates = () => {
+    setToggledDates(new Set())
+  }
+
   const handleCalendarDayClick = (day: number | null) => {
     if (!day) return
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
     const dateStr = toDateStr(date)
+    
+    // If we have a date range selected, allow toggling individual days
+    if (bulkStartDate && bulkEndDate && isInRange(dateStr)) {
+      const newToggledDates = new Set(toggledDates)
+      if (newToggledDates.has(dateStr)) {
+        newToggledDates.delete(dateStr)
+      } else {
+        newToggledDates.add(dateStr)
+      }
+      setToggledDates(newToggledDates)
+      return
+    }
+    
+    // Original date range selection logic
     if (!bulkStartDate) {
       setBulkStartDate(dateStr)
       setBulkEndDate('')
@@ -557,10 +635,19 @@ export default function TeacherDashboard() {
     const selected = isSelected(dateStr)
     const inRange = isInRange(dateStr)
     const hasAttendance = existingAttendance.has(dateStr)
+    const isToggled = toggledDates.has(dateStr)
     
     if (selected) return 'bg-blue-600 text-white'
+    if (inRange && isToggled) {
+      // Toggled dates within range show as absent (red/orange)
+      return 'bg-red-100 text-red-800 border-red-300'
+    }
     if (inRange) return 'bg-blue-100 text-blue-800'
-    if (hasAttendance) return 'bg-green-100 text-green-800 border-green-300'
+    if (hasAttendance) {
+      // For now, we'll show all existing attendance as green
+      // In the future, we could differentiate between present/absent records
+      return 'bg-green-100 text-green-800 border-green-300'
+    }
     return 'bg-gray-50'
   }
 
@@ -712,13 +799,22 @@ export default function TeacherDashboard() {
               <CardDescription>Common tasks</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={() => setShowBulkAttendance(!showBulkAttendance)}
-                variant="outline"
-                className="w-full"
-              >
-                {showBulkAttendance ? 'Hide Bulk Attendance' : 'Show Bulk Attendance'}
-              </Button>
+                              <Button 
+                  onClick={() => {
+                    if (showBulkAttendance) {
+                      // Clear form when hiding
+                      setBulkStartDate('')
+                      setBulkEndDate('')
+                      setToggledDates(new Set())
+                      setDefaultAttendanceStatus('present')
+                    }
+                    setShowBulkAttendance(!showBulkAttendance)
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {showBulkAttendance ? 'Hide Bulk Attendance' : 'Show Bulk Attendance'}
+                </Button>
             </CardContent>
           </Card>
         </div>
@@ -931,6 +1027,9 @@ export default function TeacherDashboard() {
                       <p className="font-medium">{fee.studentName}</p>
                       <p className="text-sm text-gray-600">
                         {fee.approvedDays} approved {fee.approvedDays === 1 ? 'day' : 'days'}
+                        {fee.absentDays > 0 && (
+                          <span className="text-red-600"> • {fee.absentDays} absent {fee.absentDays === 1 ? 'day' : 'days'}</span>
+                        )}
                         {fee.monthlyFee > 0 ? (
                           <>
                             {' '}× ₹{Math.round(dailyRate * 100) / 100} = ₹{fee.totalAmount}
@@ -1005,7 +1104,11 @@ export default function TeacherDashboard() {
               <div className="mb-3 flex flex-wrap gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                  <span className="text-green-800">Attendance Marked</span>
+                  <span className="text-green-800">Attendance Marked (Present)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
+                  <span className="text-red-800">Marked as Absent</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-blue-600 rounded"></div>
@@ -1060,6 +1163,44 @@ export default function TeacherDashboard() {
                 </div>
               </div>
 
+              {/* Attendance Status Selector */}
+              <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+                <Label className="text-sm font-medium mb-3 block">Mark Selected Range as:</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="attendanceStatus"
+                      value="present"
+                      checked={defaultAttendanceStatus === 'present'}
+                      onChange={(e) => {
+                        setDefaultAttendanceStatus('present')
+                        clearToggledDates()
+                      }}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm font-medium">Present</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="attendanceStatus"
+                      value="absent"
+                      checked={defaultAttendanceStatus === 'absent'}
+                      onChange={(e) => {
+                        setDefaultAttendanceStatus('absent')
+                        clearToggledDates()
+                      }}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <span className="text-sm font-medium">Absent</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Tip: After selecting a date range, click on individual days to toggle their status
+                </p>
+              </div>
+
               {/* Quick Date Presets */}
               <div className="mb-4">
                 <Label className="text-sm font-medium mb-2 block">Quick Presets:</Label>
@@ -1073,6 +1214,7 @@ export default function TeacherDashboard() {
                       weekAgo.setDate(today.getDate() - 7)
                       setBulkStartDate(toDateStr(weekAgo))
                       setBulkEndDate(toDateStr(today))
+                      clearToggledDates()
                     }}
                     className="text-xs"
                   >
@@ -1086,6 +1228,7 @@ export default function TeacherDashboard() {
                       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
                       setBulkStartDate(toDateStr(monthStart))
                       setBulkEndDate(toDateStr(today))
+                      clearToggledDates()
                     }}
                     className="text-xs"
                   >
@@ -1100,6 +1243,7 @@ export default function TeacherDashboard() {
                       yesterday.setDate(today.getDate() - 1)
                       setBulkStartDate(toDateStr(yesterday))
                       setBulkEndDate(toDateStr(yesterday))
+                      clearToggledDates()
                     }}
                     className="text-xs"
                   >
@@ -1112,6 +1256,7 @@ export default function TeacherDashboard() {
                       const today = new Date()
                       setBulkStartDate(toDateStr(today))
                       setBulkEndDate(toDateStr(today))
+                      clearToggledDates()
                     }}
                     className="text-xs"
                   >
@@ -1123,6 +1268,7 @@ export default function TeacherDashboard() {
                     onClick={() => {
                       setBulkStartDate('')
                       setBulkEndDate('')
+                      clearToggledDates()
                     }}
                     className="text-xs"
                   >
@@ -1138,7 +1284,10 @@ export default function TeacherDashboard() {
                     id="bulkStartDate"
                     type="date"
                     value={bulkStartDate}
-                    onChange={(e) => setBulkStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setBulkStartDate(e.target.value)
+                      clearToggledDates()
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -1148,7 +1297,10 @@ export default function TeacherDashboard() {
                     id="bulkEndDate"
                     type="date"
                     value={bulkEndDate}
-                    onChange={(e) => setBulkEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setBulkEndDate(e.target.value)
+                      clearToggledDates()
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -1159,11 +1311,26 @@ export default function TeacherDashboard() {
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Preview:</h4>
                   <p className="text-sm text-blue-700">
-                    Will add approved attendance for <strong>{students.length}</strong> students from{' '}
+                    Will mark <strong>{students.length}</strong> students as <strong>{defaultAttendanceStatus === 'present' ? 'Present' : 'Absent'}</strong> from{' '}
                     <strong>{new Date(bulkStartDate).toLocaleDateString()}</strong> to{' '}
                     <strong>{new Date(bulkEndDate).toLocaleDateString()}</strong>
                   </p>
-                  <p className="text-sm text-blue-600 mt-1">
+                  {toggledDates.size > 0 && (
+                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm text-yellow-800">
+                        <strong>{toggledDates.size}</strong> day{toggledDates.size === 1 ? '' : 's'} toggled to{' '}
+                        <strong>{defaultAttendanceStatus === 'present' ? 'Absent' : 'Present'}</strong>:
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {Array.from(toggledDates).map(dateStr => (
+                          <span key={dateStr} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
+                            {new Date(dateStr).toLocaleDateString()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-sm text-blue-600 mt-2">
                     Total records: <strong>{students.length * (Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
                   </p>
                 </div>
@@ -1174,7 +1341,7 @@ export default function TeacherDashboard() {
                   onClick={addBulkAttendance}
                   disabled={bulkAttendanceLoading || !bulkStartDate || !bulkEndDate}
                 >
-                  {bulkAttendanceLoading ? 'Adding...' : 'Add Bulk Attendance'}
+                  {bulkAttendanceLoading ? 'Applying...' : 'Apply Attendance'}
                 </Button>
                 <Button
                   variant="outline"
@@ -1182,6 +1349,8 @@ export default function TeacherDashboard() {
                     setShowBulkAttendance(false)
                     setBulkStartDate('')
                     setBulkEndDate('')
+                    setToggledDates(new Set())
+                    setDefaultAttendanceStatus('present')
                   }}
                 >
                   Cancel
