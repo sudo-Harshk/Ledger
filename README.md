@@ -2,7 +2,7 @@
 
 A React-based web application for managing student attendance and calculating monthly fees based on approved attendance records.
 
-## 🚀 Features
+## Features
 
 - **Student Dashboard**: Mark daily attendance, view calendar, track approved days
 - **Teacher Dashboard**: Approve/reject attendance, set monthly fees, view revenue
@@ -10,7 +10,7 @@ A React-based web application for managing student attendance and calculating mo
 - **Real-time Updates**: Firestore database for live data synchronization
 - **Responsive Design**: Modern UI with smooth animations and hover effects
 
-## 🛠️ Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 
@@ -76,7 +76,7 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
-## 📱 Usage
+## Usage
 
 ### For Students
 
@@ -91,7 +91,7 @@ The app will be available at `http://localhost:5173`
 2. **Approve Attendance**: Review and approve/reject student attendance requests
 3. **View Revenue**: See total revenue based on approved attendance
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 src/
@@ -102,7 +102,7 @@ src/
 └── main.tsx           # App entry point
 ```
 
-## 🔧 Available Scripts
+## Available Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
@@ -110,10 +110,10 @@ src/
 - `npm run preview` - Preview production build
 
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
