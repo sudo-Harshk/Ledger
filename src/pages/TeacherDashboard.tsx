@@ -47,6 +47,12 @@ export default function TeacherDashboard() {
   // Ref to track timeout for cleanup
   const monthChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
+  // Data Loading States
+  const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false)
+  const [studentFeesLoading, setStudentFeesLoading] = useState(false)
+  const [monthlyFeeLoading, setMonthlyFeeLoading] = useState(false)
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  
   // User Management State
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [newStudentUsername, setNewStudentUsername] = useState('')
@@ -147,6 +153,7 @@ export default function TeacherDashboard() {
   }
 
   const loadPendingRequests = async () => {
+    setPendingRequestsLoading(true)
     try {
       const q = query(
         collection(db, 'attendance'),
@@ -169,10 +176,13 @@ export default function TeacherDashboard() {
       console.error('Error loading pending requests:', error)
       // Show user-friendly error message
       alert('Failed to load pending attendance requests. Please refresh the page and try again.')
+    } finally {
+      setPendingRequestsLoading(false)
     }
   }
 
   const loadStudentFees = async () => {
+    setStudentFeesLoading(true)
     try {
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
       const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
@@ -217,11 +227,14 @@ export default function TeacherDashboard() {
       console.error('Error loading student fees:', error)
       // Show user-friendly error message
       alert('Failed to load student fee information. Please refresh the page and try again.')
+    } finally {
+      setStudentFeesLoading(false)
     }
   }
 
   const loadMonthlyFee = async () => {
     if (!user?.uid) return
+    setMonthlyFeeLoading(true)
     try {
       const teacherDoc = await getDoc(doc(db, 'users', user.uid))
       if (teacherDoc.exists()) {
@@ -232,10 +245,13 @@ export default function TeacherDashboard() {
       console.error('Error loading monthly fee:', error)
       // Show user-friendly error message
       alert('Failed to load monthly fee settings. Please refresh the page and try again.')
+    } finally {
+      setMonthlyFeeLoading(false)
     }
   }
 
   const loadStudents = async () => {
+    setStudentsLoading(true)
     try {
       const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
       const studentsSnapshot = await getDocs(studentsQuery)
@@ -248,13 +264,15 @@ export default function TeacherDashboard() {
           displayName: data.displayName || 'Unknown Student',
           monthlyFee: data.monthlyFee || 0,
           createdAt: data.createdAt?.toDate() || new Date()
-        })
+      })
       })
       setStudents(studentsList)
     } catch (error) {
       console.error('Error loading students:', error)
       // Show user-friendly error message
       alert('Failed to load student list. Please refresh the page and try again.')
+    } finally {
+      setStudentsLoading(false)
     }
   }
 
@@ -798,10 +816,10 @@ export default function TeacherDashboard() {
                 </div>
                 <Button 
                   onClick={updateMonthlyFee}
-                  disabled={loading}
+                  disabled={loading || monthlyFeeLoading}
                   className="w-full sm:w-auto"
                 >
-                  {loading ? 'Updating...' : 'Update Fee'}
+                  {loading ? 'Updating...' : monthlyFeeLoading ? 'Loading...' : 'Update Fee'}
                 </Button>
               </div>
             </CardContent>
@@ -832,10 +850,19 @@ export default function TeacherDashboard() {
               <CardDescription>Attendance requests</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-orange-600">{pendingRequests.length}</p>
-              <p className="text-sm text-gray-600 mt-1">
-                {pendingRequests.length === 1 ? 'request' : 'requests'} pending
-              </p>
+              {pendingRequestsLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                  <span className="ml-2 text-sm text-gray-600">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-orange-600">{pendingRequests.length}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {pendingRequests.length === 1 ? 'request' : 'requests'} pending
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -952,38 +979,41 @@ export default function TeacherDashboard() {
               {/* Students List */}
               <div className="space-y-3">
                 <h4 className="font-medium">Existing Students ({students.length})</h4>
-                {students.map((student) => (
-                  <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{student.displayName}</p>
-                      <p className="text-sm text-gray-600">
-                        @{student.username} • ₹{student.monthlyFee}/month
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Created: {student.createdAt.toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        Active
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deleteStudentAccount(student.id, student.username)}
-                        disabled={loading}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                      >
-                        {loading ? 'Deleting...' : 'Delete'}
-                      </Button>
-                    </div>
+                {studentsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading students...</span>
                   </div>
-                ))}
-                
-                {students.length === 0 && (
-                  <p className="text-center text-gray-500 py-8">
-                    No student accounts created yet
-                  </p>
+                ) : students.length === 0 ? (
+                  <p className="text-center text-gray-500 py-4">No students found</p>
+                ) : (
+                  students.map((student) => (
+                    <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{student.displayName}</p>
+                        <p className="text-sm text-gray-600">
+                          @{student.username} • ₹{student.monthlyFee}/month
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Created: {student.createdAt.toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          Active
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteStudentAccount(student.id, student.username)}
+                          disabled={loading}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          {loading ? 'Deleting...' : 'Delete'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </CardContent>
@@ -1064,48 +1094,55 @@ export default function TeacherDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 overflow-x-auto">
-              {studentFees.map((fee) => {
-                const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()
-                const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0
-                
-                return (
-                  <div key={fee.studentId} className="flex items-center justify-between p-3 border rounded-lg min-w-[320px]">
-                    <div>
-                      <p className="font-medium">{fee.studentName}</p>
-                      <p className="text-sm text-gray-600">
-                        {fee.approvedDays} approved {fee.approvedDays === 1 ? 'day' : 'days'}
-                        {fee.absentDays > 0 && (
-                          <span className="text-red-600"> • {fee.absentDays} absent {fee.absentDays === 1 ? 'day' : 'days'}</span>
-                        )}
+            {studentFeesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                <span className="ml-2 text-sm text-gray-600">Loading student fees...</span>
+              </div>
+            ) : (
+              <div className="space-y-3 overflow-x-auto">
+                {studentFees.map((fee) => {
+                  const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()
+                  const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0
+                  
+                  return (
+                    <div key={fee.studentId} className="flex items-center justify-between p-3 border rounded-lg min-w-[320px]">
+                      <div>
+                        <p className="font-medium">{fee.studentName}</p>
+                        <p className="text-sm text-gray-600">
+                          {fee.approvedDays} approved {fee.approvedDays === 1 ? 'day' : 'days'}
+                          {fee.absentDays > 0 && (
+                            <span className="text-red-600"> • {fee.absentDays} absent {fee.absentDays === 1 ? 'day' : 'days'}</span>
+                          )}
+                          {fee.monthlyFee > 0 ? (
+                            <>
+                              {' '}× ₹{Math.round(dailyRate * 100) / 100} = ₹{fee.totalAmount}
+                              <br />
+                              <span className="text-xs text-gray-500">
+                                (₹{fee.monthlyFee} ÷ {totalDaysInMonth} days = ₹{Math.round(dailyRate * 100) / 100}/day)
+                              </span>
+                            </>
+                          ) : ' (No fee set)'}
+                        </p>
+                      </div>
+                      <div className="text-right">
                         {fee.monthlyFee > 0 ? (
-                          <>
-                            {' '}× ₹{Math.round(dailyRate * 100) / 100} = ₹{fee.totalAmount}
-                            <br />
-                            <span className="text-xs text-gray-500">
-                              (₹{fee.monthlyFee} ÷ {totalDaysInMonth} days = ₹{Math.round(dailyRate * 100) / 100}/day)
-                            </span>
-                          </>
-                        ) : ' (No fee set)'}
-                      </p>
+                          <p className="text-lg font-bold text-green-600">₹{fee.totalAmount}</p>
+                        ) : (
+                          <p className="text-sm text-gray-500">No fee</p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      {fee.monthlyFee > 0 ? (
-                        <p className="text-lg font-bold text-green-600">₹{fee.totalAmount}</p>
-                      ) : (
-                        <p className="text-sm text-gray-500">No fee</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-              
-              {studentFees.length === 0 && (
-                <p className="text-center text-gray-500 py-8">
-                  No students with approved attendance or fees set for this month
-                </p>
-              )}
-            </div>
+                  )
+                })}
+                
+                {studentFees.length === 0 && (
+                  <p className="text-center text-gray-500 py-8">
+                    No students with approved attendance or fees set for this month
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

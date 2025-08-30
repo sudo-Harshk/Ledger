@@ -31,6 +31,8 @@ export default function StudentDashboard() {
     totalAmount: 0
   })
   const [loading, setLoading] = useState(false)
+  const [attendanceLoading, setAttendanceLoading] = useState(false)
+  const [feeSummaryLoading, setFeeSummaryLoading] = useState(false)
 
   useEffect(() => {
     if (user?.uid) {
@@ -56,6 +58,7 @@ export default function StudentDashboard() {
   const loadAttendanceRecords = async () => {
     if (!user?.uid) return
     
+    setAttendanceLoading(true)
     try {
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
       const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
@@ -83,12 +86,15 @@ export default function StudentDashboard() {
       console.error('Error loading attendance records:', error)
       // Show user-friendly error message
       alert('Failed to load attendance records. Please refresh the page and try again.')
+    } finally {
+      setAttendanceLoading(false)
     }
   }
 
   const loadFeeSummary = async () => {
     if (!user?.uid) return
     
+    setFeeSummaryLoading(true)
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid))
       if (userDoc.exists()) {
@@ -135,6 +141,8 @@ export default function StudentDashboard() {
       console.error('Error loading fee summary:', error)
       // Show user-friendly error message
       alert('Failed to load fee summary. Please refresh the page and try again.')
+    } finally {
+      setFeeSummaryLoading(false)
     }
   }
 
@@ -262,10 +270,19 @@ export default function StudentDashboard() {
               <CardDescription>This month's approved attendance</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-green-600">{feeSummary.totalDays}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {feeSummary.totalDays === 1 ? 'day' : 'days'} approved
-              </p>
+              {feeSummaryLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  <span className="ml-2 text-sm text-gray-600">Loading...</span>
+                </div>
+              ) : (
+                <>
+                  <p className="text-4xl font-bold text-green-600">{feeSummary.totalDays}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {feeSummary.totalDays === 1 ? 'day' : 'days'} approved
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -278,7 +295,11 @@ export default function StudentDashboard() {
               <CardDescription className="text-xs">Per day</CardDescription>
             </CardHeader>
             <CardContent>
-              {feeSummary.monthlyFee > 0 ? (
+              {feeSummaryLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                </div>
+              ) : feeSummary.monthlyFee > 0 ? (
                 <p className="text-2xl font-bold text-purple-600">
                   ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
                 </p>
@@ -295,7 +316,11 @@ export default function StudentDashboard() {
               <CardDescription className="text-xs">Amount</CardDescription>
             </CardHeader>
             <CardContent>
-              {feeSummary.monthlyFee > 0 ? (
+              {feeSummaryLoading ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                </div>
+              ) : feeSummary.monthlyFee > 0 ? (
                 <p className="text-2xl font-bold text-blue-600">₹{feeSummary.totalAmount}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">No fee</p>
@@ -333,38 +358,45 @@ export default function StudentDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <div className="min-w-[560px] grid grid-cols-7 gap-1">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="p-2 text-center font-medium text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-              
-              {getDaysInMonth().map((day, index) => {
-                const status = getAttendanceStatus(day)
-                return (
-                  <div
-                    key={index}
-                    className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center transition-all duration-200 hover:scale-105 ${
-                      status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
-                    }`}
-                  >
-                    {day && (
-                      <>
-                        <span className="font-medium select-none">{day}</span>
-                        {status && (
-                          <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
-                            <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )
-              })}
+            {attendanceLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
               </div>
-            </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="min-w-[560px] grid grid-cols-7 gap-1">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="p-2 text-center font-medium text-muted-foreground">
+                    {day}
+                  </div>
+                ))}
+                
+                {getDaysInMonth().map((day, index) => {
+                  const status = getAttendanceStatus(day)
+                  return (
+                    <div
+                      key={index}
+                      className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center transition-all duration-200 hover:scale-105 ${
+                        status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
+                      }`}
+                    >
+                      {day && (
+                        <>
+                          <span className="font-medium select-none">{day}</span>
+                          {status && (
+                            <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
+                              <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )
+                })}
+                </div>
+              </div>
+            )}
             
             <div className="mt-4 flex gap-4 text-sm">
               <div className="flex items-center gap-2">
