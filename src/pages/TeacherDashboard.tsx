@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -110,7 +110,7 @@ export default function TeacherDashboard() {
     }
   }, [])
 
-  const checkTeacherSetup = async () => {
+  const checkTeacherSetup = useCallback(async () => {
     try {
       const teachersQuery = query(collection(db, 'users'), where('role', '==', 'teacher'))
       const teachersSnapshot = await getDocs(teachersQuery)
@@ -118,7 +118,7 @@ export default function TeacherDashboard() {
     } catch (error: unknown) {
       logger.error('Error checking teacher setup:', error)
     }
-  }
+  }, [])
 
   const setupAdminTeacher = async () => {
     if (!window.confirm('This will create the admin teacher account. Continue?')) {
@@ -159,7 +159,7 @@ export default function TeacherDashboard() {
     }
   }
 
-  const loadPendingRequests = async () => {
+  const loadPendingRequests = useCallback(async () => {
     setPendingRequestsLoading(true)
     try {
       const q = query(
@@ -186,9 +186,9 @@ export default function TeacherDashboard() {
     } finally {
       setPendingRequestsLoading(false)
     }
-  }
+  }, [])
 
-  const loadStudentFees = async () => {
+  const loadStudentFees = useCallback(async () => {
     setStudentFeesLoading(true)
     try {
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
@@ -237,9 +237,9 @@ export default function TeacherDashboard() {
     } finally {
       setStudentFeesLoading(false)
     }
-  }
+  }, [currentMonth])
 
-  const loadMonthlyFee = async () => {
+  const loadMonthlyFee = useCallback(async () => {
     if (!user?.uid) return
     setMonthlyFeeLoading(true)
     try {
@@ -255,9 +255,9 @@ export default function TeacherDashboard() {
     } finally {
       setMonthlyFeeLoading(false)
     }
-  }
+  }, [user?.uid])
 
-  const loadStudents = async () => {
+  const loadStudents = useCallback(async () => {
     setStudentsLoading(true)
     try {
       const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
@@ -281,9 +281,9 @@ export default function TeacherDashboard() {
     } finally {
       setStudentsLoading(false)
     }
-  }
+  }, [])
 
-  const loadExistingAttendance = async () => {
+  const loadExistingAttendance = useCallback(async () => {
     setRefreshAttendanceLoading(true)
     try {
       console.log('Loading existing attendance for month:', currentMonth.toLocaleDateString())
@@ -330,7 +330,7 @@ export default function TeacherDashboard() {
       const absentDates = new Set<string>()
       
       // Process approved records
-      approvedAttendanceSnapshot.forEach((doc) => {
+      approvedAttendanceSnapshot.forEach((doc: any) => {
         const data = doc.data()
         // Parse the date string directly to avoid timezone issues
         const [year, month, day] = data.date.split('-').map(Number)
@@ -345,7 +345,7 @@ export default function TeacherDashboard() {
       })
       
       // Process absent records (these will be shown differently in the UI)
-      absentAttendanceSnapshot.forEach((doc) => {
+      absentAttendanceSnapshot.forEach((doc: any) => {
         const data = doc.data()
         // Parse the date string directly to avoid timezone issues
         const [year, month, day] = data.date.split('-').map(Number)
@@ -370,7 +370,7 @@ export default function TeacherDashboard() {
     } finally {
       setRefreshAttendanceLoading(false)
     }
-  }
+  }, [currentMonth])
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {

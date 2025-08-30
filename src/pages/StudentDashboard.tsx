@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { useAuth } from '../contexts/AuthContext'
@@ -42,12 +42,12 @@ export default function StudentDashboard() {
   }, [user, currentMonth])
 
   // Add a function to refresh data
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (user?.uid) {
       await loadAttendanceRecords()
       await loadFeeSummary()
     }
-  }
+  }, [user?.uid])
 
   // Refresh data every 30 seconds to catch updates
   useEffect(() => {
@@ -55,7 +55,7 @@ export default function StudentDashboard() {
     return () => clearInterval(interval)
   }, [user])
 
-  const loadAttendanceRecords = async () => {
+  const loadAttendanceRecords = useCallback(async () => {
     if (!user?.uid) return
     
     setAttendanceLoading(true)
@@ -89,9 +89,9 @@ export default function StudentDashboard() {
     } finally {
       setAttendanceLoading(false)
     }
-  }
+  }, [user?.uid, currentMonth])
 
-  const loadFeeSummary = async () => {
+  const loadFeeSummary = useCallback(async () => {
     if (!user?.uid) return
     
     setFeeSummaryLoading(true)
@@ -144,7 +144,7 @@ export default function StudentDashboard() {
     } finally {
       setFeeSummaryLoading(false)
     }
-  }
+  }, [user?.uid, currentMonth])
 
   const markAttendance = async () => {
     if (!user?.uid) return

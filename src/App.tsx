@@ -1,4 +1,3 @@
-import Particles from './components/ui/particles'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/LoginPage'
@@ -37,7 +36,6 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-background relative">
-          <Particles className="fixed inset-0 z-10" quantity={160} ease={80} color="#93c5fd" size={1} refresh />
           <div className="relative z-20">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
