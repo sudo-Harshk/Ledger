@@ -42,6 +42,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
@@ -66,8 +68,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // User exists in Auth but not in Firestore - wait a bit for sync
             logger.warn('User authenticated but no Firestore document found - waiting for sync...')
             
+            // Clear any existing timeout
+            if (timeoutId) {
+              clearTimeout(timeoutId)
+            }
+            
             // Wait for Firestore to sync, then check again
-            setTimeout(async () => {
+            timeoutId = setTimeout(async () => {
               try {
                 const retryDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
                 if (retryDoc.exists()) {
@@ -85,15 +92,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   await signOut(auth)
                   setUser(null)
                 }
-              } catch (retryError) {
-                logger.error('Error during retry')
+              } catch (error) {
+                logger.error('Error during retry:', error)
                 await signOut(auth)
                 setUser(null)
               }
             }, 3000) // Increased delay to 3 seconds
           }
-        } catch (error) {
-          logger.error('Error fetching user data')
+        } catch (error: unknown) {
+          logger.error('Error fetching user data:', error)
           setUser(null)
         }
       } else {
@@ -103,7 +110,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false)
     })
 
-    return unsubscribe
+    // Cleanup function
+    return () => {
+      unsubscribe()
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
   }, [])
 
   const login = async (username: string, password: string) => {
@@ -150,9 +163,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await signOut(auth)
         throw new Error('Your account is incomplete. Please contact your administrator.')
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Login error')
-      throw error
+      if (error instanceof Error) {
+        throw error
+      } else {
+        throw new Error('An unexpected error occurred during login')
+      }
     }
   }
 
@@ -160,9 +177,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await signOut(auth)
       setUser(null)
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Logout error')
-      throw error
+      if (error instanceof Error) {
+        throw error
+      } else {
+        throw new Error('An unexpected error occurred during logout')
+      }
     }
   }
 

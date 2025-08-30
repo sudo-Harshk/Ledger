@@ -81,6 +81,8 @@ export default function StudentDashboard() {
       setAttendanceRecords(records)
     } catch (error) {
       console.error('Error loading attendance records:', error)
+      // Show user-friendly error message
+      alert('Failed to load attendance records. Please refresh the page and try again.')
     }
   }
 
@@ -131,6 +133,8 @@ export default function StudentDashboard() {
       }
     } catch (error) {
       console.error('Error loading fee summary:', error)
+      // Show user-friendly error message
+      alert('Failed to load fee summary. Please refresh the page and try again.')
     }
   }
 

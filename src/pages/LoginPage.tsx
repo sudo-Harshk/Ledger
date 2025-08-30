@@ -30,8 +30,12 @@ export default function LoginPage() {
     try {
       await login(username, password)
       // Navigation will be handled by the useEffect above
-    } catch (error: any) {
-      setError(error.message || 'Failed to login')
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('Failed to login. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

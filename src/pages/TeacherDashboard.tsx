@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -44,6 +44,9 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
+  // Ref to track timeout for cleanup
+  const monthChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
   // User Management State
   const [showCreateUser, setShowCreateUser] = useState(false)
   const [newStudentUsername, setNewStudentUsername] = useState('')
@@ -85,13 +88,22 @@ export default function TeacherDashboard() {
     }
   }, [user, showBulkAttendance])
 
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (monthChangeTimeoutRef.current) {
+        clearTimeout(monthChangeTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const checkTeacherSetup = async () => {
     try {
       const teachersQuery = query(collection(db, 'users'), where('role', '==', 'teacher'))
       const teachersSnapshot = await getDocs(teachersQuery)
       setShowSetup(teachersSnapshot.empty)
-    } catch (error) {
-      logger.error('Error checking teacher setup')
+    } catch (error: unknown) {
+      logger.error('Error checking teacher setup:', error)
     }
   }
 
@@ -120,12 +132,14 @@ export default function TeacherDashboard() {
       })
       alert('Admin teacher account created successfully! Please store credentials securely.')
       await checkTeacherSetup()
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error creating admin teacher account')
-      if (error.code === 'auth/email-already-in-use') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
         alert('Admin teacher account already exists. You can sign in with the saved credentials.')
-      } else {
+      } else if (error instanceof Error) {
         alert(`Failed to create admin teacher account: ${error.message}`)
+      } else {
+        alert('Failed to create admin teacher account. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -153,6 +167,8 @@ export default function TeacherDashboard() {
       setPendingRequests(requests)
     } catch (error) {
       console.error('Error loading pending requests:', error)
+      // Show user-friendly error message
+      alert('Failed to load pending attendance requests. Please refresh the page and try again.')
     }
   }
 
@@ -199,6 +215,8 @@ export default function TeacherDashboard() {
       setStudentFees(fees)
     } catch (error) {
       console.error('Error loading student fees:', error)
+      // Show user-friendly error message
+      alert('Failed to load student fee information. Please refresh the page and try again.')
     }
   }
 
@@ -212,6 +230,8 @@ export default function TeacherDashboard() {
       }
     } catch (error) {
       console.error('Error loading monthly fee:', error)
+      // Show user-friendly error message
+      alert('Failed to load monthly fee settings. Please refresh the page and try again.')
     }
   }
 
@@ -233,6 +253,8 @@ export default function TeacherDashboard() {
       setStudents(studentsList)
     } catch (error) {
       console.error('Error loading students:', error)
+      // Show user-friendly error message
+      alert('Failed to load student list. Please refresh the page and try again.')
     }
   }
 
@@ -318,6 +340,8 @@ export default function TeacherDashboard() {
       setExistingAbsentAttendance(absentDates)
     } catch (error) {
       console.error('Error loading existing attendance:', error)
+      // Show user-friendly error message
+      alert('Failed to load existing attendance data. Please refresh the page and try again.')
     } finally {
       setRefreshAttendanceLoading(false)
     }
@@ -376,14 +400,16 @@ export default function TeacherDashboard() {
       setShowCreateUser(false)
       await loadStudents()
       alert(`Student account created successfully! Username: ${newStudentUsername}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating student account:', error)
-      if (error.code === 'auth/email-already-in-use') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
         alert('Username is already taken. Please choose a different username.')
-      } else if (error.code === 'auth/weak-password') {
+      } else if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/weak-password') {
         alert('Password is too weak. Please use a stronger password (at least 6 characters).')
-      } else {
+      } else if (error instanceof Error) {
         alert(`Failed to create account: ${error.message}`)
+      } else {
+        alert('Failed to create account. Please try again.')
       }
     } finally {
       setCreateUserLoading(false)
@@ -431,18 +457,38 @@ export default function TeacherDashboard() {
       return
     }
 
-    setBulkAttendanceLoading(true)
-    try {
-      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
-      const studentsSnapshot = await getDocs(studentsQuery)
-      if (studentsSnapshot.empty) {
-        alert('No students found to add attendance for')
+    // Calculate total records to check batch limits
+    const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
+    const studentsSnapshot = await getDocs(studentsQuery)
+    if (studentsSnapshot.empty) {
+      alert('No students found to add attendance for')
+      return
+    }
+    
+    const totalRecords = daysCount * studentsSnapshot.size
+    const maxBatchSize = 500 // Firestore batch limit
+    
+    if (totalRecords > maxBatchSize) {
+      const estimatedBatches = Math.ceil(totalRecords / maxBatchSize)
+      const proceed = window.confirm(
+        `This operation will create ${totalRecords} attendance records and requires ${estimatedBatches} batch operations.\n\n` +
+        `Large operations may take several minutes to complete.\n\n` +
+        `Do you want to continue?`
+      )
+      if (!proceed) {
         return
       }
-      const batch = writeBatch(db)
-      let totalRecords = 0
+    }
+
+    setBulkAttendanceLoading(true)
+    try {
+      let totalRecordsCreated = 0
       let presentRecords = 0
       let absentRecords = 0
+      let currentBatch = writeBatch(db)
+      let batchSize = 0
+      
       const currentDate = new Date(startDate)
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate)
@@ -451,10 +497,10 @@ export default function TeacherDashboard() {
           ? (defaultAttendanceStatus === 'present' ? 'absent' : 'present')
           : defaultAttendanceStatus
         
-        studentsSnapshot.docs.forEach((studentDoc) => {
+        for (const studentDoc of studentsSnapshot.docs) {
           const studentData = studentDoc.data()
           const attendanceId = `${studentDoc.id}_${dateStr}`
-          batch.set(doc(db, 'attendance', attendanceId), {
+          currentBatch.set(doc(db, 'attendance', attendanceId), {
             studentId: studentDoc.id,
             studentName: studentData.displayName || 'Unknown Student',
             date: dateStr,
@@ -465,19 +511,33 @@ export default function TeacherDashboard() {
             approvedBy: user.uid,
             approvedAt: new Date()
           })
-          totalRecords++
+          
+          totalRecordsCreated++
+          batchSize++
+          
           if (finalStatus === 'present') {
             presentRecords++
           } else {
             absentRecords++
           }
-        })
+          
+          // Commit batch when it reaches the limit
+          if (batchSize >= maxBatchSize) {
+            await currentBatch.commit()
+            currentBatch = writeBatch(db)
+            batchSize = 0
+          }
+        }
         currentDate.setDate(currentDate.getDate() + 1)
       }
-      await batch.commit()
-      const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
+      
+      // Commit any remaining operations in the final batch
+      if (batchSize > 0) {
+        await currentBatch.commit()
+      }
+      
       const studentsCount = studentsSnapshot.size
-      alert(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecords}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
+      alert(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
       setBulkStartDate('')
       setBulkEndDate('')
       setToggledDates(new Set())
@@ -503,9 +563,7 @@ export default function TeacherDashboard() {
         approvedBy: user.uid,
         approvedAt: new Date()
       })
-      if (status === 'approved') {
-        showConfetti()
-      }
+      // Confetti animation removed for performance
       await loadPendingRequests()
       await loadStudentFees()
       alert(`Attendance ${status} successfully!`)
@@ -517,38 +575,14 @@ export default function TeacherDashboard() {
     }
   }
 
-  const showConfetti = () => {
-    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
-    for (let i = 0; i < 50; i++) {
-      setTimeout(() => {
-        const confetti = document.createElement('div')
-        confetti.style.position = 'fixed'
-        confetti.style.left = Math.random() * 100 + 'vw'
-        confetti.style.top = '-10px'
-        confetti.style.width = '10px'
-        confetti.style.height = '10px'
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
-        confetti.style.borderRadius = '50%'
-        confetti.style.pointerEvents = 'none'
-        confetti.style.zIndex = '9999'
-        document.body.appendChild(confetti)
-        const animation = confetti.animate([
-          { transform: 'translateY(0px) rotate(0deg)', opacity: 1 },
-          { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
-        ], {
-          duration: 3000,
-          easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-        })
-        animation.onfinish = () => {
-          if (document.body.contains(confetti)) {
-            document.body.removeChild(confetti)
-          }
-        }
-      }, i * 100)
-    }
-  }
+  // Confetti function removed for performance optimization
 
   const changeMonth = (direction: 'prev' | 'next') => {
+    // Clear any existing timeout
+    if (monthChangeTimeoutRef.current) {
+      clearTimeout(monthChangeTimeoutRef.current)
+    }
+    
     setCurrentMonth(prev => {
       const newMonth = new Date(prev)
       if (direction === 'prev') {
@@ -565,7 +599,7 @@ export default function TeacherDashboard() {
     
     // Refresh existing attendance for the new month
     if (showBulkAttendance) {
-      setTimeout(() => loadExistingAttendance(), 100)
+      monthChangeTimeoutRef.current = setTimeout(() => loadExistingAttendance(), 100)
     }
   }
 
@@ -687,9 +721,13 @@ export default function TeacherDashboard() {
       alert(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`)
       await loadStudents()
       await loadStudentFees()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting student account:', error)
-      alert(`Failed to delete account: ${error.message}`)
+      if (error instanceof Error) {
+        alert(`Failed to delete account: ${error.message}`)
+      } else {
+        alert('Failed to delete account. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
