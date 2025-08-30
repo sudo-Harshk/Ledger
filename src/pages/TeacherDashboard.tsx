@@ -266,27 +266,6 @@ export default function TeacherDashboard() {
   const loadExistingAttendance = useCallback(async () => {
     setRefreshAttendanceLoading(true)
     try {
-      console.log('Loading existing attendance for month:', currentMonth.toLocaleDateString())
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
-      
-      console.log('Date range:', formatLocalDate(monthStart), 'to', formatLocalDate(monthEnd))
-      
-      // First, let's get all attendance records to see what's in the database
-      const allAttendanceQuery = query(collection(db, 'attendance'))
-      const allAttendanceSnapshot = await getDocs(allAttendanceQuery)
-      console.log('Total attendance records in database:', allAttendanceSnapshot.size)
-      
-      // Log a few sample records to see the structure
-      let index = 0
-      allAttendanceSnapshot.forEach((doc) => {
-        if (index < 5) { // Only log first 5 for debugging
-          const data = doc.data()
-          console.log('Sample record:', { id: doc.id, ...data })
-        }
-        index++
-      })
-      
       // Get all approved and absent attendance records and filter by date in JavaScript to avoid index requirements
       const approvedAttendanceQuery = query(
         collection(db, 'attendance'),
@@ -303,8 +282,7 @@ export default function TeacherDashboard() {
         getDocs(absentAttendanceQuery)
       ])
       
-      console.log('Found approved attendance records:', approvedAttendanceSnapshot.size)
-      console.log('Found absent attendance records:', absentAttendanceSnapshot.size)
+
       
       const presentDates = new Set<string>()
       const absentDates = new Set<string>()
@@ -319,7 +297,6 @@ export default function TeacherDashboard() {
         // Check if the date falls within the current month using date components
         if (recordDate.getFullYear() === currentMonth.getFullYear() && 
             recordDate.getMonth() === currentMonth.getMonth()) {
-          console.log('Adding approved attendance date:', data.date, 'for student:', data.studentName)
           presentDates.add(data.date)
         }
       })
@@ -334,17 +311,14 @@ export default function TeacherDashboard() {
         // Check if the date falls within the current month using date components
         if (recordDate.getFullYear() === currentMonth.getFullYear() && 
             recordDate.getMonth() === currentMonth.getMonth()) {
-          console.log('Adding absent attendance date:', data.date, 'for student:', data.studentName)
           absentDates.add(data.date)
         }
       })
       
-      console.log('Setting present dates:', Array.from(presentDates))
-      console.log('Setting absent dates:', Array.from(absentDates))
       setExistingAttendance(presentDates)
       setExistingAbsentAttendance(absentDates)
     } catch (error) {
-      console.error('Error loading existing attendance:', error)
+      logger.error('Error loading existing attendance:', error)
       // Show user-friendly error message
       alert('Failed to load existing attendance data. Please refresh the page and try again.')
     } finally {
@@ -355,7 +329,6 @@ export default function TeacherDashboard() {
   // Load existing attendance when bulk attendance modal opens
   useEffect(() => {
     if (user && showBulkAttendance) {
-      console.log('Bulk attendance opened, loading existing attendance...')
       loadExistingAttendance()
     }
   }, [user, showBulkAttendance, loadExistingAttendance])

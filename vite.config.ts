@@ -8,4 +8,20 @@ export default defineConfig({
       "@": "./src",
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'ui-vendor': ['@radix-ui/react-slot', 'class-variance-authority'],
+          // Feature chunks
+          'auth': ['./src/contexts/AuthContext', './src/hooks/useAuth'],
+          'dashboards': ['./src/pages/StudentDashboard', './src/pages/TeacherDashboard'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB for better flexibility
+  }
 });
