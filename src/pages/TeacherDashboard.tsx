@@ -1026,7 +1026,7 @@ export default function TeacherDashboard() {
                           size="sm"
                           onClick={() => deleteStudentAccount(student.id, student.username)}
                           disabled={loading}
-                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
                         >
                           {loading ? 'Deleting...' : 'Delete'}
                         </Button>
