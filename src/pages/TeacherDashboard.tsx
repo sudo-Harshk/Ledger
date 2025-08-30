@@ -94,6 +94,13 @@ export default function TeacherDashboard() {
     }
   }, [user, showBulkAttendance])
 
+  // Auto-refresh calendar when month changes
+  useEffect(() => {
+    if (user) {
+      loadExistingAttendance()
+    }
+  }, [user, currentMonth])
+
   // Cleanup timeout on component unmount
   useEffect(() => {
     return () => {
@@ -325,13 +332,13 @@ export default function TeacherDashboard() {
       // Process approved records
       approvedAttendanceSnapshot.forEach((doc) => {
         const data = doc.data()
-        const recordDate = new Date(data.date)
-        const monthStartTime = monthStart.getTime()
-        const monthEndTime = monthEnd.getTime()
-        const recordTime = recordDate.getTime()
+        // Parse the date string directly to avoid timezone issues
+        const [year, month, day] = data.date.split('-').map(Number)
+        const recordDate = new Date(year, month - 1, day) // month is 0-indexed in Date constructor
         
-        // Check if the date falls within the current month
-        if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
+        // Check if the date falls within the current month using date components
+        if (recordDate.getFullYear() === currentMonth.getFullYear() && 
+            recordDate.getMonth() === currentMonth.getMonth()) {
           console.log('Adding approved attendance date:', data.date, 'for student:', data.studentName)
           presentDates.add(data.date)
         }
@@ -340,13 +347,13 @@ export default function TeacherDashboard() {
       // Process absent records (these will be shown differently in the UI)
       absentAttendanceSnapshot.forEach((doc) => {
         const data = doc.data()
-        const recordDate = new Date(data.date)
-        const monthStartTime = monthStart.getTime()
-        const monthEndTime = monthEnd.getTime()
-        const recordTime = recordDate.getTime()
+        // Parse the date string directly to avoid timezone issues
+        const [year, month, day] = data.date.split('-').map(Number)
+        const recordDate = new Date(year, month - 1, day) // month is 0-indexed in Date constructor
         
-        // Check if the date falls within the current month
-        if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
+        // Check if the date falls within the current month using date components
+        if (recordDate.getFullYear() === currentMonth.getFullYear() && 
+            recordDate.getMonth() === currentMonth.getMonth()) {
           console.log('Adding absent attendance date:', data.date, 'for student:', data.studentName)
           absentDates.add(data.date)
         }
@@ -563,6 +570,12 @@ export default function TeacherDashboard() {
       setShowBulkAttendance(false)
       await loadPendingRequests()
       await loadStudentFees()
+      
+      // Force a complete refresh of attendance data to ensure calendar updates
+      // Clear existing data first, then reload with a small delay for Firebase sync
+      setExistingAttendance(new Set())
+      setExistingAbsentAttendance(new Set())
+      await new Promise(resolve => setTimeout(resolve, 300)) // Increased delay for better Firebase sync
       await loadExistingAttendance()
     } catch (error) {
       console.error('Error adding bulk attendance:', error)
@@ -1216,8 +1229,9 @@ export default function TeacherDashboard() {
 
 
               {/* Selection Calendar */}
-              <div className="overflow-x-auto mb-4">
-                <div className="min-w-[560px] grid grid-cols-7 gap-1">
+              <div className="mb-4" key={`calendar-${existingAttendance.size}-${existingAbsentAttendance.size}`}>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[560px] grid grid-cols-7 gap-1">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="p-2 text-center font-medium text-muted-foreground">{day}</div>
                   ))}
@@ -1255,6 +1269,7 @@ export default function TeacherDashboard() {
                       </div>
                     )
                   })}
+                </div>
                 </div>
               </div>
 
