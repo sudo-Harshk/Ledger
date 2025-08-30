@@ -9,12 +9,13 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase
 
 interface AttendanceRecord {
   date: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'absent'
   timestamp: Date
 }
 
 interface FeeSummary {
   totalDays: number
+  absentDays: number
   monthlyFee: number
   totalAmount: number
 }
@@ -25,6 +26,7 @@ export default function StudentDashboard() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [feeSummary, setFeeSummary] = useState<FeeSummary>({
     totalDays: 0,
+    absentDays: 0,
     monthlyFee: 0,
     totalAmount: 0
   })
@@ -91,20 +93,29 @@ export default function StudentDashboard() {
         const userData = userDoc.data()
         const monthlyFee = userData.monthlyFee || 0
         
-        // Get approved attendance for current month view
+        // Get approved and absent attendance for current month view
         const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
         const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
         
-        const attendanceQuery = query(
-          collection(db, 'attendance'),
-          where('studentId', '==', user.uid),
-          where('status', '==', 'approved'),
-          where('date', '>=', formatLocalDate(monthStart)),
-          where('date', '<=', formatLocalDate(monthEnd))
-        )
+        const [approvedSnapshot, absentSnapshot] = await Promise.all([
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', user.uid),
+            where('status', '==', 'approved'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          )),
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', user.uid),
+            where('status', '==', 'absent'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          ))
+        ])
         
-        const attendanceSnapshot = await getDocs(attendanceQuery)
-        const approvedDays = attendanceSnapshot.size
+        const approvedDays = approvedSnapshot.size
+        const absentDays = absentSnapshot.size
         
         // Calculate daily rate: monthly fee / total days in month
         const totalDaysInMonth = monthEnd.getDate()
@@ -113,6 +124,7 @@ export default function StudentDashboard() {
         
         setFeeSummary({
           totalDays: approvedDays,
+          absentDays,
           monthlyFee,
           totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
         })
@@ -192,6 +204,7 @@ export default function StudentDashboard() {
       case 'approved': return 'bg-green-500'
       case 'pending': return 'bg-yellow-500'
       case 'rejected': return 'bg-red-500'
+      case 'absent': return 'bg-red-400'
       default: return 'bg-gray-200'
     }
   }
@@ -252,8 +265,10 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
+
+
           {/* Small Daily Rate Card */}
-          <Card className="transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-1 transition-all duration-200 hover:scale-105">
             <CardHeader>
               <CardTitle className="text-sm">Daily Rate</CardTitle>
               <CardDescription className="text-xs">Per day</CardDescription>
@@ -270,7 +285,7 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Small Total Due Card */}
-          <Card className="transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-1 transition-all duration-200 hover:scale-105">
             <CardHeader>
               <CardTitle className="text-sm">Total Due</CardTitle>
               <CardDescription className="text-xs">Amount</CardDescription>
@@ -355,6 +370,10 @@ export default function StudentDashboard() {
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <span>Pending</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                <span>Absent</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
