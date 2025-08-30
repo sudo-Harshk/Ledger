@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { 
   signInWithEmailAndPassword, 
@@ -8,30 +8,9 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import logger from '../lib/logger'
+import { AuthContext, type User } from './AuthContextTypes'
 
-interface User {
-  uid: string
-  username: string | null
-  role: 'student' | 'teacher'
-  displayName?: string
-}
 
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (username: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
 
 interface AuthProviderProps {
   children: ReactNode

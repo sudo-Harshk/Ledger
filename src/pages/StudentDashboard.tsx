@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
@@ -34,26 +34,9 @@ export default function StudentDashboard() {
   const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [feeSummaryLoading, setFeeSummaryLoading] = useState(false)
 
-  useEffect(() => {
-    if (user?.uid) {
-      loadAttendanceRecords()
-      loadFeeSummary()
-    }
-  }, [user, currentMonth])
 
-  // Add a function to refresh data
-  const refreshData = useCallback(async () => {
-    if (user?.uid) {
-      await loadAttendanceRecords()
-      await loadFeeSummary()
-    }
-  }, [user?.uid])
 
-  // Refresh data every 30 seconds to catch updates
-  useEffect(() => {
-    const interval = setInterval(refreshData, 30000)
-    return () => clearInterval(interval)
-  }, [user])
+
 
   const loadAttendanceRecords = useCallback(async () => {
     if (!user?.uid) return
@@ -145,6 +128,25 @@ export default function StudentDashboard() {
       setFeeSummaryLoading(false)
     }
   }, [user?.uid, currentMonth])
+
+  // Load initial data when user or month changes
+  useEffect(() => {
+    if (user?.uid) {
+      loadAttendanceRecords()
+      loadFeeSummary()
+    }
+  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary])
+
+  // Refresh data every 30 seconds to catch updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (user?.uid) {
+        loadAttendanceRecords()
+        loadFeeSummary()
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [user?.uid, loadAttendanceRecords, loadFeeSummary])
 
   const markAttendance = async () => {
     if (!user?.uid) return

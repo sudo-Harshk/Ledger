@@ -3,7 +3,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db, auth } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
@@ -77,29 +77,9 @@ export default function TeacherDashboard() {
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
   const [toggledDates, setToggledDates] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    if (user) {
-      loadPendingRequests()
-      loadStudentFees()
-      loadMonthlyFee()
-      loadStudents()
-      checkTeacherSetup()
-    }
-  }, [user, currentMonth])
 
-  useEffect(() => {
-    if (user && showBulkAttendance) {
-      console.log('Bulk attendance opened, loading existing attendance...')
-      loadExistingAttendance()
-    }
-  }, [user, showBulkAttendance])
 
-  // Auto-refresh calendar when month changes
-  useEffect(() => {
-    if (user) {
-      loadExistingAttendance()
-    }
-  }, [user, currentMonth])
+
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -330,7 +310,7 @@ export default function TeacherDashboard() {
       const absentDates = new Set<string>()
       
       // Process approved records
-      approvedAttendanceSnapshot.forEach((doc: any) => {
+      approvedAttendanceSnapshot.forEach((doc) => {
         const data = doc.data()
         // Parse the date string directly to avoid timezone issues
         const [year, month, day] = data.date.split('-').map(Number)
@@ -345,7 +325,7 @@ export default function TeacherDashboard() {
       })
       
       // Process absent records (these will be shown differently in the UI)
-      absentAttendanceSnapshot.forEach((doc: any) => {
+      absentAttendanceSnapshot.forEach((doc) => {
         const data = doc.data()
         // Parse the date string directly to avoid timezone issues
         const [year, month, day] = data.date.split('-').map(Number)
@@ -371,6 +351,32 @@ export default function TeacherDashboard() {
       setRefreshAttendanceLoading(false)
     }
   }, [currentMonth])
+
+  // Load existing attendance when bulk attendance modal opens
+  useEffect(() => {
+    if (user && showBulkAttendance) {
+      console.log('Bulk attendance opened, loading existing attendance...')
+      loadExistingAttendance()
+    }
+  }, [user, showBulkAttendance, loadExistingAttendance])
+
+  // Auto-refresh calendar when month changes
+  useEffect(() => {
+    if (user) {
+      loadExistingAttendance()
+    }
+  }, [user, currentMonth, loadExistingAttendance])
+
+  // Load initial data when user or month changes
+  useEffect(() => {
+    if (user) {
+      loadPendingRequests()
+      loadStudentFees()
+      loadMonthlyFee()
+      loadStudents()
+      checkTeacherSetup()
+    }
+  }, [user, currentMonth, loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, checkTeacherSetup])
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
