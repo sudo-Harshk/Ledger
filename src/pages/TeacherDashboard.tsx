@@ -59,6 +59,8 @@ export default function TeacherDashboard() {
   const [bulkAttendanceLoading, setBulkAttendanceLoading] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const enableAdminSetup = import.meta.env.VITE_ENABLE_ADMIN_SETUP === 'true'
+  const [existingAttendance, setExistingAttendance] = useState<Set<string>>(new Set())
+  const [refreshAttendanceLoading, setRefreshAttendanceLoading] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -69,6 +71,13 @@ export default function TeacherDashboard() {
       checkTeacherSetup()
     }
   }, [user, currentMonth])
+
+  useEffect(() => {
+    if (user && showBulkAttendance) {
+      console.log('Bulk attendance opened, loading existing attendance...')
+      loadExistingAttendance()
+    }
+  }, [user, showBulkAttendance])
 
   const checkTeacherSetup = async () => {
     try {
@@ -207,6 +216,64 @@ export default function TeacherDashboard() {
       setStudents(studentsList)
     } catch (error) {
       console.error('Error loading students:', error)
+    }
+  }
+
+  const loadExistingAttendance = async () => {
+    setRefreshAttendanceLoading(true)
+    try {
+      console.log('Loading existing attendance for month:', currentMonth.toLocaleDateString())
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+      
+      console.log('Date range:', formatLocalDate(monthStart), 'to', formatLocalDate(monthEnd))
+      
+      // First, let's get all attendance records to see what's in the database
+      const allAttendanceQuery = query(collection(db, 'attendance'))
+      const allAttendanceSnapshot = await getDocs(allAttendanceQuery)
+      console.log('Total attendance records in database:', allAttendanceSnapshot.size)
+      
+      // Log a few sample records to see the structure
+      let index = 0
+      allAttendanceSnapshot.forEach((doc) => {
+        if (index < 5) { // Only log first 5 for debugging
+          const data = doc.data()
+          console.log('Sample record:', { id: doc.id, ...data })
+        }
+        index++
+      })
+      
+      // Get all approved attendance records and filter by date in JavaScript to avoid index requirements
+      const approvedAttendanceQuery = query(
+        collection(db, 'attendance'),
+        where('status', '==', 'approved')
+      )
+      
+      const approvedAttendanceSnapshot = await getDocs(approvedAttendanceQuery)
+      console.log('Found approved attendance records:', approvedAttendanceSnapshot.size)
+      
+      const attendanceDates = new Set<string>()
+      
+      approvedAttendanceSnapshot.forEach((doc) => {
+        const data = doc.data()
+        const recordDate = new Date(data.date)
+        const monthStartTime = monthStart.getTime()
+        const monthEndTime = monthEnd.getTime()
+        const recordTime = recordDate.getTime()
+        
+        // Check if the date falls within the current month
+        if (recordTime >= monthStartTime && recordTime <= monthEndTime) {
+          console.log('Adding attendance date:', data.date, 'for student:', data.studentName)
+          attendanceDates.add(data.date)
+        }
+      })
+      
+      console.log('Setting attendance dates:', Array.from(attendanceDates))
+      setExistingAttendance(attendanceDates)
+    } catch (error) {
+      console.error('Error loading existing attendance:', error)
+    } finally {
+      setRefreshAttendanceLoading(false)
     }
   }
 
@@ -358,6 +425,7 @@ export default function TeacherDashboard() {
       setShowBulkAttendance(false)
       await loadPendingRequests()
       await loadStudentFees()
+      await loadExistingAttendance()
     } catch (error) {
       console.error('Error adding bulk attendance:', error)
       alert('Failed to add bulk attendance')
@@ -430,6 +498,11 @@ export default function TeacherDashboard() {
       }
       return newMonth
     })
+    
+    // Refresh existing attendance for the new month
+    if (showBulkAttendance) {
+      setTimeout(() => loadExistingAttendance(), 100)
+    }
   }
 
   // Calendar helpers for month grid and bulk selection
@@ -483,8 +556,11 @@ export default function TeacherDashboard() {
     const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
     const selected = isSelected(dateStr)
     const inRange = isInRange(dateStr)
+    const hasAttendance = existingAttendance.has(dateStr)
+    
     if (selected) return 'bg-blue-600 text-white'
     if (inRange) return 'bg-blue-100 text-blue-800'
+    if (hasAttendance) return 'bg-green-100 text-green-800 border-green-300'
     return 'bg-gray-50'
   }
 
@@ -903,8 +979,49 @@ export default function TeacherDashboard() {
                     {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </span>
                   <Button variant="outline" size="sm" onClick={() => changeMonth('next')}>→</Button>
+                  <Button 
+                    onClick={loadExistingAttendance}
+                    disabled={refreshAttendanceLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    {refreshAttendanceLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Refreshing...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </div>
+                    )}
+                  </Button>
                 </div>
               </div>
+
+              {/* Calendar Legend */}
+              <div className="mb-3 flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                  <span className="text-green-800">Attendance Marked</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                  <span className="text-blue-800">Selected Date</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-blue-100 rounded"></div>
+                  <span className="text-blue-800">Date Range</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-50 border rounded"></div>
+                  <span className="text-gray-600">No Attendance</span>
+                </div>
+              </div>
+
+
 
               {/* Selection Calendar */}
               <div className="overflow-x-auto mb-4">
@@ -915,6 +1032,7 @@ export default function TeacherDashboard() {
                   {getDaysInMonth().map((day, idx) => {
                     const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
                     const selected = day && isSelected(dateStr)
+                    const hasAttendance = day && existingAttendance.has(dateStr)
                     return (
                       <div
                         key={idx}
@@ -927,6 +1045,11 @@ export default function TeacherDashboard() {
                             {selected && (
                               <span className="pointer-events-none absolute bottom-1 right-1">
                                 <span className="inline-block w-2 h-2 rounded-full bg-white"></span>
+                              </span>
+                            )}
+                            {hasAttendance && !selected && (
+                              <span className="pointer-events-none absolute bottom-1 right-1">
+                                <span className="inline-block w-2 h-2 rounded-full bg-green-600"></span>
                               </span>
                             )}
                           </>
