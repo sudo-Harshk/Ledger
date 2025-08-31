@@ -366,10 +366,10 @@ export default function StudentDashboard() {
                 <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <div className="min-w-[560px] grid grid-cols-7 gap-1">
+              <div className="w-full">
+                <div className="grid grid-cols-7 gap-1 w-full">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="p-2 text-center font-medium text-muted-foreground">
+                  <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
                     {day}
                   </div>
                 ))}
@@ -379,13 +379,13 @@ export default function StudentDashboard() {
                   return (
                     <div
                       key={index}
-                      className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center transition-all duration-200 hover:scale-105 ${
+                      className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:scale-105 hover:z-10 ${
                         status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
                       }`}
                     >
                       {day && (
                         <>
-                          <span className="font-medium select-none">{day}</span>
+                          <span className="font-medium select-none text-sm sm:text-base">{day}</span>
                           {status && (
                             <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
                               <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
