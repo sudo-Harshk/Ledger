@@ -10,6 +10,7 @@ import { formatLocalDate } from '../lib/utils'
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, setDoc, deleteDoc } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
+import toast from 'react-hot-toast'
 
 interface PendingAttendance {
   id: string
@@ -110,7 +111,7 @@ export default function TeacherDashboard() {
       const email = window.prompt('Enter admin teacher email:') || ''
       const password = window.prompt('Enter a strong password for admin teacher:') || ''
       if (!email || !password) {
-        alert('Email and password are required')
+        toast.error('Email and password are required')
         setLoading(false)
         return
       }
@@ -123,16 +124,16 @@ export default function TeacherDashboard() {
         monthlyFee: 0,
         createdAt: new Date()
       })
-      alert('Admin teacher account created successfully! Please store credentials securely.')
+      toast.success('Admin teacher account created successfully! Please store credentials securely.')
       await checkTeacherSetup()
     } catch (error: unknown) {
       logger.error('Error creating admin teacher account')
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
-        alert('Admin teacher account already exists. You can sign in with the saved credentials.')
+        toast.error('Admin teacher account already exists. You can sign in with the saved credentials.')
       } else if (error instanceof Error) {
-        alert(`Failed to create admin teacher account: ${error.message}`)
+        toast.error(`Failed to create admin teacher account: ${error.message}`)
       } else {
-        alert('Failed to create admin teacher account. Please try again.')
+        toast.error('Failed to create admin teacher account. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -161,8 +162,7 @@ export default function TeacherDashboard() {
       setPendingRequests(requests)
     } catch (error) {
       console.error('Error loading pending requests:', error)
-      // Show user-friendly error message
-      alert('Failed to load pending attendance requests. Please refresh the page and try again.')
+      toast.error('Failed to load pending attendance requests. Please refresh the page and try again.')
     } finally {
       setPendingRequestsLoading(false)
     }
@@ -212,8 +212,7 @@ export default function TeacherDashboard() {
       setStudentFees(fees)
     } catch (error) {
       console.error('Error loading student fees:', error)
-      // Show user-friendly error message
-      alert('Failed to load student fee information. Please refresh the page and try again.')
+      toast.error('Failed to load student fee information. Please refresh the page and try again.')
     } finally {
       setStudentFeesLoading(false)
     }
@@ -230,8 +229,7 @@ export default function TeacherDashboard() {
       }
     } catch (error) {
       console.error('Error loading monthly fee:', error)
-      // Show user-friendly error message
-      alert('Failed to load monthly fee settings. Please refresh the page and try again.')
+      toast.error('Failed to load monthly fee settings. Please refresh the page and try again.')
     } finally {
       setMonthlyFeeLoading(false)
     }
@@ -256,8 +254,7 @@ export default function TeacherDashboard() {
       setStudents(studentsList)
     } catch (error) {
       console.error('Error loading students:', error)
-      // Show user-friendly error message
-      alert('Failed to load student list. Please refresh the page and try again.')
+      toast.error('Failed to load student list. Please refresh the page and try again.')
     } finally {
       setStudentsLoading(false)
     }
@@ -319,8 +316,7 @@ export default function TeacherDashboard() {
       setExistingAbsentAttendance(absentDates)
     } catch (error) {
       logger.error('Error loading existing attendance:', error)
-      // Show user-friendly error message
-      alert('Failed to load existing attendance data. Please refresh the page and try again.')
+      toast.error('Failed to load existing attendance data. Please refresh the page and try again.')
     } finally {
       setRefreshAttendanceLoading(false)
     }
@@ -353,19 +349,19 @@ export default function TeacherDashboard() {
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
-      alert('Please fill in all fields')
+      toast.error('Please fill in all fields')
       return
     }
     if (newStudentUsername.length < 3) {
-      alert('Username must be at least 3 characters long')
+      toast.error('Username must be at least 3 characters long')
       return
     }
     if (newStudentUsername.length > 50) {
-      alert('Username must be less than 50 characters long')
+      toast.error('Username must be less than 50 characters long')
       return
     }
     if (newStudentPassword.length < 6) {
-      alert('Password must be at least 6 characters long')
+      toast.error('Password must be at least 6 characters long')
       return
     }
     const existingStudentsQuery = query(
@@ -375,7 +371,7 @@ export default function TeacherDashboard() {
     )
     const existingStudents = await getDocs(existingStudentsQuery)
     if (!existingStudents.empty) {
-      alert(`Username "${newStudentUsername}" is already taken. Please choose a different username.`)
+      toast.error(`Username "${newStudentUsername}" is already taken. Please choose a different username.`)
       return
     }
 
@@ -403,17 +399,17 @@ export default function TeacherDashboard() {
       setNewStudentMonthlyFee(0)
       setShowCreateUser(false)
       await loadStudents()
-      alert(`Student account created successfully! Username: ${newStudentUsername}`)
+      toast.success(`Student account created successfully! Username: ${newStudentUsername}`)
     } catch (error: unknown) {
       console.error('Error creating student account:', error)
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
-        alert('Username is already taken. Please choose a different username.')
+        toast.error('Username is already taken. Please choose a different username.')
       } else if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/weak-password') {
-        alert('Password is too weak. Please use a stronger password (at least 6 characters).')
+        toast.error('Password is too weak. Please use a stronger password (at least 6 characters).')
       } else if (error instanceof Error) {
-        alert(`Failed to create account: ${error.message}`)
+        toast.error(`Failed to create account: ${error.message}`)
       } else {
-        alert('Failed to create account. Please try again.')
+        toast.error('Failed to create account. Please try again.')
       }
     } finally {
       setCreateUserLoading(false)
@@ -434,11 +430,11 @@ export default function TeacherDashboard() {
         batch.update(studentDoc.ref, { monthlyFee: monthlyFee })
       })
       await batch.commit()
-      alert('Monthly fee updated successfully!')
+      toast.success('Monthly fee updated successfully!')
       await loadStudentFees()
     } catch (error) {
       console.error('Error updating monthly fee:', error)
-      alert('Failed to update monthly fee')
+      toast.error('Failed to update monthly fee')
     } finally {
       setLoading(false)
     }
@@ -447,17 +443,17 @@ export default function TeacherDashboard() {
   const addBulkAttendance = async () => {
     if (!user?.uid) return
     if (!bulkStartDate || !bulkEndDate) {
-      alert('Please select both start and end dates')
+      toast.error('Please select both start and end dates')
       return
     }
     const startDate = new Date(bulkStartDate)
     const endDate = new Date(bulkEndDate)
     if (startDate > endDate) {
-      alert('Start date cannot be after end date')
+      toast.error('Start date cannot be after end date')
       return
     }
     if (startDate < new Date('2020-01-01') || endDate > new Date('2030-12-31')) {
-      alert('Please select dates between 2020 and 2030')
+      toast.error('Please select dates between 2020 and 2030')
       return
     }
 
@@ -466,7 +462,7 @@ export default function TeacherDashboard() {
     const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
     const studentsSnapshot = await getDocs(studentsQuery)
     if (studentsSnapshot.empty) {
-      alert('No students found to add attendance for')
+      toast.error('No students found to add attendance for')
       return
     }
     
@@ -541,7 +537,7 @@ export default function TeacherDashboard() {
       }
       
       const studentsCount = studentsSnapshot.size
-      alert(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
+      toast.success(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
       setBulkStartDate('')
       setBulkEndDate('')
       setToggledDates(new Set())
@@ -558,7 +554,7 @@ export default function TeacherDashboard() {
       await loadExistingAttendance()
     } catch (error) {
       console.error('Error adding bulk attendance:', error)
-      alert('Failed to add bulk attendance')
+      toast.error('Failed to add bulk attendance')
     } finally {
       setBulkAttendanceLoading(false)
     }
@@ -576,10 +572,10 @@ export default function TeacherDashboard() {
       // Confetti animation removed for performance
       await loadPendingRequests()
       await loadStudentFees()
-      alert(`Attendance ${status} successfully!`)
+      toast.success(`Attendance ${status} successfully!`)
     } catch (error) {
       console.error('Error updating attendance:', error)
-      alert('Failed to update attendance')
+      toast.error('Failed to update attendance')
     } finally {
       setLoading(false)
     }
@@ -728,15 +724,15 @@ export default function TeacherDashboard() {
       })
       await batch.commit()
 
-      alert(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`)
+      toast.success(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`)
       await loadStudents()
       await loadStudentFees()
     } catch (error: unknown) {
       console.error('Error deleting student account:', error)
       if (error instanceof Error) {
-        alert(`Failed to delete account: ${error.message}`)
+        toast.error(`Failed to delete account: ${error.message}`)
       } else {
-        alert('Failed to delete account. Please try again.')
+        toast.error('Failed to delete account. Please try again.')
       }
     } finally {
       setLoading(false)

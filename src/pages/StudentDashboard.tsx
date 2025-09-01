@@ -6,6 +6,7 @@ import Navigation from '../components/Navigation'
 import { db } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
+import toast from 'react-hot-toast'
 
 interface AttendanceRecord {
   date: string
@@ -67,8 +68,7 @@ export default function StudentDashboard() {
       setAttendanceRecords(records)
     } catch (error) {
       console.error('Error loading attendance records:', error)
-      // Show user-friendly error message
-      alert('Failed to load attendance records. Please refresh the page and try again.')
+      toast.error('Failed to load attendance records. Please refresh the page and try again.')
     } finally {
       setAttendanceLoading(false)
     }
@@ -122,8 +122,7 @@ export default function StudentDashboard() {
       }
     } catch (error) {
       console.error('Error loading fee summary:', error)
-      // Show user-friendly error message
-      alert('Failed to load fee summary. Please refresh the page and try again.')
+      toast.error('Failed to load fee summary. Please refresh the page and try again.')
     } finally {
       setFeeSummaryLoading(false)
     }
@@ -158,7 +157,7 @@ export default function StudentDashboard() {
       // Check if already marked today
       const existingRecord = attendanceRecords.find(record => record.date === today)
       if (existingRecord) {
-        alert('Attendance already marked for today')
+        toast.error('Attendance already marked for today')
         return
       }
       
@@ -175,10 +174,10 @@ export default function StudentDashboard() {
       
       // Reload records
       await loadAttendanceRecords()
-      alert('Attendance marked successfully! Waiting for teacher approval.')
+      toast.success('Attendance marked successfully! Waiting for teacher approval.')
     } catch (error) {
       console.error('Error marking attendance:', error)
-      alert('Failed to mark attendance')
+      toast.error('Failed to mark attendance')
     } finally {
       setLoading(false)
     }

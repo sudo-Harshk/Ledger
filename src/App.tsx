@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { lazy, Suspense } from 'react'
 import './App.css'
+import ToastProvider from './components/ToastProvider';
 
 // Lazy load large dashboard components
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -91,6 +92,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Routes>
           </div>
+          <ToastProvider />
         </div>
       </Router>
     </AuthProvider>

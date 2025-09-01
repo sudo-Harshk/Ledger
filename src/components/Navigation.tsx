@@ -2,6 +2,7 @@
 import { Button } from './ui/button'
 import { useAuth } from '../hooks/useAuth'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 
 interface NavigationProps {
   title: string
@@ -14,9 +15,10 @@ export default function Navigation({ title }: NavigationProps) {
   const handleLogout = async () => {
     try {
       await logout()
+      toast.success('Logged out successfully')
     } catch (error) {
       console.error('Logout failed:', error)
-      // You could show a toast notification here
+      toast.error('Logout failed. Please try again.')
     }
   }
 

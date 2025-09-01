@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
+import toast from 'react-hot-toast'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -29,12 +30,15 @@ export default function LoginPage() {
 
     try {
       await login(username, password)
+      toast.success('Login successful!')
       // Navigation will be handled by the useEffect above
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message)
+        toast.error(error.message)
       } else {
         setError('Failed to login. Please try again.')
+        toast.error('Failed to login. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -57,7 +61,6 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            
             <div className="space-y-2">
               <Label htmlFor="username">Username or Email</Label>
               <Input
@@ -73,7 +76,6 @@ export default function LoginPage() {
                 Students: Use your username • Teachers: Use your email
               </p>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -86,21 +88,14 @@ export default function LoginPage() {
                 className="transition-all duration-200 focus:scale-105"
               />
             </div>
-            
             <Button 
-              type="submit" 
-              className="w-full transition-all duration-200 hover:scale-105"
+              type="submit"
+              className="w-full"
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-          
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Contact your teacher for account access
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
