@@ -6,12 +6,14 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
 import toast from 'react-hot-toast'
+import { FiEye, FiEyeOff } from 'react-icons/fi'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   
   const { login, user } = useAuth()
   const navigate = useNavigate()
@@ -90,15 +92,30 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="transition-all duration-200 focus:scale-105"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="transition-all duration-200 focus:scale-105 pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white shadow focus:outline-none border border-gray-200 transition-colors"
+                >
+                  {showPassword ? (
+                    <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                  ) : (
+                    <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
+                  )}
+                </button>
+              </div>
             </div>
             <Button 
               type="submit"
