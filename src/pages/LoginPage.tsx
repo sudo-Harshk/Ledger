@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -15,23 +15,35 @@ export default function LoginPage() {
   
   const { login, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const justLoggedIn = useRef(false)
 
-  // Redirect if user is already authenticated
   useEffect(() => {
     if (user) {
-      navigate(`/${user.role}`)
+      // Only show toast if just logged in
+      if (justLoggedIn.current) {
+        if (user.displayName) {
+          toast.success(`Welcome back, ${user.displayName}!`)
+        } else {
+          toast.success('Login successful!')
+        }
+        justLoggedIn.current = false
+      }
+      // Always redirect if user is present and on login page
+      if (location.pathname === '/login') {
+        navigate(`/${user.role}`)
+      }
     }
-  }, [user, navigate])
+  }, [user, navigate, location.pathname])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
       await login(username, password)
-      toast.success('Login successful!')
-      // Navigation will be handled by the useEffect above
+      justLoggedIn.current = true
+      // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message)
