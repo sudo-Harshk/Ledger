@@ -55,7 +55,7 @@ export default function Navigation({ title }: NavigationProps) {
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                className="transition-all duration-200 hover:scale-105"
+                className="transition-all duration-200"
               >
                 Logout
               </Button>

@@ -248,7 +248,7 @@ export default function StudentDashboard() {
         {/* Quick Actions - Bento Design */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Large Attendance Card */}
-          <Card className="md:col-span-2 transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-2 transition-all duration-200">
             <CardHeader>
               <CardTitle className="text-lg">Mark Attendance</CardTitle>
               <CardDescription>Mark today's attendance</CardDescription>
@@ -265,7 +265,7 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Medium Approved Days Card */}
-          <Card className="md:col-span-2 transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-2 transition-all duration-200">
             <CardHeader>
               <CardTitle className="text-lg">Approved Days</CardTitle>
               <CardDescription>This month's approved attendance</CardDescription>
@@ -290,7 +290,7 @@ export default function StudentDashboard() {
 
 
           {/* Small Daily Rate Card */}
-          <Card className="md:col-span-1 transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-1 transition-all duration-200">
             <CardHeader>
               <CardTitle className="text-sm">Daily Rate</CardTitle>
               <CardDescription className="text-xs">Per day</CardDescription>
@@ -311,7 +311,7 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Small Total Due Card */}
-          <Card className="md:col-span-1 transition-all duration-200 hover:scale-105">
+          <Card className="md:col-span-1 transition-all duration-200">
             <CardHeader>
               <CardTitle className="text-sm">Total Due</CardTitle>
               <CardDescription className="text-xs">Amount</CardDescription>
@@ -340,7 +340,7 @@ export default function StudentDashboard() {
                   variant="outline"
                   size="sm"
                   onClick={() => changeMonth('prev')}
-                  className="transition-all duration-200 hover:scale-105"
+                  className="transition-all duration-200"
                 >
                   ←
                 </Button>
@@ -351,7 +351,7 @@ export default function StudentDashboard() {
                   variant="outline"
                   size="sm"
                   onClick={() => changeMonth('next')}
-                  className="transition-all duration-200 hover:scale-105"
+                  className="transition-all duration-200"
                 >
                   →
                 </Button>
@@ -378,7 +378,7 @@ export default function StudentDashboard() {
                   return (
                     <div
                       key={index}
-                      className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:scale-105 hover:z-10 ${
+                      className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
                         status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
                       }`}
                     >
