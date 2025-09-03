@@ -63,6 +63,9 @@ export default function TeacherDashboard() {
   const [students, setStudents] = useState<StudentAccount[]>([])
   const [createUserLoading, setCreateUserLoading] = useState(false)
 
+  // Monthly Fee Animation State
+  const [isMonthlyFeeUpdated, setIsMonthlyFeeUpdated] = useState(false)
+
   // Bulk Attendance State
   const [showBulkAttendance, setShowBulkAttendance] = useState(false)
   const [bulkStartDate, setBulkStartDate] = useState('')
@@ -432,6 +435,8 @@ export default function TeacherDashboard() {
       await batch.commit()
       toast.success('Monthly fee updated successfully!')
       await loadStudentFees()
+      setIsMonthlyFeeUpdated(true)
+      setTimeout(() => setIsMonthlyFeeUpdated(false), 500)
     } catch (error) {
       console.error('Error updating monthly fee:', error)
       toast.error('Failed to update monthly fee')
@@ -818,7 +823,7 @@ export default function TeacherDashboard() {
                     value={monthlyFee}
                     onChange={(e) => setMonthlyFee(Number(e.target.value))}
                     placeholder="Enter monthly fee"
-                    className="mt-1"
+                    className={`mt-1 transition-all duration-300 ${isMonthlyFeeUpdated ? 'bg-blue-100 border-blue-400' : ''}`}
                   />
                 </div>
                 <Button 
@@ -1278,9 +1283,10 @@ export default function TeacherDashboard() {
                       setDefaultAttendanceStatus('present')
                       clearToggledDates()
                     }}
-                    className={`px-4 py-2 font-medium focus:outline-none transition-colors duration-150
-                      ${defaultAttendanceStatus === 'present' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 hover:bg-blue-50'}
-                      border-r border-gray-200`}
+                    className={`px-4 py-2 font-medium focus:outline-none border-r border-gray-200
+                      transition duration-150 ease-in-out
+                      active:scale-95
+                      ${defaultAttendanceStatus === 'present' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 hover:bg-blue-50'}`}
                     aria-pressed={defaultAttendanceStatus === 'present'}
                   >
                     Present
@@ -1291,9 +1297,10 @@ export default function TeacherDashboard() {
                       setDefaultAttendanceStatus('absent')
                       clearToggledDates()
                     }}
-                    className={`px-4 py-2 font-medium focus:outline-none transition-colors duration-150
-                      ${defaultAttendanceStatus === 'absent' ? 'bg-red-600 text-white' : 'bg-white text-gray-800 hover:bg-red-50'}
-                      border-r border-gray-200`}
+                    className={`px-4 py-2 font-medium focus:outline-none border-r border-gray-200
+                      transition duration-150 ease-in-out
+                      active:scale-95
+                      ${defaultAttendanceStatus === 'absent' ? 'bg-red-600 text-white' : 'bg-white text-gray-800 hover:bg-red-50'}`}
                     aria-pressed={defaultAttendanceStatus === 'absent'}
                   >
                     Absent
@@ -1303,7 +1310,8 @@ export default function TeacherDashboard() {
                       type="button"
                       onClick={setAllDatesInBulkRange}
                       title={`Set all dates in range to ${defaultAttendanceStatus}`}
-                      className={`flex items-center gap-2 px-4 py-2 font-medium focus:outline-none transition-colors duration-150
+                      className={`flex items-center gap-2 px-4 py-2 font-medium focus:outline-none transition duration-150 ease-in-out
+                        active:scale-95
                         ${defaultAttendanceStatus === 'present'
                           ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                           : 'bg-red-100 text-red-700 hover:bg-red-200'}
