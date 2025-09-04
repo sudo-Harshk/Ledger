@@ -143,7 +143,7 @@ export default function StudentDashboard() {
         loadAttendanceRecords()
         loadFeeSummary()
       }
-    }, 30000)
+    }, 60000)
     return () => clearInterval(interval)
   }, [user?.uid, loadAttendanceRecords, loadFeeSummary])
 
