@@ -347,7 +347,7 @@ export default function StudentDashboard() {
                           src={emoji.webp}
                           alt={emoji.alt}
                           title={emoji.name}
-                          className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                          className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                           loading="lazy"
                         />
                       );
