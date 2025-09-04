@@ -36,7 +36,6 @@ export default function StudentDashboard() {
   const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [feeSummaryLoading, setFeeSummaryLoading] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [lastApprovedDate, setLastApprovedDate] = useState<string | null>(null)
   const isFirstLoad = useRef(true)
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
