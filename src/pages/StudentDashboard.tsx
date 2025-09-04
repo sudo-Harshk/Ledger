@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { useAuth } from '../hooks/useAuth'
@@ -7,6 +7,7 @@ import { db } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import toast from 'react-hot-toast'
+import { Confetti } from '../components/Confetti'
 
 interface AttendanceRecord {
   date: string
@@ -34,6 +35,9 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(false)
   const [attendanceLoading, setAttendanceLoading] = useState(false)
   const [feeSummaryLoading, setFeeSummaryLoading] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [lastApprovedDate, setLastApprovedDate] = useState<string | null>(null)
+  const isFirstLoad = useRef(true)
 
 
 
@@ -147,6 +151,27 @@ export default function StudentDashboard() {
     return () => clearInterval(interval)
   }, [user?.uid, loadAttendanceRecords, loadFeeSummary])
 
+  // Detect new approval
+  useEffect(() => {
+    // Find the most recent approved attendance
+    const approvedRecords = attendanceRecords.filter(r => r.status === 'approved')
+    if (approvedRecords.length === 0) return
+    // Get the latest approved date
+    const latestApproved = approvedRecords.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
+    if (lastApprovedDate !== latestApproved.date) {
+      if (isFirstLoad.current) {
+        // Skip confetti on initial load
+        setLastApprovedDate(latestApproved.date)
+        isFirstLoad.current = false
+      } else {
+        setShowConfetti(true)
+        setLastApprovedDate(latestApproved.date)
+        // Hide confetti after 3 seconds
+        setTimeout(() => setShowConfetti(false), 3000)
+      }
+    }
+  }, [attendanceRecords])
+
   const markAttendance = async () => {
     if (!user?.uid) return
     
@@ -241,6 +266,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      {showConfetti && <Confetti trigger={lastApprovedDate} />}
       <Navigation title="Student Dashboard" />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">

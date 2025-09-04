@@ -26,13 +26,24 @@ const firebaseConfig = {
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 
-// Initialize App Check with reCAPTCHA v3 in production
-if (import.meta.env.PROD) {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(checkEnvVar('VITE_RECAPTCHA_V3_SITE_KEY')),
-    isTokenAutoRefreshEnabled: true,
-  });
+// Add this after imports
+
+declare global {
+  interface Window {
+    FIREBASE_APPCHECK_DEBUG_TOKEN?: boolean | string;
+  }
 }
+
+// Enable App Check debug mode in development
+if (!import.meta.env.PROD) {
+  window.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN;
+}
+
+// Initialize App Check with reCAPTCHA v3 in all environments
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider(checkEnvVar('VITE_RECAPTCHA_V3_SITE_KEY')),
+  isTokenAutoRefreshEnabled: true,
+});
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
