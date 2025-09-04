@@ -8,6 +8,7 @@ import { formatLocalDate } from '../lib/utils'
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
 import toast from 'react-hot-toast'
 import { Confetti } from '../components/Confetti'
+import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
 
 interface AttendanceRecord {
   date: string
@@ -72,14 +73,9 @@ export default function StudentDashboard() {
       })
       
       setAttendanceRecords(records)
-      // Debug log for attendance check
-      const today = formatLocalDate(new Date());
-      const markedToday = records.some(record => record.date === today);
-      console.log('DEBUG: attendanceRecords', records, 'today', today, 'markedToday', markedToday);
       // Check if attendance is already marked for today
-      setHasMarkedAttendanceToday(markedToday);
+      setHasMarkedAttendanceToday(records.some(record => record.date === formatLocalDate(new Date())));
     } catch (error) {
-      console.error('Error loading attendance records:', error)
       toast.error('Failed to load attendance records. Please refresh the page and try again.')
     } finally {
       setAttendanceLoading(false)
@@ -133,7 +129,6 @@ export default function StudentDashboard() {
         })
       }
     } catch (error) {
-      console.error('Error loading fee summary:', error)
       toast.error('Failed to load fee summary. Please refresh the page and try again.')
     } finally {
       setFeeSummaryLoading(false)
@@ -226,7 +221,6 @@ export default function StudentDashboard() {
       await loadAttendanceRecords()
       toast.success('Attendance marked successfully! Waiting for teacher approval.')
     } catch (error) {
-      console.error('Error marking attendance:', error)
       toast.error('Failed to mark attendance')
     } finally {
       setLoading(false)
@@ -284,6 +278,15 @@ export default function StudentDashboard() {
     })
   }
 
+  // Utility to get a deterministic random emoji for today
+  const getTodayEmoji = () => {
+    const today = new Date();
+    const daySeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const index = daySeed % approvedDaysEmojis.length;
+    return approvedDaysEmojis[index];
+  };
+
+  // Emoji list for Approved Days card
   // Don't render if user is not available
   if (!user) {
     return null
@@ -329,7 +332,22 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <>
-                  <p className="text-4xl font-bold text-green-600">{feeSummary.totalDays}</p>
+                  <div className="flex items-center justify-between w-full">
+                    <p className="text-4xl font-bold text-green-600">{feeSummary.totalDays}</p>
+                    {(() => {
+                      const emoji = getTodayEmoji();
+                      return (
+                        <img
+                          key={emoji.name}
+                          src={emoji.webp}
+                          alt={emoji.alt}
+                          title={emoji.name}
+                          className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                          loading="lazy"
+                        />
+                      );
+                    })()}
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {feeSummary.totalDays === 1 ? 'day' : 'days'} approved
                   </p>
