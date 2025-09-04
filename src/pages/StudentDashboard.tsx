@@ -39,6 +39,7 @@ export default function StudentDashboard() {
   const isFirstLoad = useRef(true)
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
+  const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
 
 
 
@@ -71,6 +72,12 @@ export default function StudentDashboard() {
       })
       
       setAttendanceRecords(records)
+      // Debug log for attendance check
+      const today = formatLocalDate(new Date());
+      const markedToday = records.some(record => record.date === today);
+      console.log('DEBUG: attendanceRecords', records, 'today', today, 'markedToday', markedToday);
+      // Check if attendance is already marked for today
+      setHasMarkedAttendanceToday(markedToday);
     } catch (error) {
       console.error('Error loading attendance records:', error)
       toast.error('Failed to load attendance records. Please refresh the page and try again.')
@@ -300,10 +307,10 @@ export default function StudentDashboard() {
             <CardContent>
               <Button 
                 onClick={markAttendance}
-                disabled={loading}
-                className="w-full"
+                disabled={loading || hasMarkedAttendanceToday}
+                className={`w-full ${hasMarkedAttendanceToday ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
               >
-                {loading ? 'Marking...' : 'Mark Today'}
+                {loading ? 'Marking...' : hasMarkedAttendanceToday ? 'Marked Today' : 'Mark Today'}
               </Button>
             </CardContent>
           </Card>
