@@ -333,7 +333,12 @@ export default function StudentDashboard() {
               ) : (
                 <>
                   <div className="flex items-center justify-between w-full">
-                    <p className="text-4xl font-bold text-green-600">{feeSummary.totalDays}</p>
+                    <div className="flex items-end gap-2">
+                      <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
+                      <span className="text-base text-muted-foreground mb-1">
+                        {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
+                      </span>
+                    </div>
                     {(() => {
                       const emoji = getTodayEmoji();
                       return (
@@ -348,9 +353,6 @@ export default function StudentDashboard() {
                       );
                     })()}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {feeSummary.totalDays === 1 ? 'day' : 'days'} approved
-                  </p>
                 </>
               )}
             </CardContent>
