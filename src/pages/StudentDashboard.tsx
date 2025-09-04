@@ -38,6 +38,8 @@ export default function StudentDashboard() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [lastApprovedDate, setLastApprovedDate] = useState<string | null>(null)
   const isFirstLoad = useRef(true)
+  const prevTodayStatus = useRef<string | null>(null);
+  const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
 
 
 
@@ -151,26 +153,43 @@ export default function StudentDashboard() {
     return () => clearInterval(interval)
   }, [user?.uid, loadAttendanceRecords, loadFeeSummary])
 
-  // Detect new approval
+  // Utility to get today's confetti key
+  const getTodayConfettiKey = () => {
+    const now = new Date();
+    return `confetti_shown_${formatLocalDate(now)}`;
+  };
+
+  // Detect new approval for today only
   useEffect(() => {
-    // Find the most recent approved attendance
-    const approvedRecords = attendanceRecords.filter(r => r.status === 'approved')
-    if (approvedRecords.length === 0) return
-    // Get the latest approved date
-    const latestApproved = approvedRecords.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
-    if (lastApprovedDate !== latestApproved.date) {
-      if (isFirstLoad.current) {
-        // Skip confetti on initial load
-        setLastApprovedDate(latestApproved.date)
-        isFirstLoad.current = false
-      } else {
-        setShowConfetti(true)
-        setLastApprovedDate(latestApproved.date)
-        // Hide confetti after 3 seconds
-        setTimeout(() => setShowConfetti(false), 3000)
+    // Only run confetti logic if viewing the current month
+    const now = new Date();
+    const isCurrentMonth =
+      currentMonth.getMonth() === now.getMonth() &&
+      currentMonth.getFullYear() === now.getFullYear();
+    if (!isCurrentMonth) return;
+    const todayStr = formatLocalDate(now);
+    const todayRecord = attendanceRecords.find(r => r.date === todayStr);
+    const currentStatus = todayRecord?.status || null;
+    const confettiKey = getTodayConfettiKey();
+    const confettiAlreadyShown = localStorage.getItem(confettiKey) === 'true';
+    // Only trigger confetti if status transitions from not approved to approved and not already shown
+    if (
+      prevTodayStatus.current !== 'approved' &&
+      currentStatus === 'approved' &&
+      !confettiAlreadyShown
+    ) {
+      if (!isFirstLoad.current) {
+        setConfettiTrigger(Date.now());
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 1500);
+        localStorage.setItem(confettiKey, 'true');
       }
     }
-  }, [attendanceRecords])
+    // Update previous status for next effect run
+    prevTodayStatus.current = currentStatus;
+    // Mark initial load as done
+    if (isFirstLoad.current) isFirstLoad.current = false;
+  }, [attendanceRecords, currentMonth]);
 
   const markAttendance = async () => {
     if (!user?.uid) return
@@ -266,7 +285,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {showConfetti && <Confetti trigger={lastApprovedDate} />}
+      {showConfetti && <Confetti trigger={confettiTrigger} />}
       <Navigation title="Student Dashboard" />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">
