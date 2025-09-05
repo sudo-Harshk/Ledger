@@ -1360,10 +1360,11 @@ export default function TeacherDashboard() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const today = new Date()
-                      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-                      setBulkStartDate(toDateStr(monthStart))
-                      setBulkEndDate(toDateStr(today))
+                      const today = new Date();
+                      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                      setBulkStartDate(toDateStr(monthStart));
+                      setBulkEndDate(toDateStr(monthEnd));
                       // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
