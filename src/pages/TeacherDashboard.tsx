@@ -11,6 +11,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, 
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
 import toast from 'react-hot-toast'
+import { debounce } from '../lib/debounce';
 
 interface PendingAttendance {
   id: string
@@ -593,8 +594,17 @@ export default function TeacherDashboard() {
       } else {
         newMonth.setMonth(prev.getMonth() + 1)
       }
+      // Only show toast if the current month is after the start, and the new month would be before the start
+      if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
+        debouncedToast('Started using platform from August 2025')
+        return new Date(PLATFORM_START)
+      }
+      if (newMonth < PLATFORM_START) {
+        return new Date(PLATFORM_START)
+      }
       return newMonth
-    })
+    }
+    )
     
     // Clear toggled dates when changing months
     // setToggledDates(new Set()) // Removed
@@ -744,6 +754,9 @@ export default function TeacherDashboard() {
   if (!user) {
     return null
   }
+
+  const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
+  const debouncedToast = useRef(debounce((msg: string) => toast.error(msg), 500)).current;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -1211,40 +1224,48 @@ export default function TeacherDashboard() {
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                     <div key={day} className="p-2 text-center font-medium text-muted-foreground">{day}</div>
                   ))}
-                  {getDaysInMonth().map((day, idx) => {
-                    const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
-                    const selected = day && isSelected(dateStr)
-                    const hasPresentAttendance = day && existingAttendance.has(dateStr)
-                    const hasAbsentAttendance = day && existingAbsentAttendance.has(dateStr)
-                    return (
-                      <div
-                        key={idx}
-                        className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day)}`}
-                        onClick={() => handleCalendarDayClick(day)}
-                      >
-                        {day && (
-                          <>
-                            <span className="font-medium select-none">{day}</span>
-                            {selected && (
-                              <span className="pointer-events-none absolute bottom-1 right-1">
-                                <span className="inline-block w-2 h-1 rounded-full bg-white"></span>
-                              </span>
-                            )}
-                            {hasPresentAttendance && !selected && (
-                              <span className="pointer-events-none absolute bottom-1 right-1">
-                                <span className="inline-block w-2 h-2 rounded-full bg-green-600"></span>
-                              </span>
-                            )}
-                            {hasAbsentAttendance && !selected && (
-                              <span className="pointer-events-none absolute bottom-1 right-1">
-                                <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )
-                  })}
+                  {currentMonth < PLATFORM_START ? (
+                    <div className="text-center text-red-600 font-semibold py-8">
+                      Started using platform from August 2025
+                    </div>
+                  ) : (
+                  <>
+                    {getDaysInMonth().map((day, idx) => {
+                      const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
+                      const selected = day && isSelected(dateStr)
+                      const hasPresentAttendance = day && existingAttendance.has(dateStr)
+                      const hasAbsentAttendance = day && existingAbsentAttendance.has(dateStr)
+                      return (
+                        <div
+                          key={idx}
+                          className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day)}`}
+                          onClick={() => handleCalendarDayClick(day)}
+                        >
+                          {day && (
+                            <>
+                              <span className="font-medium select-none">{day}</span>
+                              {selected && (
+                                <span className="pointer-events-none absolute bottom-1 right-1">
+                                  <span className="inline-block w-2 h-1 rounded-full bg-white"></span>
+                                </span>
+                              )}
+                              {hasPresentAttendance && !selected && (
+                                <span className="pointer-events-none absolute bottom-1 right-1">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-green-600"></span>
+                                </span>
+                              )}
+                              {hasAbsentAttendance && !selected && (
+                                <span className="pointer-events-none absolute bottom-1 right-1">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-red-500"></span>
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
                 </div>
                 </div>
               </div>

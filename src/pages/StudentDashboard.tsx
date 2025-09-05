@@ -9,6 +9,7 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase
 import toast from 'react-hot-toast'
 import { Confetti } from '../components/Confetti'
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
+import { debounce } from '../lib/debounce';
 
 interface AttendanceRecord {
   date: string
@@ -41,9 +42,9 @@ export default function StudentDashboard() {
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
+  const debouncedToast = useRef(debounce((msg: string) => toast.error(msg), 500)).current;
 
-
-
+  const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
 
   const loadAttendanceRecords = useCallback(async () => {
@@ -274,6 +275,14 @@ export default function StudentDashboard() {
       } else {
         newMonth.setMonth(prev.getMonth() + 1)
       }
+      // Only show toast if the current month is after the start, and the new month would be before the start
+      if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
+        debouncedToast('Started using platform from August 2025')
+        return new Date(PLATFORM_START)
+      }
+      if (newMonth < PLATFORM_START) {
+        return new Date(PLATFORM_START)
+      }
       return newMonth
     })
   }
@@ -430,64 +439,72 @@ export default function StudentDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {attendanceLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
+            {currentMonth < PLATFORM_START ? (
+              <div className="text-center text-red-600 font-semibold py-8">
+                Started using platform from August 2025
               </div>
             ) : (
-              <div className="w-full">
-                <div className="grid grid-cols-7 gap-1 w-full">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
-                    {day}
+              <>
+                {attendanceLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
                   </div>
-                ))}
-                
-                {getDaysInMonth().map((day, index) => {
-                  const status = getAttendanceStatus(day)
-                  return (
-                    <div
-                      key={index}
-                      className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
-                        status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
-                      }`}
-                    >
-                      {day && (
-                        <>
-                          <span className="font-medium select-none text-sm sm:text-base">{day}</span>
-                          {status && (
-                            <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
-                              <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
-                            </span>
+                ) : (
+                  <div className="w-full">
+                    <div className="grid grid-cols-7 gap-1 w-full">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
+                        {day}
+                      </div>
+                    ))}
+                    
+                    {getDaysInMonth().map((day, index) => {
+                      const status = getAttendanceStatus(day)
+                      return (
+                        <div
+                          key={index}
+                          className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
+                            status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
+                          }`}
+                        >
+                          {day && (
+                            <>
+                              <span className="font-medium select-none text-sm sm:text-base">{day}</span>
+                              {status && (
+                                <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
+                                  <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
+                                </span>
+                              )}
+                            </>
                           )}
-                        </>
-                      )}
+                        </div>
+                      )
+                    })}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+                
+                <div className="mt-4 flex gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span>Approved</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span>Pending</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                    <span>Absent</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span>Rejected</span>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
-            
-            <div className="mt-4 flex gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span>Approved</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <span>Pending</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                <span>Absent</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span>Rejected</span>
-              </div>
-            </div>
           </CardContent>
         </Card>
         </div>
