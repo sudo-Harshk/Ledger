@@ -593,13 +593,13 @@ export default function TeacherDashboard() {
       } else {
         newMonth.setMonth(prev.getMonth() + 1)
       }
-      // Only show toast if the current month is after the start, and the new month would be before the start
+      // If navigating before platform start, show toast and set to current month
       if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
-        debouncedToast('Started using platform from August 2025', 'info')
-        return new Date(PLATFORM_START)
+        debouncedToast('Started using platform from August 2025', 'error')
+        return new Date()
       }
       if (newMonth < PLATFORM_START) {
-        return new Date(PLATFORM_START)
+        return new Date()
       }
       return newMonth
     }

@@ -17,7 +17,7 @@ export function debouncedToast(
         toast.success(message);
         break;
       case 'error':
-        toast.error(message);
+        toast.error(message, { icon: null }); // Suppress error icon
         break;
       case 'loading':
         toast.loading(message);
