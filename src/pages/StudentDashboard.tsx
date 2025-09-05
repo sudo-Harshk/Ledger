@@ -42,6 +42,7 @@ export default function StudentDashboard() {
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
   const [totalDueAmount, setTotalDueAmount] = useState(0)
+  const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -136,29 +137,43 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth])
 
+  const getMonthKey = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+
   const saveTotalDue = useCallback(async (amount: number) => {
-    if (!user?.uid) return
+    if (!user?.uid) return;
     try {
-      await setDoc(doc(db, 'users', user.uid), {
-        currentMonthTotalDue: amount,
-        lastTotalDueUpdate: new Date()
-      }, { merge: true })
+      const monthKey = getMonthKey(currentMonth);
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      let totalDueByMonth: { [key: string]: number } = {};
+      if (userDoc.exists()) {
+        totalDueByMonth = userDoc.data().totalDueByMonth || {};
+      }
+      totalDueByMonth[monthKey] = amount;
+      await setDoc(userRef, {
+        totalDueByMonth,
+        lastTotalDueUpdate: new Date(),
+      }, { merge: true });
     } catch (error) {
-      console.error('Error saving total due amount:', error)
+      console.error('Error saving total due amount:', error);
     }
-  }, [user?.uid])
+  }, [user?.uid, currentMonth]);
 
   const loadTotalDue = useCallback(async () => {
-    if (!user?.uid) return
+    if (!user?.uid) return;
     try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid))
+      const monthKey = getMonthKey(currentMonth);
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
-        setTotalDueAmount(userDoc.data().currentMonthTotalDue || 0)
+        const totalDueByMonth: { [key: string]: number } = userDoc.data().totalDueByMonth || {};
+        setTotalDueAmount(totalDueByMonth[monthKey] || 0);
       }
     } catch (error) {
-      console.error('Error loading total due amount:', error)
+      console.error('Error loading total due amount:', error);
     }
-  }, [user?.uid])
+  }, [user?.uid, currentMonth]);
 
   // Load initial data when user or month changes
   useEffect(() => {
@@ -301,17 +316,20 @@ export default function StudentDashboard() {
       } else {
         newMonth.setMonth(prev.getMonth() + 1)
       }
-      // If navigating before platform start, show toast and set to current month
-      if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
-        debouncedToast('Started using platform from August 2025', 'error')
-        return new Date()
-      }
       if (newMonth < PLATFORM_START) {
-        return new Date()
+        setShouldShowPlatformStartToast(true);
+        return new Date();
       }
-      return newMonth
-    })
-  }
+      return newMonth;
+    });
+  };
+
+  useEffect(() => {
+    if (shouldShowPlatformStartToast) {
+      debouncedToast('Started using platform from August 2025', 'error');
+      setShouldShowPlatformStartToast(false);
+    }
+  }, [shouldShowPlatformStartToast]);
 
   // Utility to get a deterministic random emoji for today
   const getTodayEmoji = () => {
@@ -326,6 +344,17 @@ export default function StudentDashboard() {
   if (!user) {
     return null
   }
+
+  const now = new Date();
+  const isCurrentMonth =
+    currentMonth.getMonth() === now.getMonth() &&
+    currentMonth.getFullYear() === now.getFullYear();
+  const isPastMonth =
+    currentMonth.getFullYear() < now.getFullYear() ||
+    (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() < now.getMonth());
+  const isFutureMonth =
+    currentMonth.getFullYear() > now.getFullYear() ||
+    (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() > now.getMonth());
 
   return (
     <div className="min-h-screen bg-background">
@@ -345,10 +374,18 @@ export default function StudentDashboard() {
             <CardContent>
               <Button 
                 onClick={markAttendance}
-                disabled={loading || hasMarkedAttendanceToday}
-                className={`w-full ${hasMarkedAttendanceToday ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
+                disabled={loading || hasMarkedAttendanceToday || !isCurrentMonth}
+                className={`w-full ${hasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
               >
-                {loading ? 'Marking...' : hasMarkedAttendanceToday ? 'Marked Today' : 'Mark Today'}
+                {loading
+                  ? 'Marking...'
+                  : hasMarkedAttendanceToday
+                    ? 'Marked Today'
+                    : isPastMonth
+                      ? 'Disabled for Past months'
+                      : isFutureMonth
+                        ? 'Disabled for Future months'
+                        : 'Mark Today'}
               </Button>
             </CardContent>
           </Card>
