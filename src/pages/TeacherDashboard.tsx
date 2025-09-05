@@ -75,7 +75,6 @@ export default function TeacherDashboard() {
   const enableAdminSetup = import.meta.env.VITE_ENABLE_ADMIN_SETUP === 'true'
   const [existingAttendance, setExistingAttendance] = useState<Set<string>>(new Set())
   const [existingAbsentAttendance, setExistingAbsentAttendance] = useState<Set<string>>(new Set())
-  const [refreshAttendanceLoading, setRefreshAttendanceLoading] = useState(false)
   
   // New state for enhanced bulk attendance
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
@@ -295,7 +294,6 @@ export default function TeacherDashboard() {
   }, [])
 
   const loadExistingAttendance = useCallback(async () => {
-    setRefreshAttendanceLoading(true)
     try {
       // Get all approved and absent attendance records and filter by date in JavaScript to avoid index requirements
       const approvedAttendanceQuery = query(
@@ -352,7 +350,7 @@ export default function TeacherDashboard() {
       logger.error('Error loading existing attendance:', error)
       debouncedToast('Failed to load existing attendance data. Please refresh the page and try again.', 'error')
     } finally {
-      setRefreshAttendanceLoading(false)
+      // setRefreshAttendanceLoading(false) // Removed
     }
   }, [currentMonth])
 
@@ -381,6 +379,14 @@ export default function TeacherDashboard() {
       checkTeacherSetup()
     }
   }, [user, currentMonth, loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup])
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      loadExistingAttendance();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [user, loadExistingAttendance]);
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
@@ -632,23 +638,23 @@ export default function TeacherDashboard() {
       // If navigating before platform start, show toast and set to current month
       if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
         debouncedToast('Started using platform from August 2025', 'error')
+        loadExistingAttendance();
         return new Date()
       }
       if (newMonth < PLATFORM_START) {
+        loadExistingAttendance();
         return new Date()
       }
+      loadExistingAttendance();
       return newMonth
-    }
-    )
+    })
     
     // Clear toggled dates when changing months
     // setToggledDates(new Set()) // Removed
     setExistingAbsentAttendance(new Set())
     
     // Refresh existing attendance for the new month
-    if (showBulkAttendance) {
-      monthChangeTimeoutRef.current = setTimeout(() => loadExistingAttendance(), 100)
-    }
+    // monthChangeTimeoutRef.current = setTimeout(() => loadExistingAttendance(), 100) // Removed
   }
 
   // Calendar helpers for month grid and bulk selection
@@ -1199,25 +1205,6 @@ export default function TeacherDashboard() {
                     {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </span>
                   <Button variant="outline" size="sm" onClick={() => changeMonth('next')}>→</Button>
-                  <Button 
-                    onClick={loadExistingAttendance}
-                    disabled={refreshAttendanceLoading}
-                    className="w-full sm:w-auto"
-                  >
-                    {refreshAttendanceLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                        Refreshing...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Refresh
-                      </div>
-                    )}
-                  </Button>
                 </div>
               </div>
 
