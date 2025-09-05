@@ -6,10 +6,9 @@ import Navigation from '../components/Navigation'
 import { db } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import toast from 'react-hot-toast'
 import { Confetti } from '../components/Confetti'
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
-import { debounce } from '../lib/debounce';
+import { debouncedToast } from '../lib/debouncedToast';
 
 interface AttendanceRecord {
   date: string
@@ -42,7 +41,6 @@ export default function StudentDashboard() {
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
-  const debouncedToast = useRef(debounce((msg: string) => toast.error(msg), 500)).current;
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -77,7 +75,7 @@ export default function StudentDashboard() {
       // Check if attendance is already marked for today
       setHasMarkedAttendanceToday(records.some(record => record.date === formatLocalDate(new Date())));
     } catch (error) {
-      toast.error('Failed to load attendance records. Please refresh the page and try again.')
+      debouncedToast('Failed to load attendance records. Please refresh the page and try again.', 'error')
     } finally {
       setAttendanceLoading(false)
     }
@@ -130,7 +128,7 @@ export default function StudentDashboard() {
         })
       }
     } catch (error) {
-      toast.error('Failed to load fee summary. Please refresh the page and try again.')
+      debouncedToast('Failed to load fee summary. Please refresh the page and try again.', 'error')
     } finally {
       setFeeSummaryLoading(false)
     }
@@ -203,7 +201,7 @@ export default function StudentDashboard() {
       // Check if already marked today
       const existingRecord = attendanceRecords.find(record => record.date === today)
       if (existingRecord) {
-        toast.error('Attendance already marked for today')
+        debouncedToast('Attendance already marked for today', 'error')
         return
       }
       
@@ -220,9 +218,9 @@ export default function StudentDashboard() {
       
       // Reload records
       await loadAttendanceRecords()
-      toast.success('Attendance marked successfully! Waiting for teacher approval.')
+      debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
-      toast.error('Failed to mark attendance')
+      debouncedToast('Failed to mark attendance', 'error')
     } finally {
       setLoading(false)
     }
@@ -277,7 +275,7 @@ export default function StudentDashboard() {
       }
       // Only show toast if the current month is after the start, and the new month would be before the start
       if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
-        debouncedToast('Started using platform from August 2025')
+        debouncedToast('Started using platform from August 2025', 'info')
         return new Date(PLATFORM_START)
       }
       if (newMonth < PLATFORM_START) {

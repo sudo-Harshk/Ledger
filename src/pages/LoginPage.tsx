@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
-import toast from 'react-hot-toast'
+import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 
 export default function LoginPage() {
@@ -25,15 +25,15 @@ export default function LoginPage() {
       // Only show toast if just logged in
       if (justLoggedIn.current) {
         if (user.displayName) {
-          toast.success(`Welcome back, ${user.displayName}!`)
+          debouncedToast(`Welcome back, ${user.displayName}!`, 'success');
         } else {
-          toast.success('Login successful!')
+          debouncedToast('Login successful!', 'success');
         }
-        justLoggedIn.current = false
+        justLoggedIn.current = false;
       }
       // Always redirect if user is present and on login page
       if (location.pathname === '/login') {
-        navigate(`/${user.role}`)
+        navigate(`/${user.role}`);
       }
     }
   }, [user, navigate, location.pathname])
@@ -48,11 +48,11 @@ export default function LoginPage() {
       // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
       if (error instanceof Error) {
-        setError(error.message)
-        toast.error(error.message)
+        setError(error.message);
+        debouncedToast(error.message, 'error');
       } else {
-        setError('Failed to login. Please try again.')
-        toast.error('Failed to login. Please try again.')
+        setError('Failed to login. Please try again.');
+        debouncedToast('Failed to login. Please try again.', 'error');
       }
     } finally {
       setLoading(false)
