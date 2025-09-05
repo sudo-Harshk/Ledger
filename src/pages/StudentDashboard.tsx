@@ -214,18 +214,17 @@ export default function StudentDashboard() {
     const currentStatus = todayRecord?.status || null;
     const confettiKey = getTodayConfettiKey();
     const confettiAlreadyShown = localStorage.getItem(confettiKey) === 'true';
-    // Only trigger confetti if status transitions from not approved to approved and not already shown
-    if (
-      prevTodayStatus.current !== 'approved' &&
+    // Only trigger confetti if status transitions from not approved (pending, absent, rejected) to approved and not already shown
+    const prevStatus = prevTodayStatus.current;
+    const isFirstApproval =
+      (prevStatus === 'pending' || prevStatus === 'absent' || prevStatus === 'rejected' || prevStatus === null) &&
       currentStatus === 'approved' &&
-      !confettiAlreadyShown
-    ) {
-      if (!isFirstLoad.current) {
-        setConfettiTrigger(Date.now());
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 1500);
-        localStorage.setItem(confettiKey, 'true');
-      }
+      !confettiAlreadyShown;
+    if (isFirstApproval) {
+      setConfettiTrigger(Date.now());
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 1500);
+      localStorage.setItem(confettiKey, 'true');
     }
     // Update previous status for next effect run
     prevTodayStatus.current = currentStatus;
