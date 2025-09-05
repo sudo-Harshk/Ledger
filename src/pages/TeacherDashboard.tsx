@@ -1375,21 +1375,6 @@ export default function TeacherDashboard() {
                     size="sm"
                     onClick={() => {
                       const today = new Date()
-                      const yesterday = new Date(today)
-                      yesterday.setDate(today.getDate() - 1)
-                      setBulkStartDate(toDateStr(yesterday))
-                      setBulkEndDate(toDateStr(yesterday))
-                      // setToggledDates(new Set()) // Removed
-                    }}
-                    className="text-xs"
-                  >
-                    Yesterday
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date()
                       setBulkStartDate(toDateStr(today))
                       setBulkEndDate(toDateStr(today))
                       // setToggledDates(new Set()) // Removed
