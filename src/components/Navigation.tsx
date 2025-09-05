@@ -6,9 +6,11 @@ import toast from 'react-hot-toast'
 
 interface NavigationProps {
   title: string
+  onRefresh?: () => void
+  refreshing?: boolean
 }
 
-export default function Navigation({ title }: NavigationProps) {
+export default function Navigation({ title, onRefresh, refreshing }: NavigationProps) {
   const { user, logout } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -59,6 +61,26 @@ export default function Navigation({ title }: NavigationProps) {
               >
                 Logout
               </Button>
+              {onRefresh && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="Refresh dashboard"
+                  onClick={onRefresh}
+                  disabled={refreshing}
+                  className="transition-all duration-200 hover:bg-transparent focus:bg-transparent hover:text-gray-700 focus:text-gray-700"
+                >
+                  {refreshing ? (
+                    <svg className="animate-spin h-6 w-6 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true" focusable="false">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75 2.28 0 4.374.784 6.042 2.086M21.75 12c0 5.385-4.365 9.75-9.75 9.75-2.28 0-4.374-.784-6.042-2.086m0 0V19.5m0-2.836v2.836h2.836" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-6 w-6 text-gray-700" aria-hidden="true" focusable="false">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75 2.28 0 4.374.784 6.042 2.086M21.75 12c0 5.385-4.365 9.75-9.75 9.75-2.28 0-4.374-.784-6.042-2.086m0 0V19.5m0-2.836v2.836h2.836" />
+                    </svg>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>

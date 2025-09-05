@@ -43,6 +43,7 @@ export default function StudentDashboard() {
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
   const [totalDueAmount, setTotalDueAmount] = useState(0)
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -338,6 +339,20 @@ export default function StudentDashboard() {
     return approvedDaysEmojis[index];
   };
 
+  // Handler for refresh button
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadAttendanceRecords(),
+        loadFeeSummary(),
+        loadTotalDue(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Emoji list for Approved Days card
   // Don't render if user is not available
   if (!user) {
@@ -358,11 +373,14 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {showConfetti && <Confetti trigger={confettiTrigger} />}
-      <Navigation title="Student Dashboard" />
+      <Navigation title="Student Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* Quick Actions - Bento Design */}
+          {/* Dashboard Header (no refresh button here anymore) */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+          </div>
+          {/* Quick Actions - Bento Design */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           {/* Large Attendance Card */}
           <Card className="md:col-span-2 transition-all duration-200">
