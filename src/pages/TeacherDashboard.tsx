@@ -650,6 +650,12 @@ export default function TeacherDashboard() {
     if (bulkStartDate && !bulkEndDate) {
       if (new Date(dateStr) >= new Date(bulkStartDate)) {
         setBulkEndDate(dateStr)
+        // Show toast if single date selected
+        if (dateStr === bulkStartDate) {
+          toast.success(`You selected ${new Date(dateStr).toLocaleDateString()} for attendance.`)
+        } else {
+          toast.success(`You selected ${new Date(bulkStartDate).toLocaleDateString()} to ${new Date(dateStr).toLocaleDateString()} for attendance.`)
+        }
       } else {
         setBulkStartDate(dateStr)
         setBulkEndDate('')
