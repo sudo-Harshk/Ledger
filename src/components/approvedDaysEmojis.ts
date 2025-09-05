@@ -1,5 +1,4 @@
 export const approvedDaysEmojis = [
-  { name: "mouth-none", emoji: "😶", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f636/512.webp", alt: "😶" },
   { name: "salute", emoji: "🫡", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1fae1/512.webp", alt: "🫡" },
   { name: "zipperface", emoji: "🤐", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f910/512.webp", alt: "🤐" },
   { name: "face-in-clouds", emoji: "😶‍🌫️", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f636_200d_1f32b_fe0f/512.webp", alt: "😶‍🌫️" },
@@ -11,5 +10,29 @@ export const approvedDaysEmojis = [
   { name: "hundred-points", emoji: "💯", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f4af/512.webp", alt: "💯" },
   { name: "screaming-cat", emoji: "🙀", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f640/512.webp", alt: "🙀" },
   { name: "grinning", emoji: "😁", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f601/512.webp", alt: "😁" },
-  { name: "relieved", emoji: "😌", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60c/512.webp", alt: "😌" }
+  { name: "relieved", emoji: "😌", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60c/512.webp", alt: "😌" },
+  { name: "star-struck", emoji: "🤩", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f929/512.webp", alt: "🤩" },
+  { name: "partying", emoji: "🥳", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f973/512.webp", alt: "🥳" },
+  { name: "astonished", emoji: "😲", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f632/512.webp", alt: "😲" },
+  { name: "sleeping", emoji: "😴", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f634/512.webp", alt: "😴" },
+  { name: "head-bandage", emoji: "🤕", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f915/512.webp", alt: "🤕" },
+  { name: "thermometer-face", emoji: "🤒", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f912/512.webp", alt: "🤒" },
+  { name: "disguised", emoji: "🥸", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f978/512.webp", alt: "🥸" },
+  { name: "collision", emoji: "💥", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f4a5/512.webp", alt: "💥" },
+  { name: "footprints", emoji: "👣", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f463/512.webp", alt: "👣" },
+  { name: "eyes", emoji: "👀", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f440/512.webp", alt: "👀" },
+  { name: "sign-of-the-horns", emoji: "🤘🏻", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f918_1f3fb/512.webp", alt: "🤘🏻" },
+  { name: "dancer", emoji: "💃🏻", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f483_1f3fb/512.webp", alt: "💃🏻" },
+  { name: "gorilla", emoji: "🦍", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f98d/512.webp", alt: "🦍" },
+  { name: "tiger", emoji: "🐅", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f405/512.webp", alt: "🐅" },
+  { name: "monkey", emoji: "🐒", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f412/512.webp", alt: "🐒" },
+  { name: "kangaroo", emoji: "🦘", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f998/512.webp", alt: "🦘" },
+  { name: "goose", emoji: "🪿", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1fabf/512.webp", alt: "🪿" },
+  { name: "owl", emoji: "🦉", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f989/512.webp", alt: "🦉" },
+  { name: "octopus", emoji: "🐙", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f419/512.webp", alt: "🐙" },
+  { name: "rocket", emoji: "🚀", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f680/512.webp", alt: "🚀" },
+  { name: "camping", emoji: "🏕️", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f3d5_fe0f/512.webp", alt: "🏕️" },
+  { name: "gemini-symbol", emoji: "♊", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/264a/512.webp", alt: "♊" },
+  { name: "musical-notes", emoji: "🎶", webp: "https://fonts.gstatic.com/s/e/notoemoji/latest/1f3b6/512.webp", alt: "🎶" }
 ];
+
