@@ -81,6 +81,9 @@ export default function TeacherDashboard() {
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
   // Remove toggledDates state entirely
 
+  // Add after other useState hooks
+  const [totalRevenue, setTotalRevenue] = useState(0)
+
   // Cleanup timeout on component unmount
   useEffect(() => {
     return () => {
@@ -167,6 +170,36 @@ export default function TeacherDashboard() {
     }
   }, [])
 
+  const saveMonthlyRevenue = useCallback(async (revenue: number) => {
+    if (!user?.uid) return
+    try {
+      const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`
+      const monthlySummaryRef = doc(db, 'users', user.uid, 'monthlySummaries', monthYear)
+      await setDoc(monthlySummaryRef, {
+        revenue,
+        lastUpdated: new Date()
+      }, { merge: true })
+    } catch (error) {
+      console.error('Error saving monthly revenue:', error)
+    }
+  }, [user?.uid, currentMonth])
+
+  const loadMonthlyRevenue = useCallback(async () => {
+    if (!user?.uid) return
+    try {
+      const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`
+      const monthlySummaryRef = doc(db, 'users', user.uid, 'monthlySummaries', monthYear)
+      const docSnap = await getDoc(monthlySummaryRef)
+      if (docSnap.exists()) {
+        setTotalRevenue(docSnap.data().revenue || 0)
+      } else {
+        setTotalRevenue(0)
+      }
+    } catch (error) {
+      console.error('Error loading monthly revenue:', error)
+    }
+  }, [user?.uid, currentMonth])
+
   const loadStudentFees = useCallback(async () => {
     setStudentFeesLoading(true)
     try {
@@ -209,13 +242,15 @@ export default function TeacherDashboard() {
         })
       }
       setStudentFees(fees)
+      const total = fees.reduce((sum, fee) => sum + fee.totalAmount, 0)
+      await saveMonthlyRevenue(total)
     } catch (error) {
       console.error('Error loading student fees:', error)
       debouncedToast('Failed to load student fee information. Please refresh the page and try again.', 'error')
     } finally {
       setStudentFeesLoading(false)
     }
-  }, [currentMonth])
+  }, [currentMonth, saveMonthlyRevenue])
 
   const loadMonthlyFee = useCallback(async () => {
     if (!user?.uid) return
@@ -342,9 +377,10 @@ export default function TeacherDashboard() {
       loadStudentFees()
       loadMonthlyFee()
       loadStudents()
+      loadMonthlyRevenue()
       checkTeacherSetup()
     }
-  }, [user, currentMonth, loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, checkTeacherSetup])
+  }, [user, currentMonth, loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup])
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
@@ -833,7 +869,7 @@ export default function TeacherDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-green-600">
-                ₹{studentFees.reduce((sum, fee) => sum + fee.totalAmount, 0)}
+                ₹{totalRevenue}
               </p>
               <p className="text-sm text-gray-600 mt-1">
                 {studentFees.filter(fee => fee.monthlyFee > 0).length} students

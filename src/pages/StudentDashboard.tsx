@@ -41,6 +41,7 @@ export default function StudentDashboard() {
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
+  const [totalDueAmount, setTotalDueAmount] = useState(0)
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -126,6 +127,7 @@ export default function StudentDashboard() {
           monthlyFee,
           totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
         })
+        await saveTotalDue(Math.round(totalAmount * 100) / 100)
       }
     } catch (error) {
       debouncedToast('Failed to load fee summary. Please refresh the page and try again.', 'error')
@@ -134,13 +136,38 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth])
 
+  const saveTotalDue = useCallback(async (amount: number) => {
+    if (!user?.uid) return
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        currentMonthTotalDue: amount,
+        lastTotalDueUpdate: new Date()
+      }, { merge: true })
+    } catch (error) {
+      console.error('Error saving total due amount:', error)
+    }
+  }, [user?.uid])
+
+  const loadTotalDue = useCallback(async () => {
+    if (!user?.uid) return
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid))
+      if (userDoc.exists()) {
+        setTotalDueAmount(userDoc.data().currentMonthTotalDue || 0)
+      }
+    } catch (error) {
+      console.error('Error loading total due amount:', error)
+    }
+  }, [user?.uid])
+
   // Load initial data when user or month changes
   useEffect(() => {
     if (user?.uid) {
       loadAttendanceRecords()
       loadFeeSummary()
+      loadTotalDue()
     }
-  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary])
+  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
   // Refresh data every 30 seconds to catch updates
   useEffect(() => {
@@ -400,7 +427,7 @@ export default function StudentDashboard() {
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
               ) : feeSummary.monthlyFee > 0 ? (
-                <p className="text-2xl font-bold text-blue-600">₹{feeSummary.totalAmount}</p>
+                <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
               ) : (
                 <p className="text-sm text-muted-foreground">No fee</p>
               )}
