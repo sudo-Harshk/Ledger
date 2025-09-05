@@ -79,11 +79,7 @@ export default function TeacherDashboard() {
   
   // New state for enhanced bulk attendance
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
-  const [toggledDates, setToggledDates] = useState<Set<string>>(new Set())
-
-
-
-
+  // Remove toggledDates state entirely
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -497,10 +493,7 @@ export default function TeacherDashboard() {
       const currentDate = new Date(startDate)
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate)
-        const isDateToggled = toggledDates.has(dateStr)
-        const finalStatus = isDateToggled 
-          ? (defaultAttendanceStatus === 'present' ? 'absent' : 'present')
-          : defaultAttendanceStatus
+        const finalStatus = defaultAttendanceStatus
         
         for (const studentDoc of studentsSnapshot.docs) {
           const studentData = studentDoc.data()
@@ -545,7 +538,6 @@ export default function TeacherDashboard() {
       toast.success(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`)
       setBulkStartDate('')
       setBulkEndDate('')
-      setToggledDates(new Set())
       setDefaultAttendanceStatus('present')
       setShowBulkAttendance(false)
       await loadPendingRequests()
@@ -605,7 +597,7 @@ export default function TeacherDashboard() {
     })
     
     // Clear toggled dates when changing months
-    setToggledDates(new Set())
+    // setToggledDates(new Set()) // Removed
     setExistingAbsentAttendance(new Set())
     
     // Refresh existing attendance for the new month
@@ -629,46 +621,26 @@ export default function TeacherDashboard() {
   const toDateStr = (d: Date) => formatLocalDate(d)
 
   // Clear toggled dates when date range changes
-  const clearToggledDates = () => {
-    setToggledDates(new Set())
-  }
+  // const clearToggledDates = () => { // Removed
+  //   setToggledDates(new Set())
+  // }
 
   // Add back the setAllDatesInBulkRange function
-  const setAllDatesInBulkRange = () => {
-    if (!bulkStartDate || !bulkEndDate) return
-
-    const startDate = new Date(bulkStartDate)
-    const endDate = new Date(bulkEndDate)
-    const newToggledDates = new Set<string>()
-
-    let currentDate = new Date(startDate)
-    while (currentDate <= endDate) {
-      const dateStr = toDateStr(currentDate)
-      if (defaultAttendanceStatus === 'absent') {
-        newToggledDates.add(dateStr)
-      }
-      currentDate.setDate(currentDate.getDate() + 1)
-    }
-    setToggledDates(newToggledDates)
-  }
+  // const setAllDatesInBulkRange = () => { // Removed
+  //   if (!bulkStartDate || !bulkEndDate) return;
+  //   setToggledDates(new Set()); // All dates will match the bulk status
+  // }
 
   const handleCalendarDayClick = (day: number | null) => {
     if (!day) return
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
     const dateStr = toDateStr(date)
-    
-    // If we have a date range selected, allow toggling individual days
-    if (bulkStartDate && bulkEndDate && isInRange(dateStr)) {
-      const newToggledDates = new Set(toggledDates)
-      if (newToggledDates.has(dateStr)) {
-        newToggledDates.delete(dateStr)
-      } else {
-        newToggledDates.add(dateStr)
-      }
-      setToggledDates(newToggledDates)
+
+    // If a range is selected, do nothing (disable toggling individual days)
+    if (bulkStartDate && bulkEndDate) {
       return
     }
-    
+
     // Original date range selection logic
     if (!bulkStartDate) {
       setBulkStartDate(dateStr)
@@ -700,19 +672,18 @@ export default function TeacherDashboard() {
 
   const getCellClasses = (day: number | null) => {
     if (!day) return 'bg-white'
-    const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
-    const selected = isSelected(dateStr)
-    const inRange = isInRange(dateStr)
-    const hasPresentAttendance = existingAttendance.has(dateStr)
-    const hasAbsentAttendance = existingAbsentAttendance.has(dateStr)
-    const isToggled = toggledDates.has(dateStr)
+    // const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
+    const selected = isSelected(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
+    const inRange = isInRange(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
+    const hasPresentAttendance = existingAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
+    const hasAbsentAttendance = existingAbsentAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
+    // const isToggled = toggledDates.has(dateStr) // Removed
     
     if (selected) return 'bg-blue-600 text-white'
-    if (inRange && isToggled) {
-      // Toggled dates within range show as absent (red/orange)
-      return 'bg-red-100 text-red-800 border-red-300'
+    if (inRange) {
+      // Dates in range show as the defaultAttendanceStatus
+      return defaultAttendanceStatus === 'present' ? 'bg-blue-100 text-blue-800' : 'bg-red-50 text-red-700'
     }
-    if (inRange) return 'bg-blue-100 text-blue-800'
     if (hasPresentAttendance) {
       // Present attendance shows as green
       return 'bg-green-100 text-green-800 border-green-300'
@@ -891,8 +862,8 @@ export default function TeacherDashboard() {
                       // Clear form when hiding
                       setBulkStartDate('')
                       setBulkEndDate('')
-                      setToggledDates(new Set())
-                      setDefaultAttendanceStatus('present')
+                      // setToggledDates(new Set()) // Removed
+                      // setDefaultAttendanceStatus('present') // Removed
                       setExistingAbsentAttendance(new Set())
                     }
                     setShowBulkAttendance(!showBulkAttendance)
@@ -1242,7 +1213,7 @@ export default function TeacherDashboard() {
                     return (
                       <div
                         key={idx}
-                        className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center cursor-pointer ${getCellClasses(day)}`}
+                        className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day)}`}
                         onClick={() => handleCalendarDayClick(day)}
                       >
                         {day && (
@@ -1281,11 +1252,10 @@ export default function TeacherDashboard() {
                     type="button"
                     onClick={() => {
                       setDefaultAttendanceStatus('present')
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className={`px-4 py-2 font-medium focus:outline-none border-r border-gray-200
                       transition duration-150 ease-in-out
-                      active:scale-95
                       ${defaultAttendanceStatus === 'present' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800 hover:bg-blue-50'}`}
                     aria-pressed={defaultAttendanceStatus === 'present'}
                   >
@@ -1295,11 +1265,10 @@ export default function TeacherDashboard() {
                     type="button"
                     onClick={() => {
                       setDefaultAttendanceStatus('absent')
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className={`px-4 py-2 font-medium focus:outline-none border-r border-gray-200
                       transition duration-150 ease-in-out
-                      active:scale-95
                       ${defaultAttendanceStatus === 'absent' ? 'bg-red-600 text-white' : 'bg-white text-gray-800 hover:bg-red-50'}`}
                     aria-pressed={defaultAttendanceStatus === 'absent'}
                   >
@@ -1308,7 +1277,38 @@ export default function TeacherDashboard() {
                   {bulkStartDate && bulkEndDate && (
                     <button
                       type="button"
-                      onClick={setAllDatesInBulkRange}
+                      onClick={() => {
+                        const startDate = new Date(bulkStartDate);
+                        const endDate = new Date(bulkEndDate);
+                        let allDaysMatchDefault = true;
+                        let allDaysMatchOpposite = true;
+
+                        const tempDate = new Date(startDate);
+                        while (tempDate <= endDate) {
+                          // Removed unused dateStr variable
+                          const isToggled = false; // No individual toggling
+
+                          // Determine effective status for this specific day
+                          const effectiveStatus = isToggled
+                            ? (defaultAttendanceStatus === 'present' ? 'absent' : 'present')
+                            : defaultAttendanceStatus;
+
+                          if (effectiveStatus !== defaultAttendanceStatus) {
+                            allDaysMatchDefault = false;
+                          }
+                          if (effectiveStatus === defaultAttendanceStatus) {
+                            allDaysMatchOpposite = false;
+                          }
+                          tempDate.setDate(tempDate.getDate() + 1);
+                        }
+
+                        if (allDaysMatchOpposite && !allDaysMatchDefault) {
+                          // If all days have been effectively toggled to the opposite of the default,
+                          // update the defaultAttendanceStatus to reflect this.
+                          setDefaultAttendanceStatus(prevStatus => (prevStatus === 'present' ? 'absent' : 'present'));
+                          // setToggledDates(new Set()); // Clear toggled dates as they are now the new default
+                        }
+                      }}
                       title={`Set all dates in range to ${defaultAttendanceStatus}`}
                       className={`flex items-center gap-2 px-4 py-2 font-medium focus:outline-none transition duration-150 ease-in-out
                         active:scale-95
@@ -1344,7 +1344,7 @@ export default function TeacherDashboard() {
                       weekAgo.setDate(today.getDate() - 7)
                       setBulkStartDate(toDateStr(weekAgo))
                       setBulkEndDate(toDateStr(today))
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
                   >
@@ -1358,7 +1358,7 @@ export default function TeacherDashboard() {
                       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
                       setBulkStartDate(toDateStr(monthStart))
                       setBulkEndDate(toDateStr(today))
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
                   >
@@ -1373,7 +1373,7 @@ export default function TeacherDashboard() {
                       yesterday.setDate(today.getDate() - 1)
                       setBulkStartDate(toDateStr(yesterday))
                       setBulkEndDate(toDateStr(yesterday))
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
                   >
@@ -1386,7 +1386,7 @@ export default function TeacherDashboard() {
                       const today = new Date()
                       setBulkStartDate(toDateStr(today))
                       setBulkEndDate(toDateStr(today))
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
                   >
@@ -1398,7 +1398,7 @@ export default function TeacherDashboard() {
                     onClick={() => {
                       setBulkStartDate('')
                       setBulkEndDate('')
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="text-xs"
                   >
@@ -1416,7 +1416,7 @@ export default function TeacherDashboard() {
                     value={bulkStartDate}
                     onChange={(e) => {
                       setBulkStartDate(e.target.value)
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="mt-1"
                   />
@@ -1429,7 +1429,7 @@ export default function TeacherDashboard() {
                     value={bulkEndDate}
                     onChange={(e) => {
                       setBulkEndDate(e.target.value)
-                      clearToggledDates()
+                      // setToggledDates(new Set()) // Removed
                     }}
                     className="mt-1"
                   />
@@ -1445,21 +1445,6 @@ export default function TeacherDashboard() {
                     <strong>{new Date(bulkStartDate).toLocaleDateString()}</strong> to{' '}
                     <strong>{new Date(bulkEndDate).toLocaleDateString()}</strong>
                   </p>
-                  {toggledDates.size > 0 && (
-                    <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                      <p className="text-sm text-yellow-800">
-                        <strong>{toggledDates.size}</strong> day{toggledDates.size === 1 ? '' : 's'} toggled to{' '}
-                        <strong>{defaultAttendanceStatus === 'present' ? 'Absent' : 'Present'}</strong>:
-                      </p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {Array.from(toggledDates).map(dateStr => (
-                          <span key={dateStr} className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">
-                            {new Date(dateStr).toLocaleDateString()}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   <p className="text-sm text-blue-600 mt-2">
                     Total records: <strong>{students.length * (Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
                   </p>
@@ -1479,7 +1464,7 @@ export default function TeacherDashboard() {
                     setShowBulkAttendance(false)
                     setBulkStartDate('')
                     setBulkEndDate('')
-                    setToggledDates(new Set())
+                    // setToggledDates(new Set()) // Removed
                     setDefaultAttendanceStatus('present')
                     setExistingAbsentAttendance(new Set())
                   }}
