@@ -245,6 +245,7 @@ export default function StudentDashboard() {
       
       // Reload records
       await loadAttendanceRecords()
+      await loadFeeSummary()
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
       debouncedToast('Failed to mark attendance', 'error')
