@@ -9,6 +9,7 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase
 import { Confetti } from '../components/Confetti'
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
 import { debouncedToast } from '../lib/debouncedToast';
+import Footer from '../components/Footer';
 
 interface AttendanceRecord {
   date: string
@@ -589,6 +590,7 @@ export default function StudentDashboard() {
         </Card>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

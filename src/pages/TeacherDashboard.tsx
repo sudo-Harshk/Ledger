@@ -11,6 +11,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, 
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
 import { debouncedToast } from '../lib/debouncedToast';
+import Footer from '../components/Footer';
 
 interface PendingAttendance {
   id: string
@@ -1510,6 +1511,7 @@ export default function TeacherDashboard() {
           </Card>
         )}
       </div>
+      <Footer />
     </div>
   )
 }
