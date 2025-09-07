@@ -6,7 +6,7 @@ import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db, auth } from '../firebase'
-import { formatLocalDate } from '../lib/utils'
+import { formatLocalDate, formatDateDDMMYYYY } from '../lib/utils'
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, setDoc, deleteDoc } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
@@ -1476,12 +1476,20 @@ export default function TeacherDashboard() {
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <h4 className="font-medium text-blue-900 mb-2">Preview:</h4>
                   <p className="text-sm text-blue-700">
-                    Will mark <strong>{students.length}</strong> students as <strong>{defaultAttendanceStatus === 'present' ? 'Present' : 'Absent'}</strong> from{' '}
-                    <strong>{new Date(bulkStartDate).toLocaleDateString()}</strong> to{' '}
-                    <strong>{new Date(bulkEndDate).toLocaleDateString()}</strong>
+                    Will mark <strong>{students.length}</strong> students as <strong>{defaultAttendanceStatus === 'present' ? 'Present' : 'Absent'}</strong>{' '}
+                    {bulkStartDate === bulkEndDate ? (
+                      <>for <strong>{formatDateDDMMYYYY(new Date(bulkStartDate))}</strong></>
+                    ) : (
+                      <>from <strong>{formatDateDDMMYYYY(new Date(bulkStartDate))}</strong> to <strong>{formatDateDDMMYYYY(new Date(bulkEndDate))}</strong></>
+                    )}
                   </p>
                   <p className="text-sm text-blue-600 mt-2">
-                    Total records: <strong>{students.length * (Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
+                    Total records: <strong>{
+                      students.length *
+                      (bulkStartDate === bulkEndDate
+                        ? 1
+                        : Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                    }</strong>
                   </p>
                 </div>
               )}
