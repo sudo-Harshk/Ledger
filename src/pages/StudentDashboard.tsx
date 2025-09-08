@@ -344,11 +344,9 @@ export default function StudentDashboard() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        loadAttendanceRecords(),
-        loadFeeSummary(),
-        loadTotalDue(),
-      ]);
+      await loadAttendanceRecords();
+      await loadFeeSummary();
+      await loadTotalDue();
     } finally {
       setRefreshing(false);
     }
