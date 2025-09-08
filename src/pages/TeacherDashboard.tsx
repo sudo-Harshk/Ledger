@@ -44,6 +44,7 @@ export default function TeacherDashboard() {
   const [studentFees, setStudentFees] = useState<StudentFee[]>([])
   const [monthlyFee, setMonthlyFee] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   
   // Ref to track timeout for cleanup
@@ -799,9 +800,26 @@ export default function TeacherDashboard() {
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadPendingRequests(),
+        loadStudentFees(),
+        loadMonthlyFee(),
+        loadStudents(),
+        loadMonthlyRevenue(),
+        checkTeacherSetup(),
+        loadExistingAttendance(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <Navigation title="Teacher Dashboard" />
+      <Navigation title="Teacher Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       
       <div className="container mx-auto px-6 py-8">
         {/* Header Section */}
