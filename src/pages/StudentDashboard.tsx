@@ -216,8 +216,16 @@ export default function StudentDashboard() {
     const currentStatus = todayRecord?.status || null;
     const confettiKey = getTodayConfettiKey();
     const confettiAlreadyShown = localStorage.getItem(confettiKey) === 'true';
-    // Only trigger confetti if status transitions from not approved (pending, absent, rejected) to approved and not already shown
     const prevStatus = prevTodayStatus.current;
+
+    // Skip confetti logic on first load
+    if (isFirstLoad.current) {
+      prevTodayStatus.current = currentStatus;
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // Only trigger confetti if status transitions from not approved to approved and not already shown
     const isFirstApproval =
       (prevStatus === 'pending' || prevStatus === 'absent' || prevStatus === 'rejected' || prevStatus === null) &&
       currentStatus === 'approved' &&
@@ -230,8 +238,6 @@ export default function StudentDashboard() {
     }
     // Update previous status for next effect run
     prevTodayStatus.current = currentStatus;
-    // Mark initial load as done
-    if (isFirstLoad.current) isFirstLoad.current = false;
   }, [attendanceRecords, currentMonth]);
 
   const markAttendance = async () => {
