@@ -1089,9 +1089,9 @@ export default function TeacherDashboard() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => approveAttendance(request.id, 'rejected')}
                           disabled={loading}
+                          className="bg-red-600 hover:bg-red-700 text-white"
                         >
                           Reject
                         </Button>
