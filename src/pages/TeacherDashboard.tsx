@@ -805,10 +805,7 @@ export default function TeacherDashboard() {
       
       <div className="container mx-auto px-6 py-8">
         {/* Header Section */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Teacher Dashboard</h1>
-          <p className="text-gray-600">Manage students, attendance, and fees</p>
-        </div>
+        {/* Removed header section as per user request */}
 
         {/* Setup Section - Only shown when no teacher exists */}
         {enableAdminSetup && showSetup && (
