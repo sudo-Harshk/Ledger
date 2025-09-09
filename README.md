@@ -82,6 +82,35 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
+### 6. Firestore Indexes (Required)
+
+To ensure the app works correctly, you must create the following composite indexes in your Firebase Firestore database:
+
+#### 1. Attendance Index by Status, Student, and Date
+- **Index Name:** `attendance-status-studentId-date`
+- **Collection ID:** `attendance`
+- **Fields to Index (in order, all ascending):**
+  - `status`
+  - `studentId`
+  - `date`
+  - `__name__`
+
+#### 2. Attendance Index by Student and Date
+- **Index Name:** `attendance-studentId-date`
+- **Collection ID:** `attendance`
+- **Fields to Index (in order, all ascending):**
+  - `studentId`
+  - `date`
+  - `__name__`
+
+**How to Create These Indexes:**
+1. Go to the [Firestore Indexes page](https://console.firebase.google.com/) in your Firebase project.
+2. Click **Add Index**.
+3. For each index above, select the `attendance` collection and add the fields in the specified order (all set to ascending).
+4. Optionally, give each index a name as shown above for easy reference.
+
+> **Note:** The field `__name__` refers to the document ID and is usually added automatically when creating composite indexes.
+
 ## Usage
 
 ### For Students
