@@ -186,17 +186,7 @@ export default function StudentDashboard() {
     }
   }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
-  // Refresh data every 30 seconds to catch updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (user?.uid) {
-        loadAttendanceRecords()
-        loadFeeSummary()
-      }
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [user?.uid, loadAttendanceRecords, loadFeeSummary])
-
+  
   // Utility to get today's confetti key
   const getTodayConfettiKey = () => {
     const now = new Date();
@@ -268,6 +258,7 @@ export default function StudentDashboard() {
       // Reload records
       await loadAttendanceRecords()
       await loadFeeSummary()
+      await loadTotalDue()
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
       debouncedToast('Failed to mark attendance', 'error')
