@@ -234,6 +234,7 @@ export default function StudentDashboard() {
     if (!user?.uid) return
     
     setLoading(true)
+    setFeeSummaryLoading(true); // Show loader immediately
     try {
       const today = formatLocalDate(new Date())
       
@@ -255,7 +256,7 @@ export default function StudentDashboard() {
         year: currentMonth.getFullYear()
       })
       
-      // Reload records
+      // Reload records and due
       await loadAttendanceRecords()
       await loadFeeSummary()
       await loadTotalDue()
@@ -264,6 +265,7 @@ export default function StudentDashboard() {
       debouncedToast('Failed to mark attendance', 'error')
     } finally {
       setLoading(false)
+      setFeeSummaryLoading(false); // Hide loader after data is fetched
     }
   }
 

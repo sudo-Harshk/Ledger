@@ -604,15 +604,14 @@ export default function TeacherDashboard() {
   const approveAttendance = async (requestId: string, status: 'approved' | 'rejected') => {
     if (!user?.uid) return
     setLoading(true)
+    setStudentFeesLoading(true); // Show loader immediately
     try {
       await updateDoc(doc(db, 'attendance', requestId), {
         status: status,
         approvedBy: user.uid,
         approvedAt: new Date()
       })
-      // Confetti animation removed for performance
       await loadPendingRequests()
-      setStudentFeesLoading(true); // Start loading for revenue card
       await loadStudentFees()
       await loadMonthlyRevenue()
       debouncedToast(`Attendance ${status} successfully!`, 'success')
@@ -621,7 +620,7 @@ export default function TeacherDashboard() {
       debouncedToast('Failed to update attendance', 'error')
     } finally {
       setLoading(false)
-      setStudentFeesLoading(false); // End loading for revenue card
+      setStudentFeesLoading(false); // Hide loader after data is fetched
     }
   }
 
