@@ -612,13 +612,16 @@ export default function TeacherDashboard() {
       })
       // Confetti animation removed for performance
       await loadPendingRequests()
+      setStudentFeesLoading(true); // Start loading for revenue card
       await loadStudentFees()
+      await loadMonthlyRevenue()
       debouncedToast(`Attendance ${status} successfully!`, 'success')
     } catch (error) {
       console.error('Error updating attendance:', error)
       debouncedToast('Failed to update attendance', 'error')
     } finally {
       setLoading(false)
+      setStudentFeesLoading(false); // End loading for revenue card
     }
   }
 
@@ -890,12 +893,20 @@ export default function TeacherDashboard() {
               <CardDescription>This month</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-green-600">
-                ₹{totalRevenue}
-              </p>
-              <p className="text-sm text-gray-600 mt-1">
-                {studentFees.filter(fee => fee.monthlyFee > 0).length} students
-              </p>
+              {studentFeesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-green-600">
+                    ₹{totalRevenue}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {studentFees.filter(fee => fee.monthlyFee > 0).length} students
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
