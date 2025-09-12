@@ -12,6 +12,7 @@ import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
 import { Link as LinkIcon } from 'lucide-react'
 import { linkGoogleAccount } from '../lib/linkGoogleAccount'
+import { formatDistanceToNow } from 'date-fns'
 
 interface AttendanceRecord {
   date: string
@@ -47,6 +48,7 @@ export default function StudentDashboard() {
   const [totalDueAmount, setTotalDueAmount] = useState(0)
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -173,6 +175,8 @@ export default function StudentDashboard() {
       if (userDoc.exists()) {
         const totalDueByMonth: { [key: string]: number } = userDoc.data().totalDueByMonth || {};
         setTotalDueAmount(totalDueByMonth[monthKey] || 0);
+        const lastUpdate = userDoc.data().lastTotalDueUpdate;
+        setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
     } catch (error) {
       console.error('Error loading total due amount:', error);
@@ -379,6 +383,13 @@ export default function StudentDashboard() {
       <Navigation title="Student Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">
+          {/* Updated X ago info */}
+          <div className="flex items-center gap-2 mb-2" title={lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : ''}>
+            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span className="text-sm font-medium text-muted-foreground">
+              {lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
+            </span>
+          </div>
           {/* Account Settings Card for Google Link */}
           {!isGoogleLinked && (
             <Card className="mb-8">
