@@ -10,6 +10,8 @@ import { Confetti } from '../components/Confetti'
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
 import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
+import { Link as LinkIcon } from 'lucide-react'
+import { linkGoogleAccount } from '../lib/linkGoogleAccount'
 
 interface AttendanceRecord {
   date: string
@@ -357,6 +359,9 @@ export default function StudentDashboard() {
     return null
   }
 
+  const providerData = user?.providerData || [];
+  const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
+
   const now = new Date();
   const isCurrentMonth =
     currentMonth.getMonth() === now.getMonth() &&
@@ -374,6 +379,21 @@ export default function StudentDashboard() {
       <Navigation title="Student Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">
+          {/* Account Settings Card for Google Link */}
+          {!isGoogleLinked && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>Link your Google account for easier login and account recovery.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" onClick={linkGoogleAccount} className="w-full sm:w-auto">
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  Link Google Account
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           {/* Dashboard Header (no refresh button here anymore) */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>

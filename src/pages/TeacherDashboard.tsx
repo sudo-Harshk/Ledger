@@ -14,6 +14,9 @@ import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
 import { Link as LinkIcon } from 'lucide-react'
 import { linkGoogleAccount } from '../lib/linkGoogleAccount'
+import { formatDistanceToNow } from 'date-fns'
+import { onSnapshot } from 'firebase/firestore'
+import { Clock } from 'lucide-react';
 
 interface PendingAttendance {
   id: string
@@ -86,6 +89,8 @@ export default function TeacherDashboard() {
 
   // Add after other useState hooks
   const [totalRevenue, setTotalRevenue] = useState(0)
+  const [financialSummary, setFinancialSummary] = useState<{ revenue: number; lastUpdated: any } | null>(null)
+  const [financialSummaryLoading, setFinancialSummaryLoading] = useState(true)
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -391,6 +396,26 @@ export default function TeacherDashboard() {
     }, 60000);
     return () => clearInterval(interval);
   }, [user, loadExistingAttendance]);
+
+  // Real-time listener for monthly summary
+  useEffect(() => {
+    if (!user?.uid) return;
+    setFinancialSummaryLoading(true);
+    const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`;
+    const summaryDocRef = doc(db, 'users', user.uid, 'monthlySummaries', monthYear);
+    const unsubscribe = onSnapshot(summaryDocRef, (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setFinancialSummary({
+          revenue: docSnapshot.data().revenue || 0,
+          lastUpdated: docSnapshot.data().lastUpdated || null,
+        });
+      } else {
+        setFinancialSummary(null);
+      }
+      setFinancialSummaryLoading(false);
+    });
+    return () => unsubscribe();
+  }, [user?.uid, currentMonth]);
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
@@ -912,19 +937,29 @@ export default function TeacherDashboard() {
               <CardDescription>This month</CardDescription>
             </CardHeader>
             <CardContent>
-              {studentFeesLoading ? (
+              {financialSummaryLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 </div>
               ) : (
-                <>
-                  <p className="text-3xl font-bold text-green-600">
-                    ₹{totalRevenue}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {studentFees.filter(fee => fee.monthlyFee > 0).length} students
-                  </p>
-                </>
+                <div className="flex flex-row items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold text-green-600">
+                      ₹{financialSummary?.revenue ?? totalRevenue}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {studentFees.filter(fee => fee.monthlyFee > 0).length} students
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 group" title={financialSummary?.lastUpdated ? financialSummary.lastUpdated.toDate().toLocaleString() : ''}>
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground group-hover:underline cursor-help">
+                      {financialSummary?.lastUpdated
+                        ? `Updated ${formatDistanceToNow(financialSummary.lastUpdated.toDate())} ago`
+                        : 'Loading...'}
+                    </span>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
