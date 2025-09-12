@@ -12,6 +12,8 @@ import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
 import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
+import { Link as LinkIcon } from 'lucide-react'
+import { linkGoogleAccount } from '../lib/linkGoogleAccount'
 
 interface PendingAttendance {
   id: string
@@ -801,6 +803,8 @@ export default function TeacherDashboard() {
   }
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
+  const providerData = user?.providerData || [];
+  const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -824,6 +828,22 @@ export default function TeacherDashboard() {
       <Navigation title="Teacher Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       
       <div className="container mx-auto px-6 py-8">
+        {/* Account Settings Card for Google Link */}
+        {user.role === 'teacher' && !isGoogleLinked && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>Link your Google account for easier login and account recovery.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={linkGoogleAccount} className="w-full sm:w-auto">
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Link Google Account
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header Section */}
         {/* Removed header section as per user request */}
 

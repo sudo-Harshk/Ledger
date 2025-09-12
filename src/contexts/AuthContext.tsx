@@ -3,13 +3,17 @@ import type { ReactNode } from 'react'
 import { 
   signInWithEmailAndPassword, 
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+  getAdditionalUserInfo,
+  deleteUser
 } from 'firebase/auth'
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import logger from '../lib/logger'
 import { AuthContext, type User } from './AuthContextTypes'
-
+import { debouncedToast } from '../lib/debouncedToast'
 
 
 interface AuthProviderProps {
@@ -39,7 +43,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               uid: firebaseUser.uid,
               username: userData.username || firebaseUser.email,
               role: userData.role,
-              displayName: userData.displayName
+              displayName: userData.displayName,
+              providerData: firebaseUser.providerData,
             }
             logger.debug('Setting user state')
             setUser(userInfo)
@@ -62,7 +67,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     uid: firebaseUser.uid,
                     username: userData.username || firebaseUser.email,
                     role: userData.role,
-                    displayName: userData.displayName
+                    displayName: userData.displayName,
+                    providerData: firebaseUser.providerData,
                   }
                   setUser(userInfo)
                 } else {
@@ -152,6 +158,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const loginWithGoogle = async () => {
+    try {
+      logger.info('Attempting Google login')
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const additionalInfo = getAdditionalUserInfo(result)
+      if (additionalInfo?.isNewUser) {
+        // Unauthorized: delete user and show error
+        if (auth.currentUser) {
+          await deleteUser(auth.currentUser)
+        }
+        debouncedToast('Account not registered. Please contact your teacher.', 'error')
+        throw new Error('Account not registered. Please contact your teacher.')
+      }
+      logger.info('Google login successful')
+      // Check if user document exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid))
+      if (!userDoc.exists()) {
+        // Create user document if it doesn't exist (should not happen for existing users)
+        await setDoc(doc(db, 'users', result.user.uid), {
+          username: result.user.email,
+          role: 'student', // Default role, adjust as needed
+          displayName: result.user.displayName || '',
+          email: result.user.email || '',
+        })
+        logger.info('Created Firestore user document for Google user')
+      }
+    } catch (error: unknown) {
+      logger.error('Google login error')
+      if (error instanceof Error) {
+        throw error
+      } else {
+        throw new Error('An unexpected error occurred during Google login')
+      }
+    }
+  }
+
   const logout = async () => {
     try {
       await signOut(auth)
@@ -170,7 +213,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     loading,
     login,
-    logout
+    logout,
+    loginWithGoogle
   }
 
   return (

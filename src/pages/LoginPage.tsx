@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
 import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
+import { Chrome } from 'lucide-react'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -15,7 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
-  const { login, user } = useAuth()
+  const { login, user, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const justLoggedIn = useRef(false)
@@ -56,6 +57,26 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+      justLoggedIn.current = true;
+      // Navigation and toast will be handled in useEffect
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+        debouncedToast(error.message, 'error');
+      } else {
+        setError('Failed to login with Google. Please try again.');
+        debouncedToast('Failed to login with Google. Please try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -123,6 +144,22 @@ export default function LoginPage() {
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+            {/* Divider */}
+            <div className="flex items-center my-4">
+              <div className="flex-grow border-t border-gray-200" />
+              <span className="mx-4 text-xs text-muted-foreground">Or sign in with</span>
+              <div className="flex-grow border-t border-gray-200" />
+            </div>
+            {/* Google Sign-In Button */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleSignIn}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              Sign in with Google
             </Button>
           </form>
         </CardContent>
