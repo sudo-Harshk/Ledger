@@ -17,6 +17,7 @@ import { linkGoogleAccount } from '../lib/linkGoogleAccount'
 import { formatDistanceToNow } from 'date-fns'
 import { onSnapshot } from 'firebase/firestore'
 import { Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface PendingAttendance {
   id: string
@@ -41,6 +42,7 @@ interface StudentAccount {
   displayName: string
   monthlyFee: number
   createdAt: Date
+  totalDueByMonth?: { [key: string]: any } // Add this line
 }
 
 export default function TeacherDashboard() {
@@ -290,8 +292,9 @@ export default function TeacherDashboard() {
           username: data.username || 'Unknown Username',
           displayName: data.displayName || 'Unknown Student',
           monthlyFee: data.monthlyFee || 0,
-          createdAt: data.createdAt?.toDate() || new Date()
-      })
+          createdAt: data.createdAt?.toDate() || new Date(),
+          totalDueByMonth: data.totalDueByMonth || {}, // Add this line
+        })
       })
       setStudents(studentsList)
     } catch (error) {
@@ -822,6 +825,43 @@ export default function TeacherDashboard() {
     }
   }
 
+  // Utility to get month key in 'YYYY-MM' format
+  const getMonthKey = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // Handler for marking a student's due as paid
+  const handleMarkAsPaid = async (studentId: string, monthKey: string) => {
+    const loadingToast = toast.loading('Recording payment...');
+    try {
+      const userRef = doc(db, 'users', studentId);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) throw new Error('Student not found');
+      const totalDueByMonth = userDoc.data().totalDueByMonth || {};
+      const monthDue = totalDueByMonth[monthKey];
+      let dueAmount = 0;
+      if (typeof monthDue === 'object' && monthDue !== null) {
+        dueAmount = monthDue.due;
+      } else if (typeof monthDue === 'number') {
+        dueAmount = monthDue;
+      } else {
+        throw new Error('No due found for this month');
+      }
+      await updateDoc(userRef, {
+        [`totalDueByMonth.${monthKey}.status`]: 'paid',
+        [`totalDueByMonth.${monthKey}.amountPaid`]: dueAmount,
+        [`totalDueByMonth.${monthKey}.paymentDate`]: (await import('firebase/firestore')).serverTimestamp(),
+      });
+      toast.dismiss(loadingToast);
+      toast.success('Payment recorded!');
+      // Optionally refresh student fees after marking as paid
+      await loadStudentFees();
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error('Failed to record payment: ' + (error?.message || 'Unknown error'));
+    }
+  };
+
   // Don't render if user is not available
   if (!user) {
     return null
@@ -1225,9 +1265,21 @@ export default function TeacherDashboard() {
             ) : (
               <div className="space-y-3 overflow-x-auto">
                 {studentFees.map((fee) => {
-                  const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()
-                  const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0
-                  
+                  const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+                  const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0;
+                  const monthKey = getMonthKey(currentMonth);
+                  // Find the student object for this fee
+                  const studentObj = students.find(s => s.id === fee.studentId);
+                  // We'll need to fetch the payment status from the student object if available
+                  let paymentStatus = null;
+                  let paymentDate = null;
+                  let amountPaid = null;
+                  if (studentObj && studentObj.totalDueByMonth && studentObj.totalDueByMonth[monthKey]) {
+                    const dueObj = studentObj.totalDueByMonth[monthKey];
+                    paymentStatus = dueObj.status;
+                    paymentDate = dueObj.paymentDate;
+                    amountPaid = dueObj.amountPaid;
+                  }
                   return (
                     <div key={fee.studentId} className="flex items-center justify-between p-3 border rounded-lg min-w-[320px]">
                       <div>
@@ -1247,6 +1299,23 @@ export default function TeacherDashboard() {
                             </>
                           ) : ' (No fee set)'}
                         </p>
+                        {/* Payment status display */}
+                        {fee.monthlyFee > 0 && (
+                          <div className="mt-1">
+                            {paymentStatus === 'paid' ? (
+                              <span className="text-green-600 text-xs font-semibold">
+                                Paid{amountPaid ? `: ₹${amountPaid}` : ''}
+                                {paymentDate && (
+                                  <span className="ml-2 text-gray-500">on {paymentDate?.toDate ? paymentDate.toDate().toLocaleDateString() : ''}</span>
+                                )}
+                              </span>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => handleMarkAsPaid(fee.studentId, monthKey)} disabled={paymentStatus === 'paid'}>
+                                Mark as Paid
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="text-right">
                         {fee.monthlyFee > 0 ? (

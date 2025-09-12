@@ -153,11 +153,19 @@ export default function StudentDashboard() {
       const monthKey = getMonthKey(currentMonth);
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
-      let totalDueByMonth: { [key: string]: number } = {};
+      let totalDueByMonth: { [key: string]: { due: number, status: string } } = {};
       if (userDoc.exists()) {
-        totalDueByMonth = userDoc.data().totalDueByMonth || {};
+        // Accept both old and new formats for backward compatibility
+        const raw = userDoc.data().totalDueByMonth || {};
+        for (const key in raw) {
+          if (typeof raw[key] === 'number') {
+            totalDueByMonth[key] = { due: raw[key], status: 'unpaid' };
+          } else {
+            totalDueByMonth[key] = raw[key];
+          }
+        }
       }
-      totalDueByMonth[monthKey] = amount;
+      totalDueByMonth[monthKey] = { due: amount, status: totalDueByMonth[monthKey]?.status || 'unpaid' };
       await setDoc(userRef, {
         totalDueByMonth,
         lastTotalDueUpdate: new Date(),
@@ -173,8 +181,14 @@ export default function StudentDashboard() {
       const monthKey = getMonthKey(currentMonth);
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (userDoc.exists()) {
-        const totalDueByMonth: { [key: string]: number } = userDoc.data().totalDueByMonth || {};
-        setTotalDueAmount(totalDueByMonth[monthKey] || 0);
+        const raw = userDoc.data().totalDueByMonth || {};
+        let due = 0;
+        if (typeof raw[monthKey] === 'object' && raw[monthKey] !== null) {
+          due = raw[monthKey].due;
+        } else if (typeof raw[monthKey] === 'number') {
+          due = raw[monthKey];
+        }
+        setTotalDueAmount(due);
         const lastUpdate = userDoc.data().lastTotalDueUpdate;
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
