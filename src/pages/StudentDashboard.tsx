@@ -14,6 +14,7 @@ import { Link as LinkIcon } from 'lucide-react'
 import { linkGoogleAccount } from '../lib/linkGoogleAccount'
 import { formatDistanceToNow } from 'date-fns'
 import PaidBadge from '../components/PaidBadge';
+import { CheckCircle } from 'lucide-react';
 
 interface AttendanceRecord {
   date: string
@@ -539,7 +540,12 @@ export default function StudentDashboard() {
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
               ) : feeSummary.monthlyFee > 0 ? (
-                <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
+                <div className="flex items-center justify-between w-full">
+                  <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
+                  {paymentStatus === 'paid' && (
+                    <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
+                  )}
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No fee</p>
               )}
