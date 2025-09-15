@@ -13,6 +13,7 @@ import Footer from '../components/Footer';
 import { Link as LinkIcon } from 'lucide-react'
 import { linkGoogleAccount } from '../lib/linkGoogleAccount'
 import { formatDistanceToNow } from 'date-fns'
+import PaidBadge from '../components/PaidBadge';
 
 interface AttendanceRecord {
   date: string
@@ -46,6 +47,8 @@ export default function StudentDashboard() {
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
   const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
   const [totalDueAmount, setTotalDueAmount] = useState(0)
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
+  const [paymentDate, setPaymentDate] = useState<Date | null>(null)
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
@@ -183,12 +186,20 @@ export default function StudentDashboard() {
       if (userDoc.exists()) {
         const raw = userDoc.data().totalDueByMonth || {};
         let due = 0;
+        let status: string | null = null;
+        let paidDate: Date | null = null;
         if (typeof raw[monthKey] === 'object' && raw[monthKey] !== null) {
           due = raw[monthKey].due;
+          status = raw[monthKey].status || null;
+          if (raw[monthKey].paymentDate) {
+            paidDate = raw[monthKey].paymentDate.toDate ? raw[monthKey].paymentDate.toDate() : new Date(raw[monthKey].paymentDate);
+          }
         } else if (typeof raw[monthKey] === 'number') {
           due = raw[monthKey];
         }
         setTotalDueAmount(due);
+        setPaymentStatus(status);
+        setPaymentDate(paidDate);
         const lastUpdate = userDoc.data().lastTotalDueUpdate;
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
@@ -516,7 +527,10 @@ export default function StudentDashboard() {
           {/* Small Total Due Card */}
           <Card className="md:col-span-1 transition-all duration-200">
             <CardHeader>
-              <CardTitle className="text-sm">Total Due</CardTitle>
+              <div className="flex items-center justify-between w-full">
+                <CardTitle className="text-sm">Total Due</CardTitle>
+                {paymentStatus === 'paid' && <PaidBadge paymentDate={paymentDate} />}
+              </div>
               <CardDescription className="text-xs">Amount</CardDescription>
             </CardHeader>
             <CardContent>
