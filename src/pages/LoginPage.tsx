@@ -7,7 +7,6 @@ import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
 import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
-import { Chrome } from 'lucide-react'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -158,7 +157,14 @@ export default function LoginPage() {
               className="w-full"
               onClick={handleGoogleSignIn}
             >
-              <Chrome className="mr-2 h-4 w-4" />
+              <img
+                src="https://img.icons8.com/color/48/google-logo.png"
+                alt="google-logo"
+                width={20}
+                height={20}
+                className="mr-2 inline-block align-middle"
+                style={{ display: 'inline-block', verticalAlign: 'middle' }}
+              />
               Sign in with Google
             </Button>
           </form>
