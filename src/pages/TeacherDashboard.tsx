@@ -42,7 +42,7 @@ interface StudentAccount {
   displayName: string
   monthlyFee: number
   createdAt: Date
-  totalDueByMonth?: { [key: string]: any } // Add this line
+  totalDueByMonth?: { [key: string]: any } 
 }
 
 export default function TeacherDashboard() {
@@ -1268,9 +1268,7 @@ export default function TeacherDashboard() {
                   const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
                   const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0;
                   const monthKey = getMonthKey(currentMonth);
-                  // Find the student object for this fee
                   const studentObj = students.find(s => s.id === fee.studentId);
-                  // We'll need to fetch the payment status from the student object if available
                   let paymentStatus = null;
                   let paymentDate = null;
                   let amountPaid = null;
@@ -1281,10 +1279,10 @@ export default function TeacherDashboard() {
                     amountPaid = dueObj.amountPaid;
                   }
                   return (
-                    <div key={fee.studentId} className="flex items-center justify-between p-3 border rounded-lg min-w-[320px]">
-                      <div>
-                        <p className="font-medium">{fee.studentName}</p>
-                        <p className="text-sm text-gray-600">
+                    <div key={fee.studentId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 border rounded-lg min-w-[260px]">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-base sm:text-lg truncate">{fee.studentName}</p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
                           {fee.approvedDays} approved {fee.approvedDays === 1 ? 'day' : 'days'}
                           {fee.absentDays > 0 && (
                             <span className="text-red-600"> • {fee.absentDays} absent {fee.absentDays === 1 ? 'day' : 'days'}</span>
@@ -1292,9 +1290,8 @@ export default function TeacherDashboard() {
                           {fee.monthlyFee > 0 ? (
                             <>
                               {' '}× ₹{Math.round(dailyRate * 100) / 100} = ₹{fee.totalAmount}
-                              <br />
-                              <span className="text-xs text-gray-500">
-                                (₹{fee.monthlyFee} ÷ {totalDaysInMonth} days = ₹{Math.round(dailyRate * 100) / 100}/day)
+                              <span className="hidden sm:inline text-xs text-gray-500">
+                                {' '} (₹{fee.monthlyFee} ÷ {totalDaysInMonth} days = ₹{Math.round(dailyRate * 100) / 100}/day)
                               </span>
                             </>
                           ) : ' (No fee set)'}
@@ -1306,7 +1303,7 @@ export default function TeacherDashboard() {
                               <span className="text-green-600 text-xs font-semibold">
                                 Paid{amountPaid ? `: ₹${amountPaid}` : ''}
                                 {paymentDate && (
-                                  <span className="ml-2 text-gray-500">on {paymentDate?.toDate ? paymentDate.toDate().toLocaleDateString() : ''}</span>
+                                  <span className="ml-2 text-gray-500 hidden sm:inline">on {paymentDate?.toDate ? paymentDate.toDate().toLocaleDateString() : ''}</span>
                                 )}
                               </span>
                             ) : (
@@ -1317,11 +1314,11 @@ export default function TeacherDashboard() {
                           </div>
                         )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         {fee.monthlyFee > 0 ? (
-                          <p className="text-lg font-bold text-green-600">₹{fee.totalAmount}</p>
+                          <p className="text-lg sm:text-xl font-bold text-green-600">₹{fee.totalAmount}</p>
                         ) : (
-                          <p className="text-sm text-gray-500">No fee</p>
+                          <p className="text-xs sm:text-sm text-gray-500">No fee</p>
                         )}
                       </div>
                     </div>
@@ -1388,8 +1385,8 @@ export default function TeacherDashboard() {
 
 
 
-              {/* Selection Calendar */}
-              <div className="mb-4" key={`calendar-${existingAttendance.size}-${existingAbsentAttendance.size}`}>
+              {/* Selection Calendar - hidden on mobile, visible on sm+ */}
+              <div className="hidden sm:block mb-4" key={`calendar-${existingAttendance.size}-${existingAbsentAttendance.size}`}> 
                 <div className="overflow-x-auto">
                   <div className="min-w-[560px] grid grid-cols-7 gap-1">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -1439,6 +1436,16 @@ export default function TeacherDashboard() {
                 )}
                 </div>
                 </div>
+              </div>
+              {/* Alternative content for mobile */}
+              <div className="sm:hidden mb-4">
+                <Card>
+                  <CardContent>
+                    <div className="text-center text-muted-foreground py-8">
+                      Bulk attendance calendar is available on larger screens.
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Attendance Status Selector */}

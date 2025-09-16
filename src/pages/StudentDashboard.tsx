@@ -553,8 +553,8 @@ export default function StudentDashboard() {
           </Card>
         </div>
 
-        {/* Calendar */}
-        <Card>
+        {/* Calendar - hidden on mobile, visible on sm+ */}
+        <Card className="hidden sm:block">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Attendance Calendar</CardTitle>
@@ -601,7 +601,6 @@ export default function StudentDashboard() {
                         {day}
                       </div>
                     ))}
-                    
                     {getDaysInMonth().map((day, index) => {
                       const status = getAttendanceStatus(day)
                       return (
@@ -627,7 +626,6 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 )}
-                
                 <div className="mt-4 flex gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -648,6 +646,14 @@ export default function StudentDashboard() {
                 </div>
               </>
             )}
+          </CardContent>
+        </Card>
+        {/* Alternative content for mobile */}
+        <Card className="sm:hidden">
+          <CardContent>
+            <div className="text-center text-muted-foreground py-8">
+              Calendar view is available on larger screens.
+            </div>
           </CardContent>
         </Card>
         </div>
