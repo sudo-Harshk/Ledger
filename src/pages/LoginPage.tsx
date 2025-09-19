@@ -8,10 +8,6 @@ import { useAuth } from '../hooks/useAuth'
 import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import Footer from '../components/Footer'
-import { auth } from '../firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import * as Dialog from '@radix-ui/react-dialog';
-import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -19,9 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
   
   const { login, user, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
@@ -86,20 +79,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
-
-  const handlePasswordReset = async () => {
-    setResetLoading(true);
-    try {
-      await sendPasswordResetEmail(auth, resetEmail);
-      setResetDialogOpen(false);
-      setResetEmail('');
-      toast.success('Password reset link sent! Please check your inbox.');
-    } catch (error) {
-      toast.error('No account found with that email address.');
-    } finally {
-      setResetLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -173,16 +152,6 @@ export default function LoginPage() {
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-              {/* Forgot Password Link */}
-              <div className="flex justify-end mt-1">
-                <button
-                  type="button"
-                  className="text-xs text-blue-600 hover:underline focus:outline-none"
-                  onClick={() => setResetDialogOpen(true)}
-                >
-                  Forgot Password?
-                </button>
-              </div>
               {/* Divider */}
               <div className="flex items-center my-4">
                 <div className="flex-grow border-t border-gray-200" />
@@ -209,43 +178,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-        {/* Password Reset Dialog */}
-        <Dialog.Root open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg focus:outline-none">
-              <Dialog.Title className="text-lg font-bold mb-2">Reset Your Password</Dialog.Title>
-              <Dialog.Description className="mb-4 text-sm text-gray-600">
-                Enter your email address and we will send you a link to reset your password.
-              </Dialog.Description>
-              <Input
-                type="email"
-                placeholder="Email address"
-                value={resetEmail}
-                onChange={e => setResetEmail(e.target.value)}
-                className="mb-4"
-                autoFocus
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setResetDialogOpen(false)}
-                  disabled={resetLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handlePasswordReset}
-                  disabled={resetLoading || !resetEmail}
-                >
-                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
-                </Button>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
       </main>
       <Footer />
     </div>
