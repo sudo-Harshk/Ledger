@@ -127,6 +127,26 @@ const FooterClock: React.FC = () => {
   );
 };
 
+// LiveQuote component for a quote with live date and time
+const LiveQuote: React.FC = () => {
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center mt-20 mb-8"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, type: 'spring', stiffness: 60 }}
+    >
+      <span className="flex flex-row items-center gap-4 text-center">
+        <span className="text-4xl md:text-6xl text-[#F87171] select-none" aria-label="quote">“</span>
+        <span className="italic text-gray-800 text-2xl md:text-4xl font-semibold leading-snug relative">
+          The present moment is all you ever have.
+          <span className="block w-2/3 mx-auto mt-2 h-1 rounded-full bg-[#F87171]/20" />
+        </span>
+      </span>
+    </motion.div>
+  );
+};
+
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState('home');
@@ -275,7 +295,9 @@ const LandingPage: React.FC = () => {
                 <span className="text-gray-400">Developer 2 (design coming soon)</span>
               </Rotating3DCard>
             </div>
-            {/* World Clock below the developer cards */}
+            {/* Live Quote below the developer cards */}
+            <LiveQuote />
+            {/* World Clock below the quote */}
             <WorldClock />
           </motion.section>
         )}
