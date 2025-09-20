@@ -92,21 +92,47 @@ const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties
   );
 };
 
-// WorldClock component
-const WorldClock: React.FC = () => {
-  const [now, setNow] = useState(new Date());
+// SegmentedControl for country/timezone selection
+const TIMEZONE_OPTIONS = [
+  { label: '🇮🇳 India', tz: 'Asia/Kolkata' },
+  { label: '🇺🇸 USA', tz: 'America/New_York' },
+  { label: '🇬🇧 UK', tz: 'Europe/London' },
+  { label: '🇯🇵 Japan', tz: 'Asia/Tokyo' },
+];
 
+const SegmentedControl: React.FC<{
+  value: string;
+  onChange: (tz: string) => void;
+}> = ({ value, onChange }) => (
+  <div className="flex gap-2 justify-center mt-10 mb-2">
+    {TIMEZONE_OPTIONS.map(opt => (
+      <button
+        key={opt.tz}
+        className={`px-4 py-2 rounded-full border font-bold shadow transition-colors duration-150 ${
+          value === opt.tz
+            ? 'bg-[#F87171] text-white border-[#F87171]'
+            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+        }`}
+        onClick={() => onChange(opt.tz)}
+        aria-pressed={value === opt.tz}
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
+);
+
+// WorldClock now accepts a timezone prop
+const WorldClock: React.FC<{ timezone: string }> = ({ timezone }) => {
+  const [now, setNow] = useState(new Date());
   React.useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
-
-  // Format: e.g. Saturday, 21 September 2025, 14:23:45
   const dateString = now.toLocaleDateString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone
   });
-  const timeString = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
+  const timeString = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: timezone });
   return (
     <div className="flex flex-row items-center justify-center mt-16 mb-2 gap-8">
       <div className="text-xl font-mono text-gray-700">{dateString}</div>
@@ -138,6 +164,8 @@ const LiveQuote: React.FC = () => {
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState('home');
+  // Timezone state for world clock
+  const [timezone, setTimezone] = useState('Asia/Kolkata');
 
   return (
     <div className="min-h-screen bg-[#FDF6F0] flex flex-col relative overflow-x-hidden" style={{ fontFamily: "'Roboto Mono', monospace" }}>
@@ -285,13 +313,13 @@ const LandingPage: React.FC = () => {
             </div>
             {/* Live Quote below the developer cards */}
             <LiveQuote />
-            {/* World Clock below the quote */}
-            <WorldClock />
+            {/* World Clock below the quote, using selected timezone */}
+            <WorldClock timezone={timezone} />
           </motion.section>
         )}
       </AnimatePresence>
       {/* Footer */}
-      <Footer />
+      <Footer timezone={timezone} setTimezone={setTimezone} showClock={false} />
     </div>
   );
 };
