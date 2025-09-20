@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
+import Footer from '../components/Footer';
 
 // Tooltip component
 const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => {
@@ -34,7 +35,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
 
 const navLinks = [
   { label: 'Home', value: 'home' },
-  { label: 'About', value: 'about' },
+  { label: 'Team', value: 'about' },
 ];
 
 // 3D Rotating Card Component
@@ -111,19 +112,6 @@ const WorldClock: React.FC = () => {
       <div className="text-xl font-mono text-gray-700">{dateString}</div>
       <div className="text-4xl font-bold text-[#F87171] tracking-widest font-mono">{timeString}</div>
     </div>
-  );
-};
-
-// FooterClock component for time in the footer
-const FooterClock: React.FC = () => {
-  const [now, setNow] = useState(new Date());
-  React.useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-  const timeString = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  return (
-    <div className="text-sm text-[#F87171] font-mono font-bold ml-auto">{timeString}</div>
   );
 };
 
@@ -303,12 +291,7 @@ const LandingPage: React.FC = () => {
         )}
       </AnimatePresence>
       {/* Footer */}
-      <footer className="w-full flex items-center justify-center px-8 py-4 border-t border-[#F9C5D1] bg-[#FDF6F0] mt-auto z-10 relative">
-        <div className="text-gray-400 text-sm text-center w-full">&copy; {new Date().getFullYear()} Ledger App. Inspired by Japanese design.</div>
-        <div className="absolute right-8">
-          <FooterClock />
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
