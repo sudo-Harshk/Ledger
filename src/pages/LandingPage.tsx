@@ -35,7 +35,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
 
 const navLinks = [
   { label: 'Home', value: 'home' },
-  { label: 'Team', value: 'about' },
+  { label: 'Team', value: 'team' },
 ];
 
 // 3D Rotating Card Component
@@ -237,9 +237,9 @@ const LandingPage: React.FC = () => {
             </section>
           </motion.main>
         )}
-        {currentSection === 'about' && (
+        {currentSection === 'team' && (
           <motion.section
-            key="about"
+            key="team"
             className="flex-1 w-full max-w-5xl mx-auto py-12 px-4 flex flex-col items-center"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
