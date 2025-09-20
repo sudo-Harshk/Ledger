@@ -104,7 +104,7 @@ export default function LoginPage() {
         </nav>
       </header>
       <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md border-2 border-[#F87171] shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">Ledger</CardTitle>
             <CardDescription>
@@ -123,14 +123,14 @@ export default function LoginPage() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="Students: Enter username • Teachers: Enter email"
+                  placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   className="transition-all duration-200 focus:scale-105"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Students: Use your username • Teachers: Use your email
+                <p className="text-xs text-gray-400 mt-1">
+                  Students: Use your username &bull; Teachers: Use your email
                 </p>
               </div>
               <div className="space-y-2">
