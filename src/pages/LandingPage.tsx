@@ -37,45 +37,6 @@ const navLinks = [
   { label: 'About', value: 'about' },
 ];
 
-const homeHighlights = [
-  {
-    emoji: '📅',
-    jp: '出席',
-    label: 'Track Attendance',
-    color: 'text-[#F87171]'
-  },
-  {
-    emoji: '✅',
-    jp: '承認',
-    label: 'Approve Easily',
-    color: 'text-[#A7F3D0]'
-  },
-  {
-    emoji: '📈',
-    jp: '進捗',
-    label: 'Monitor Progress',
-    color: 'text-[#FDE68A]'
-  },
-];
-
-const gridVariants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.10,
-    },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.38, ease: 'easeInOut' },
-  },
-};
-
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState('home');
