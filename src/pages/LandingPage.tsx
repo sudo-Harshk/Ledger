@@ -92,36 +92,6 @@ const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties
   );
 };
 
-// SegmentedControl for country/timezone selection
-const TIMEZONE_OPTIONS = [
-  { label: '🇮🇳 India', tz: 'Asia/Kolkata' },
-  { label: '🇺🇸 USA', tz: 'America/New_York' },
-  { label: '🇬🇧 UK', tz: 'Europe/London' },
-  { label: '🇯🇵 Japan', tz: 'Asia/Tokyo' },
-];
-
-const SegmentedControl: React.FC<{
-  value: string;
-  onChange: (tz: string) => void;
-}> = ({ value, onChange }) => (
-  <div className="flex gap-2 justify-center mt-10 mb-2">
-    {TIMEZONE_OPTIONS.map(opt => (
-      <button
-        key={opt.tz}
-        className={`px-4 py-2 rounded-full border font-bold shadow transition-colors duration-150 ${
-          value === opt.tz
-            ? 'bg-[#F87171] text-white border-[#F87171]'
-            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-        }`}
-        onClick={() => onChange(opt.tz)}
-        aria-pressed={value === opt.tz}
-      >
-        {opt.label}
-      </button>
-    ))}
-  </div>
-);
-
 // WorldClock now accepts a timezone prop
 const WorldClock: React.FC<{ timezone: string }> = ({ timezone }) => {
   const [now, setNow] = useState(new Date());
