@@ -7,8 +7,9 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   getAdditionalUserInfo,
-  deleteUser
+  deleteUser,
 } from 'firebase/auth'
+
 import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import logger from '../lib/logger'
@@ -214,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     login,
     logout,
-    loginWithGoogle
+    loginWithGoogle,
   }
 
   return (

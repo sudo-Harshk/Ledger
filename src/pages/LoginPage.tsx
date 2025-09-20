@@ -16,7 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
-  const { login, user, loginWithGoogle } = useAuth()
+  const { login, user, loginWithGoogle } = useAuth();
+
   const navigate = useNavigate()
   const location = useLocation()
   const justLoggedIn = useRef(false)
@@ -179,6 +180,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </main>
+      {/* reCAPTCHA container for phone auth (invisible, required for Firebase) */}
+      <div id="recaptcha-container" style={{ display: 'none' }} />
       <Footer />
     </div>
   )

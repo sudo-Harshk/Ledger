@@ -18,6 +18,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { onSnapshot } from 'firebase/firestore'
 import { Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { differenceInCalendarDays } from 'date-fns';
 
 interface PendingAttendance {
   id: string
@@ -93,6 +94,13 @@ export default function TeacherDashboard() {
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [financialSummary, setFinancialSummary] = useState<{ revenue: number; lastUpdated: any } | null>(null)
   const [financialSummaryLoading, setFinancialSummaryLoading] = useState(true)
+
+  // Revenue preview state
+  const [revenuePreview, setRevenuePreview] = useState({
+    days: 0,
+    dailyRate: 0,
+    total: 0,
+  });
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -419,6 +427,33 @@ export default function TeacherDashboard() {
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
+
+  useEffect(() => {
+    if (!bulkStartDate || !bulkEndDate || defaultAttendanceStatus !== 'present' || students.length === 0) {
+      setRevenuePreview({ days: 0, dailyRate: 0, total: 0 });
+      return;
+    }
+    const start = new Date(bulkStartDate);
+    const end = new Date(bulkEndDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+      setRevenuePreview({ days: 0, dailyRate: 0, total: 0 });
+      return;
+    }
+    // Number of days in range (inclusive)
+    const days = differenceInCalendarDays(end, start) + 1;
+    // Use the month of the start date for daily rate calculation
+    const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    // Sum revenue for all students
+    let total = 0;
+    let dailyRate = 0;
+    if (students.length > 0) {
+      // Assume all students have the same month (start date's month)
+      // If you want per-student breakdown, loop and sum
+      dailyRate = students.reduce((sum, s) => sum + (s.monthlyFee / daysInMonth), 0);
+      total = dailyRate * days;
+    }
+    setRevenuePreview({ days, dailyRate, total });
+  }, [bulkStartDate, bulkEndDate, students, defaultAttendanceStatus]);
 
   const createStudentAccount = async () => {
     if (!newStudentUsername || !newStudentName || !newStudentPassword) {
@@ -1647,6 +1682,15 @@ export default function TeacherDashboard() {
                         : Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
                     }</strong>
                   </p>
+                  {/* Revenue Preview */}
+                  {defaultAttendanceStatus === 'present' && revenuePreview.days > 0 && revenuePreview.dailyRate > 0 && (
+                    <div className="mt-3 p-3 bg-blue-100 border border-blue-300 rounded">
+                      <div className="font-semibold text-blue-900 mb-1">Estimated Revenue for this period:</div>
+                      <div className="text-blue-800 text-sm">
+                        {revenuePreview.days} days × ₹{(revenuePreview.dailyRate).toFixed(2)}/day = <span className="font-bold">₹{(revenuePreview.total).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
