@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 
 // Tooltip component
 const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => {
@@ -36,6 +36,60 @@ const navLinks = [
   { label: 'Home', value: 'home' },
   { label: 'About', value: 'about' },
 ];
+
+// 3D Rotating Card Component
+const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties; children: React.ReactNode }> = ({ className = '', style = {}, children }) => {
+  const [isHovering, setIsHovering] = useState(false);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(y, { stiffness: 200, damping: 20 });
+  const rotateY = useSpring(x, { stiffness: 200, damping: 20 });
+  const transform = useMotionTemplate`rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+
+  function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const cardWidth = rect.width;
+    const cardHeight = rect.height;
+    const centerX = rect.left + cardWidth / 2;
+    const centerY = rect.top + cardHeight / 2;
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+    const rotateYVal = ((mouseX - centerX) / (cardWidth / 2)) * 12;
+    const rotateXVal = -((mouseY - centerY) / (cardHeight / 2)) * 12;
+    x.set(rotateYVal);
+    y.set(rotateXVal);
+    setIsHovering(true);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+    setIsHovering(false);
+  }
+
+  return (
+    <div style={{ perspective: 1000, ...style }}>
+      <motion.div
+        className={className}
+        style={{
+          transformStyle: 'preserve-3d',
+          boxShadow: isHovering ? '0 8px 32px 0 rgba(248,113,113,0.15)' : undefined,
+          willChange: 'transform',
+          transition: 'box-shadow 0.2s',
+          transform,
+        }}
+        animate={{
+          scale: isHovering ? 1.03 : 1,
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+};
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -159,15 +213,12 @@ const LandingPage: React.FC = () => {
               About the Developers
             </motion.h2>
             <div className="flex flex-col md:flex-row gap-8 w-full justify-center items-stretch">
-              {/* Developer 1 - prominent card */}
-              <motion.div
-                className="flex flex-col md:flex-row bg-white/90 rounded-2xl shadow-xl border-2 border-[#F9C5D1] flex-1 min-h-[320px] overflow-hidden"
-                style={{ minWidth: '320px', maxWidth: '100%' }}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.3, type: 'spring', stiffness: 60 }}
+              {/* Developer 1 - prominent card with 3D rotation */}
+              <Rotating3DCard
+                className="flex flex-col md:flex-row bg-white/90 rounded-2xl shadow-xl border-2 border-[#F9C5D1] flex-1 min-h-[320px] md:w-[480px] w-full overflow-hidden"
+                style={{ maxWidth: '100%' }}
               >
-                <div className="md:w-1/2 w-full h-64 md:h-auto flex-shrink-0">
+                <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0">
                   <img
                     src="/developer1.png"
                     alt="Harshk portrait"
@@ -175,21 +226,18 @@ const LandingPage: React.FC = () => {
                     style={{ minHeight: '100%', minWidth: '100%' }}
                   />
                 </div>
-                <div className="flex flex-col justify-center items-start p-6 md:w-1/2 w-full">
+                <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
                   <div className="font-bold text-2xl text-gray-800 mb-2">Harshk</div>
-                  <div className="text-[#F87171] font-medium text-lg mb-4">Architect & Developer</div>
+                  <div className="text-[#F87171] font-medium text-lg mb-2">Architect & Developer</div>
                   {/* Optional: Add a short description or quote here */}
                 </div>
-              </motion.div>
-              {/* Developer 2 Placeholder - smaller card */}
-              <motion.div
-                className="flex-1 bg-white/80 rounded-xl shadow p-6 flex flex-col items-center min-h-[220px] border-2 border-dashed border-[#A7F3D0] md:max-w-xs md:self-center"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15, duration: 0.3, type: 'spring', stiffness: 60 }}
+              </Rotating3DCard>
+              {/* Developer 2 Placeholder - smaller card with 3D rotation */}
+              <Rotating3DCard
+                className="flex-1 bg-white/80 rounded-xl shadow p-8 flex flex-col items-center min-h-[180px] md:w-[320px] w-full border-2 border-dashed border-[#A7F3D0] md:self-center"
               >
                 <span className="text-gray-400">Developer 2 (design coming soon)</span>
-              </motion.div>
+              </Rotating3DCard>
             </div>
           </motion.section>
         )}
