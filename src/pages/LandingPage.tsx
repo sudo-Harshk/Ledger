@@ -91,6 +91,29 @@ const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties
   );
 };
 
+// WorldClock component
+const WorldClock: React.FC = () => {
+  const [now, setNow] = useState(new Date());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format: e.g. Saturday, 21 September 2025, 14:23:45
+  const dateString = now.toLocaleDateString(undefined, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+  const timeString = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  return (
+    <div className="flex flex-row items-center justify-center mt-16 mb-2 gap-8">
+      <div className="text-xl font-mono text-gray-700">{dateString}</div>
+      <div className="text-4xl font-bold text-[#F87171] tracking-widest font-mono">{timeString}</div>
+    </div>
+  );
+};
+
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentSection, setCurrentSection] = useState('home');
@@ -239,6 +262,8 @@ const LandingPage: React.FC = () => {
                 <span className="text-gray-400">Developer 2 (design coming soon)</span>
               </Rotating3DCard>
             </div>
+            {/* World Clock below the developer cards */}
+            <WorldClock />
           </motion.section>
         )}
       </AnimatePresence>
