@@ -9,6 +9,7 @@ import ToastProvider from './components/ToastProvider';
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
+const LandingPage = lazy(() => import('./pages/LandingPage'))
 
 function App() {
   // Protected Route Component - moved inside App function to be within AuthProvider
@@ -89,7 +90,19 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={
+              <Suspense fallback={
+                <div className="min-h-screen bg-background flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
+                </div>
+              }>
+                <LandingPage />
+              </Suspense>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </div>
           <ToastProvider />

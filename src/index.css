@@ -4,60 +4,50 @@
 
 @layer base {
   :root {
-    /* Light theme - Calm blue slate palette */
-    --background: 210 40% 98%;          /* slate-50 */
-    --foreground: 222 47% 11%;          /* slate-900 */
+    /* Custom Japanese-inspired palette for Ledger */
+    --background: 39 78% 97%;          /* #FDF6F0 */
+    --foreground: 222 47% 13%;         /* #222 */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 222 47% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;             /* blue-600 */
-    --primary-foreground: 210 40% 98%;  /* slate-50 */
-    --secondary: 210 40% 96%;           /* slate-100 */
-    --secondary-foreground: 222 47% 11%;
-    --muted: 215 16% 84%;               /* slate-300 */
-    --muted-foreground: 215 20% 25%;    /* slate-700 */
-    --accent: 199 89% 48%;              /* sky-500 */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 72% 51%;           /* red-600 */
-    --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;              /* slate-200 */
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;                /* blue-600 */
-    --chart-1: 221 83% 53%;             /* blue */
-    --chart-2: 158 64% 52%;             /* emerald-500 */
-    --chart-3: 199 89% 48%;             /* sky-500 */
-    --chart-4: 43 96% 56%;              /* amber-400 */
-    --chart-5: 346 77% 49%;             /* rose-500 */
+    --popover-foreground: 222 47% 13%;
+    --primary: 4 90% 65%;              /* #F87171 (red-pink) */
+    --primary-foreground: 39 78% 97%;  /* #FDF6F0 */
+    --secondary: 39 78% 97%;           /* #FDF6F0 */
+    --secondary-foreground: 222 47% 13%;
+    --muted: 15 32% 90%;               /* #F9C5D1 (light pink) */
+    --muted-foreground: 222 47% 13%;
+    --accent: 43 96% 56%;              /* #FDE68A (yellow) */
+    --accent-foreground: 222 47% 13%;
+    --destructive: 0 72% 51%;          /* red-600 */
+    --destructive-foreground: 39 78% 97%;
+    --border: 15 32% 90%;              /* #F9C5D1 */
+    --input: 15 32% 90%;
+    --ring: 4 90% 65%;                 /* #F87171 */
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark theme tuned to same brand */
+    /* For now, just invert background/foreground for dark mode */
     --background: 222 47% 7%;           /* slate-950 */
-    --foreground: 210 40% 98%;
+    --foreground: 39 78% 97%;           /* #FDF6F0 */
     --card: 222 47% 9%;
-    --card-foreground: 210 40% 98%;
+    --card-foreground: 39 78% 97%;
     --popover: 222 47% 9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;             /* blue-500/600 blend */
+    --popover-foreground: 39 78% 97%;
+    --primary: 4 90% 65%;
     --primary-foreground: 222 47% 7%;
-    --secondary: 217 33% 17%;           /* slate-800 */
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 39 78% 97%;
     --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 80%;    /* slate-300 */
-    --accent: 199 89% 60%;              /* sky-400 */
+    --muted-foreground: 215 20% 80%;
+    --accent: 43 96% 56%;
     --accent-foreground: 222 47% 7%;
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 39 78% 97%;
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 158 64% 52%;
-    --chart-3: 199 89% 60%;
-    --chart-4: 43 96% 56%;
-    --chart-5: 346 77% 60%;
+    --ring: 4 90% 65%;
   }
 }
 
@@ -67,8 +57,9 @@
   }
   
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #FDF6F0;
+    color: #222;
+    font-family: 'Roboto Mono', monospace;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

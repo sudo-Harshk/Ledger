@@ -924,7 +924,7 @@ export default function TeacherDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-[#FDF6F0]">
       <Navigation title="Teacher Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
       
       <div className="container mx-auto px-6 py-8">

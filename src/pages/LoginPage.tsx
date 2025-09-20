@@ -83,11 +83,25 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Simple Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-center">
-          <span className="text-2xl font-bold text-gray-900">Ledger</span>
+      {/* Redesigned Header to match landing page */}
+      <header className="flex items-center justify-between px-8 py-6 border-b border-[#F9C5D1] bg-[#FDF6F0]">
+        <div className="flex items-center gap-2">
+          <div className="border-2 border-[#F87171] rounded-md px-2 py-1 text-[#F87171] font-bold text-lg tracking-widest">LEDGER</div>
         </div>
+        <nav className="flex gap-8 text-gray-700 font-medium text-lg">
+          <button
+            onClick={() => navigate('/')}
+            className="bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 border-transparent hover:border-[#F87171]"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => navigate('/?section=about')}
+            className="bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 border-transparent hover:border-[#F87171]"
+          >
+            About
+          </button>
+        </nav>
       </header>
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
