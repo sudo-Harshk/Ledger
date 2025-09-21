@@ -12,7 +12,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
       onMouseLeave={() => setShow(false)}
       onFocus={() => setShow(true)}
       onBlur={() => setShow(false)}
-      tabIndex={0}
+      tabIndex={0} 
     >
       {children}
       <AnimatePresence>
@@ -262,7 +262,7 @@ const LandingPage: React.FC = () => {
               >
                 <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0">
                   <img
-                    src="https://pub-a59743c5485d41dd8f83bd22a04652b0.r2.dev/developer1.png"
+                    src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1758480335/Developer1_rbppcq.webp"
                     alt="Harshk portrait"
                     className="w-full h-full object-cover object-center bg-white"
                     style={{ minHeight: '100%', minWidth: '100%' }}
@@ -274,11 +274,23 @@ const LandingPage: React.FC = () => {
                   {/* Optional: Add a short description or quote here */}
                 </div>
               </Rotating3DCard>
-              {/* Developer 2 Placeholder - smaller card with 3D rotation */}
+              {/* Developer 2 - prominent card with 3D rotation, same size as Harshk */}
               <Rotating3DCard
-                className="flex-1 bg-white/80 rounded-xl shadow p-8 flex flex-col items-center min-h-[180px] md:w-[320px] w-full border-2 border-dashed border-[#A7F3D0] md:self-center"
+                className="flex flex-col md:flex-row bg-white/90 rounded-2xl shadow-xl border-2 border-[#A7F3D0] flex-1 min-h-[320px] md:w-[480px] w-full overflow-hidden"
+                style={{ maxWidth: '100%' }}
               >
-                <span className="text-gray-400">Developer 2 (design coming soon)</span>
+                <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0 flex items-center justify-center">
+                  <img
+                    src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=512&h=512&facepad=2&q=80"
+                    alt="Sahasara placeholder"
+                    className="w-full h-full object-cover object-center bg-white"
+                    style={{ minHeight: '100%', minWidth: '100%' }}
+                  />
+                </div>
+                <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
+                  <div className="font-bold text-2xl text-gray-800 mb-2">Sahasara</div>
+                  <div className="text-[#8B5CF6] font-medium text-lg mb-2">UI/UX Designer</div>
+                </div>
               </Rotating3DCard>
             </div>
             {/* Live Quote below the developer cards */}
