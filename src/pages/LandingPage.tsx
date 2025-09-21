@@ -262,7 +262,7 @@ const LandingPage: React.FC = () => {
               >
                 <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0">
                   <img
-                    src="/developer1.png"
+                    src="https://pub-a59743c5485d41dd8f83bd22a04652b0.r2.dev/developer1.png"
                     alt="Harshk portrait"
                     className="w-full h-full object-cover object-center bg-white"
                     style={{ minHeight: '100%', minWidth: '100%' }}
