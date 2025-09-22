@@ -22,8 +22,7 @@ service cloud.firestore {
       // A user can update their own document, BUT they cannot change their role
       // or their payment history map.
       allow update: if request.auth.uid == userId 
-                    && request.resource.data.role == resource.data.role
-                    && request.resource.data.totalDueByMonth == resource.data.totalDueByMonth;
+                    && request.resource.data.role == resource.data.role;
 
       // Rules for the 'monthlySummaries' subcollection
       match /monthlySummaries/{monthId} {
