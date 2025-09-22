@@ -13,6 +13,9 @@ service cloud.firestore {
       // Teachers can read all user profiles (needed for the dashboard).
       allow read: if request.auth.uid == userId || isTeacher();
 
+      // Allow all users (even unauthenticated) to list/query users collection (for username login)
+      allow list: if true;
+
       // Only teachers can create new user documents.
       allow create: if isTeacher();
 
@@ -21,6 +24,14 @@ service cloud.firestore {
       allow update: if request.auth.uid == userId 
                     && request.resource.data.role == resource.data.role
                     && request.resource.data.totalDueByMonth == resource.data.totalDueByMonth;
+
+      // Rules for the 'monthlySummaries' subcollection
+      match /monthlySummaries/{monthId} {
+        // Only the user (owner) or a teacher can read
+        allow read: if request.auth.uid == userId || isTeacher();
+        // Only teachers can write
+        allow write: if isTeacher();
+      }
     }
 
     // Rules for the 'attendance' collection
