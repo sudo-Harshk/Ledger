@@ -1,3 +1,5 @@
 {
-  "projects": { "default": "ledger-90834" }
+  "projects": {
+    "default": "ledger-90834"
+  }
 }

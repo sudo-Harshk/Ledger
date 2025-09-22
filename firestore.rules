@@ -1,44 +1,50 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAuthed() {
-      return request.auth != null;
-    }
 
+    // Helper function to check if a user is a teacher
     function isTeacher() {
-      return isAuthed() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
     }
 
-    function isOwner(userId) {
-      return isAuthed() && request.auth.uid == userId;
-    }
-
-    // Users
+    // Rules for the 'users' collection
     match /users/{userId} {
-      // Owner can read and update their own profile, but cannot change role
-      allow read: if isOwner(userId) || isTeacher();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      // Users can only read their own profile.
+      // Teachers can read all user profiles (needed for the dashboard).
+      allow read: if request.auth.uid == userId || isTeacher();
 
-      // Teachers can manage student docs
-      allow create, update, delete: if isTeacher() &&
-        (
-          (request.resource != null && request.resource.data.role == 'student') ||
-          (resource != null && resource.data.role == 'student')
-        );
+      // Only teachers can create new user documents.
+      allow create: if isTeacher();
+
+      // A user can update their own document, BUT they cannot change their role
+      // or their payment history map.
+      allow update: if request.auth.uid == userId 
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.totalDueByMonth == resource.data.totalDueByMonth;
     }
 
-    // Attendance
-    match /attendance/{docId} {
-      // Students can read their own; teachers can read all
-      allow read: if isTeacher() || (isAuthed() && resource.data.studentId == request.auth.uid);
+    // Rules for the 'attendance' collection
+    match /attendance/{attendanceId} {
+      // A student can read their own attendance records.
+      // A teacher can read all attendance records.
+      allow read: if request.auth.uid == resource.data.studentId || isTeacher();
 
-      // Students can create only their own
-      allow create: if isAuthed() && request.resource.data.studentId == request.auth.uid;
+      // A user can only create an attendance record for themselves,
+      // and the initial status must be 'pending'.
+      allow create: if request.auth.uid == request.resource.data.studentId
+                     && request.resource.data.status == 'pending';
 
-      // Teachers can update/delete any attendance
-      allow update, delete: if isTeacher();
+      // Only teachers can update attendance records (e.g., to approve them).
+      allow update: if isTeacher();
+    }
+    
+    // Rules for the 'revenueSummaries' collection
+    match /revenueSummaries/{summaryId} {
+        // Any signed-in user can read the summary data (it's not sensitive).
+        allow read: if request.auth != null;
+        
+        // Only teachers can update the summary document.
+        allow write: if isTeacher();
     }
   }
 }
