@@ -103,8 +103,11 @@ export default function LoginPage() {
           </button>
         </nav>
       </header>
-      <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-2 border-[#F87171] shadow-lg">
+      <main className="flex-1 flex items-center justify-center p-4 relative">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className="w-96 h-96 rounded-full bg-gradient-to-br from-[#F87171]/40 via-[#F9C5D1]/60 to-[#FDF6F0]/0 blur-3xl opacity-80"></div>
+        </div>
+        <Card className="w-full max-w-md border-2 border-[#F87171] bg-white/90 backdrop-blur-md relative z-10">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">Ledger</CardTitle>
             <CardDescription>
