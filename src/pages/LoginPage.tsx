@@ -114,8 +114,12 @@ export default function LoginPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                  {error}
+                <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md flex items-center gap-2 animate-fade-in">
+                  <svg className="h-5 w-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                  </svg>
+                  <span>{error}</span>
                 </div>
               )}
               <div className="space-y-2">
