@@ -143,21 +143,26 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="transition-all duration-200 focus:scale-105 pr-10"
+                    className="transition-all duration-200 focus:scale-105 pr-12"
                   />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white shadow focus:outline-none border border-gray-200 transition-colors"
-                  >
-                    {showPassword ? (
-                      <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-                    ) : (
-                      <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700" />
-                    )}
-                  </button>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <button
+                      type="button"
+                      tabIndex={0}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="p-1 rounded-full bg-white/80 hover:bg-white shadow focus:outline-none border border-gray-200 transition-colors focus:ring-2 focus:ring-[#F87171] relative group"
+                    >
+                      {showPassword ? (
+                        <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700 transition-all duration-200" />
+                      ) : (
+                        <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700 transition-all duration-200" />
+                      )}
+                      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-[#222] text-white text-xs shadow-lg z-50 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-150">
+                        {showPassword ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <Button 
