@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db } from '../firebase'
 import { formatLocalDate } from '../lib/utils'
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
+import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
 import { Confetti } from '../components/Confetti'
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
 import { debouncedToast } from '../lib/debouncedToast';
@@ -218,6 +218,64 @@ export default function StudentDashboard() {
     }
   }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
+  // Real-time listener for user document (fees, payment status, etc.)
+  useEffect(() => {
+    if (!user?.uid) return;
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Update fee/payment state
+        const raw = data.totalDueByMonth || {};
+        const monthKey = getMonthKey(currentMonth);
+        let due = 0;
+        let status = null;
+        let paidDate = null;
+        if (typeof raw[monthKey] === 'object' && raw[monthKey] !== null) {
+          due = raw[monthKey].due;
+          status = raw[monthKey].status || null;
+          if (raw[monthKey].paymentDate) {
+            paidDate = raw[monthKey].paymentDate.toDate ? raw[monthKey].paymentDate.toDate() : new Date(raw[monthKey].paymentDate);
+          }
+        } else if (typeof raw[monthKey] === 'number') {
+          due = raw[monthKey];
+        }
+        setTotalDueAmount(due);
+        setPaymentStatus(status);
+        setPaymentDate(paidDate);
+        const lastUpdate = data.lastTotalDueUpdate;
+        setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
+      }
+    });
+    return () => unsubscribe();
+  }, [user?.uid, currentMonth]);
+
+  // Real-time listener for attendance records
+  useEffect(() => {
+    if (!user?.uid) return;
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const q = query(
+      collection(db, 'attendance'),
+      where('studentId', '==', user.uid),
+      where('date', '>=', formatLocalDate(monthStart)),
+      where('date', '<=', formatLocalDate(monthEnd))
+    );
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const records: AttendanceRecord[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        records.push({
+          date: data.date,
+          status: data.status,
+          timestamp: data.timestamp?.toDate() || new Date(),
+        });
+      });
+      setAttendanceRecords(records);
+      setHasMarkedAttendanceToday(records.some(record => record.date === formatLocalDate(new Date())));
+    });
+    return () => unsubscribe();
+  }, [user?.uid, currentMonth]);
   
   // Utility to get today's confetti key
   const getTodayConfettiKey = () => {
