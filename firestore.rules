@@ -41,8 +41,10 @@ service cloud.firestore {
 
       // A user can only create an attendance record for themselves,
       // and the initial status must be 'pending'.
-      allow create: if request.auth.uid == request.resource.data.studentId
-                     && request.resource.data.status == 'pending';
+      // Teachers can create attendance records for any student.
+      allow create: if isTeacher() ||
+                     (request.auth.uid == request.resource.data.studentId
+                      && request.resource.data.status == 'pending');
 
       // Only teachers can update attendance records (e.g., to approve them).
       allow update: if isTeacher();
