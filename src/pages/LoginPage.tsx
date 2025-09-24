@@ -96,10 +96,10 @@ export default function LoginPage() {
             Home
           </button>
           <button
-            onClick={() => navigate('/?section=about')}
+            onClick={() => navigate('/?section=team')}
             className="bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 border-transparent hover:border-[#F87171]"
           >
-            About
+            Team
           </button>
         </nav>
       </header>

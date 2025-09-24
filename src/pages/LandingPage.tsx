@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useMotionValue, useSpring, useMotionTemplate } from 'framer-motion';
 import Footer from '../components/Footer';
 
@@ -133,9 +133,21 @@ const LiveQuote: React.FC = () => {
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentSection, setCurrentSection] = useState('home');
   // Timezone state for world clock
   const [timezone, setTimezone] = useState('Asia/Kolkata');
+
+  // Set section from query param on mount
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const section = params.get('section');
+    if (section === 'team') {
+      setCurrentSection('team');
+    } else {
+      setCurrentSection('home');
+    }
+  }, [location.search]);
 
   return (
     <div className="min-h-screen bg-[#FDF6F0] flex flex-col relative overflow-x-hidden" style={{ fontFamily: "'Roboto Mono', monospace" }}>
