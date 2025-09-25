@@ -12,9 +12,10 @@ import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
 import { Link as LinkIcon } from 'lucide-react'
 import { linkGoogleAccount } from '../lib/linkGoogleAccount'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, endOfMonth, differenceInDays } from 'date-fns'
 import PaidBadge from '../components/PaidBadge';
 import { CheckCircle } from 'lucide-react';
+import DueDateBanner from '../components/DueDateBanner';
 
 interface AttendanceRecord {
   date: string
@@ -53,9 +54,12 @@ export default function StudentDashboard() {
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
+  const [monthlyDueDate, setMonthlyDueDate] = useState<Date | null>(null);
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
+  const today = new Date();
+  const daysUntilDue = monthlyDueDate ? differenceInDays(monthlyDueDate, today) : 0;
 
   const loadAttendanceRecords = useCallback(async () => {
     if (!user?.uid) return
@@ -209,14 +213,20 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth]);
 
+  const calculateMonthlyDueDate = useCallback(() => {
+    const dueDate = endOfMonth(currentMonth);
+    setMonthlyDueDate(dueDate);
+  }, [currentMonth]);
+
   // Load initial data when user or month changes
   useEffect(() => {
     if (user?.uid) {
       loadAttendanceRecords()
       loadFeeSummary()
       loadTotalDue()
+      calculateMonthlyDueDate();
     }
-  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
+  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue, calculateMonthlyDueDate])
 
   // Real-time listener for user document (fees, payment status, etc.)
   useEffect(() => {
@@ -474,6 +484,10 @@ export default function StudentDashboard() {
               {lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
             </span>
           </div>
+          {/* Due Date Reminder Banner */}
+          {monthlyDueDate && paymentStatus !== 'paid' && (
+            <DueDateBanner dueDate={monthlyDueDate} daysUntilDue={daysUntilDue} paymentStatus={paymentStatus} />
+          )}
           {/* Account Settings Card for Google Link */}
           {!isGoogleLinked && (
             <Card className="mb-8">
