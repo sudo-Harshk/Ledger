@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { useAuth } from '../hooks/useAuth'
@@ -47,7 +47,6 @@ export default function StudentDashboard() {
   const isFirstLoad = useRef(true)
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
-  const [hasMarkedAttendanceToday, setHasMarkedAttendanceToday] = useState(false);
   const [totalDueAmount, setTotalDueAmount] = useState(0)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
   const [paymentDate, setPaymentDate] = useState<Date | null>(null)
@@ -89,7 +88,6 @@ export default function StudentDashboard() {
       
       setAttendanceRecords(records)
       // Check if attendance is already marked for today
-      setHasMarkedAttendanceToday(records.some(record => record.date === formatLocalDate(new Date())));
     } catch (error) {
       debouncedToast('Failed to load attendance records. Please refresh the page and try again.', 'error')
     } finally {
@@ -282,7 +280,6 @@ export default function StudentDashboard() {
         });
       });
       setAttendanceRecords(records);
-      setHasMarkedAttendanceToday(records.some(record => record.date === formatLocalDate(new Date())));
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
@@ -369,52 +366,54 @@ export default function StudentDashboard() {
     }
   }
 
-  const getDaysInMonth = () => {
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const firstDayOfMonth = new Date(year, month, 1).getDay()
-    
-    const days = []
-    
-    // Add empty cells for days before the first day of the month
+  // Memoize days array for calendar
+  const daysInMonth = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const days = [];
     for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(null)
+      days.push(null);
     }
-    
-    // Add days of the month
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push(i)
+      days.push(i);
     }
-    
-    return days
-  }
+    return days;
+  }, [currentMonth]);
 
-  const getAttendanceStatus = (day: number | null) => {
-    if (!day) return null
-    
-    const dateStr = formatLocalDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day))
-    const record = attendanceRecords.find(r => r.date === dateStr)
-    return record?.status || null
-  }
+  // Memoize hasMarkedAttendanceToday
+  const memoHasMarkedAttendanceToday = useMemo(() => {
+    return attendanceRecords.some(record => record.date === formatLocalDate(new Date()));
+  }, [attendanceRecords]);
 
-  const getStatusColor = (status: string) => {
+  // Memoize getAttendanceStatus
+  const getAttendanceStatus = useCallback((day: number | null) => {
+    if (!day) return null;
+    const dateStr = formatLocalDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
+    const record = attendanceRecords.find(r => r.date === dateStr);
+    return record?.status || null;
+  }, [attendanceRecords, currentMonth]);
+
+  // Memoize getStatusColor
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
-      case 'approved': return 'bg-green-500'
-      case 'pending': return 'bg-yellow-500'
-      case 'rejected': return 'bg-red-500'
-      case 'absent': return 'bg-red-400'
-      default: return 'bg-gray-200'
+      case 'approved': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'rejected': return 'bg-red-500';
+      case 'absent': return 'bg-red-400';
+      default: return 'bg-gray-200';
     }
-  }
+  }, []);
 
-  const changeMonth = (direction: 'prev' | 'next') => {
+  // Memoize changeMonth
+  const changeMonth = useCallback((direction: 'prev' | 'next') => {
     setCurrentMonth(prev => {
-      const newMonth = new Date(prev)
+      const newMonth = new Date(prev);
       if (direction === 'prev') {
-        newMonth.setMonth(prev.getMonth() - 1)
+        newMonth.setMonth(prev.getMonth() - 1);
       } else {
-        newMonth.setMonth(prev.getMonth() + 1)
+        newMonth.setMonth(prev.getMonth() + 1);
       }
       if (newMonth < PLATFORM_START) {
         setShouldShowPlatformStartToast(true);
@@ -422,7 +421,19 @@ export default function StudentDashboard() {
       }
       return newMonth;
     });
-  };
+  }, [PLATFORM_START]);
+
+  // Memoize handleRefresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadAttendanceRecords();
+      await loadFeeSummary();
+      await loadTotalDue();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadAttendanceRecords, loadFeeSummary, loadTotalDue]);
 
   useEffect(() => {
     if (shouldShowPlatformStartToast) {
@@ -437,18 +448,6 @@ export default function StudentDashboard() {
     const daySeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
     const index = daySeed % approvedDaysEmojis.length;
     return approvedDaysEmojis[index];
-  };
-
-  // Handler for refresh button
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await loadAttendanceRecords();
-      await loadFeeSummary();
-      await loadTotalDue();
-    } finally {
-      setRefreshing(false);
-    }
   };
 
   // Emoji list for Approved Days card
@@ -518,12 +517,12 @@ export default function StudentDashboard() {
             <CardContent>
               <Button 
                 onClick={markAttendance}
-                disabled={loading || hasMarkedAttendanceToday || !isCurrentMonth}
-                className={`w-full ${hasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
+                disabled={loading || memoHasMarkedAttendanceToday || !isCurrentMonth}
+                className={`w-full ${memoHasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
               >
                 {loading
                   ? 'Marking...'
-                  : hasMarkedAttendanceToday
+                  : memoHasMarkedAttendanceToday
                     ? 'Marked Today'
                     : isPastMonth
                       ? 'Disabled for Past months'
@@ -673,7 +672,7 @@ export default function StudentDashboard() {
                         {day}
                       </div>
                     ))}
-                    {getDaysInMonth().map((day, index) => {
+                    {daysInMonth.map((day, index) => {
                       const status = getAttendanceStatus(day)
                       return (
                         <div
