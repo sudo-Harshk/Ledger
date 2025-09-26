@@ -1,18 +1,25 @@
 
 import { Button } from './ui/button'
 import { useAuth } from '../hooks/useAuth'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { Typewriter } from 'react-simple-typewriter'
 
 interface NavigationProps {
-  title: string
   onRefresh?: () => void
   refreshing?: boolean
 }
 
-export default function Navigation({ title, onRefresh, refreshing }: NavigationProps) {
+export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
   const { user, logout } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  // Add state to control cursor visibility
+  const [showCursor, setShowCursor] = useState(true);
+  useEffect(() => {
+    // Hide cursor after animation (words array has only one word, so after typing is done)
+    const timeout = setTimeout(() => setShowCursor(false), ((user?.displayName?.length || 4) * 80) + 1000);
+    return () => clearTimeout(timeout);
+  }, [user?.displayName]);
 
   const handleLogout = async () => {
     try {
@@ -34,10 +41,23 @@ export default function Navigation({ title, onRefresh, refreshing }: NavigationP
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="text-sm text-gray-600 hidden sm:block">
-              Welcome back, {user.displayName || 'User'}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back,{' '}
+              {/* Desktop only: typewriter effect */}
+              <span className="hidden sm:inline text-gray-900">
+                <Typewriter
+                  words={[user?.displayName || 'User']}
+                  loop={1}
+                  cursor={showCursor}
+                  cursorStyle="|"
+                  typeSpeed={80}
+                  deleteSpeed={50}
+                  delaySpeed={1000}
+                />
+              </span>
+              {/* Mobile only: plain text */}
+              <span className="inline sm:hidden text-gray-900">{user?.displayName || 'User'}</span>
+            </h1>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -87,7 +107,8 @@ export default function Navigation({ title, onRefresh, refreshing }: NavigationP
         {isMenuOpen && (
           <div className="md:hidden mt-3 border-t border-gray-200 pt-3">
             <p className="text-sm text-gray-600 mb-2">
-              Welcome back, {user.displayName || 'User'}
+              Welcome back,{' '}
+              <span className="text-gray-900">{user?.displayName || 'User'}</span>
             </p>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
