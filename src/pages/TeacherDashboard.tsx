@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -691,135 +691,35 @@ export default function TeacherDashboard() {
 
   // Confetti function removed for performance optimization
 
-  const changeMonth = (direction: 'prev' | 'next') => {
-    // Clear any existing timeout
-    if (monthChangeTimeoutRef.current) {
-      clearTimeout(monthChangeTimeoutRef.current)
-    }
-    
-    setCurrentMonth(prev => {
-      const newMonth = new Date(prev)
-      if (direction === 'prev') {
-        newMonth.setMonth(prev.getMonth() - 1)
-      } else {
-        newMonth.setMonth(prev.getMonth() + 1)
-      }
-      // If navigating before platform start, show toast and set to current month
-      if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
-        debouncedToast('Started using platform from August 2025', 'error')
-        loadExistingAttendance();
-        return new Date()
-      }
-      if (newMonth < PLATFORM_START) {
-        loadExistingAttendance();
-        return new Date()
-      }
-      loadExistingAttendance();
-      return newMonth
-    })
-    
-    // Clear toggled dates when changing months
-    // setToggledDates(new Set()) // Removed
-    setExistingAbsentAttendance(new Set())
-    
-    // Refresh existing attendance for the new month
-    // monthChangeTimeoutRef.current = setTimeout(() => loadExistingAttendance(), 100) // Removed
-  }
+  const toDateStr = useCallback((d: Date) => formatLocalDate(d), []);
 
-  // Calendar helpers for month grid and bulk selection
-  const getDaysInMonth = () => {
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    const firstDayOfMonth = new Date(year, month, 1).getDay()
-    const days: (number | null)[] = []
-    for (let i = 0; i < firstDayOfMonth; i++) days.push(null)
-    for (let i = 1; i <= daysInMonth; i++) days.push(i)
-    return days
-  }
-
-  const toDateStr = (d: Date) => formatLocalDate(d)
-
-  // Clear toggled dates when date range changes
-  // const clearToggledDates = () => { // Removed
-  //   setToggledDates(new Set())
-  // }
-
-  // Add back the setAllDatesInBulkRange function
-  // const setAllDatesInBulkRange = () => { // Removed
-  //   if (!bulkStartDate || !bulkEndDate) return;
-  //   setToggledDates(new Set()); // All dates will match the bulk status
-  // }
-
-  const handleCalendarDayClick = (day: number | null) => {
-    if (!day) return
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    const dateStr = toDateStr(date)
-
-    // If a range is selected, do nothing (disable toggling individual days)
-    if (bulkStartDate && bulkEndDate) {
-      return
-    }
-
-    // Original date range selection logic
-    if (!bulkStartDate) {
-      setBulkStartDate(dateStr)
-      setBulkEndDate('')
-      return
-    }
-    if (bulkStartDate && !bulkEndDate) {
-      if (new Date(dateStr) >= new Date(bulkStartDate)) {
-        setBulkEndDate(dateStr)
-        // Show toast if single date selected
-        if (dateStr === bulkStartDate) {
-          debouncedToast(`You selected ${new Date(dateStr).toLocaleDateString()} for attendance.`, 'success')
-        } else {
-          debouncedToast(`You selected ${new Date(bulkStartDate).toLocaleDateString()} to ${new Date(dateStr).toLocaleDateString()} for attendance.`, 'success')
-        }
-      } else {
-        setBulkStartDate(dateStr)
-        setBulkEndDate('')
-      }
-      return
-    }
-    // both set -> start new selection
-    setBulkStartDate(dateStr)
-    setBulkEndDate('')
-  }
-
-  const isSelected = (dateStr: string) => bulkStartDate === dateStr || bulkEndDate === dateStr
-  const isInRange = (dateStr: string) => {
+  const isSelected = useCallback((dateStr: string) => bulkStartDate === dateStr || bulkEndDate === dateStr, [bulkStartDate, bulkEndDate]);
+  const isInRange = useCallback((dateStr: string) => {
     if (!bulkStartDate || !bulkEndDate) return false
     const d = new Date(dateStr).getTime()
     const s = new Date(bulkStartDate).getTime()
     const e = new Date(bulkEndDate).getTime()
     return d >= s && d <= e
-  }
+  }, [bulkStartDate, bulkEndDate]);
 
-  const getCellClasses = (day: number | null) => {
-    if (!day) return 'bg-white'
-    // const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
-    const selected = isSelected(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
-    const inRange = isInRange(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
-    const hasPresentAttendance = existingAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
-    const hasAbsentAttendance = existingAbsentAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '')
-    // const isToggled = toggledDates.has(dateStr) // Removed
-    
-    if (selected) return 'bg-blue-600 text-white'
+  const getCellClasses = useCallback((day: number | null): string => {
+    if (!day) return 'bg-white';
+    const selected = isSelected(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    const inRange = isInRange(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    const hasPresentAttendance = existingAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    const hasAbsentAttendance = existingAbsentAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    if (selected) return 'bg-blue-600 text-white';
     if (inRange) {
-      // Dates in range show as the defaultAttendanceStatus
-      return defaultAttendanceStatus === 'present' ? 'bg-blue-100 text-blue-800' : 'bg-red-50 text-red-700'
+      return defaultAttendanceStatus === 'present' ? 'bg-blue-100 text-blue-800' : 'bg-red-50 text-red-700';
     }
     if (hasPresentAttendance) {
-      // Present attendance shows as green
-      return 'bg-green-100 text-green-800 border-green-300'
+      return 'bg-green-100 text-green-800 border-green-300';
     }
     if (hasAbsentAttendance) {
-      // Absent attendance shows as light red
-      return 'bg-red-50 text-red-700 border-red-200'
+      return 'bg-red-50 text-red-700 border-red-200';
     }
-    return 'bg-gray-50'
-  }
+    return 'bg-gray-50';
+  }, [currentMonth, existingAttendance, existingAbsentAttendance, defaultAttendanceStatus, isSelected, isInRange, toDateStr]);
 
   // Removed unused helpers to satisfy TypeScript build
 
@@ -861,9 +761,9 @@ export default function TeacherDashboard() {
   }
 
   // Utility to get month key in 'YYYY-MM' format
-  const getMonthKey = (date: Date) => {
+  const getMonthKey = useCallback((date: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-  };
+  }, []);
 
   // Handler for marking a student's due as paid
   const handleMarkAsPaid = async (studentId: string, monthKey: string) => {
@@ -906,7 +806,73 @@ export default function TeacherDashboard() {
   const providerData = user?.providerData || [];
   const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
 
-  const handleRefresh = async () => {
+  const daysInMonth = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const days = [];
+    for (let i = 0; i < firstDayOfMonth; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(i);
+    return days;
+  }, [currentMonth]);
+
+  const changeMonth = useCallback((direction: 'prev' | 'next') => {
+    if (monthChangeTimeoutRef.current) {
+      clearTimeout(monthChangeTimeoutRef.current);
+    }
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      if (direction === 'prev') {
+        newMonth.setMonth(prev.getMonth() - 1);
+      } else {
+        newMonth.setMonth(prev.getMonth() + 1);
+      }
+      if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
+        debouncedToast('Started using platform from August 2025', 'error');
+        loadExistingAttendance();
+        return new Date();
+      }
+      if (newMonth < PLATFORM_START) {
+        loadExistingAttendance();
+        return new Date();
+      }
+      loadExistingAttendance();
+      return newMonth;
+    });
+    setExistingAbsentAttendance(new Set());
+  }, [PLATFORM_START, loadExistingAttendance]);
+
+  // Implement handleCalendarDayClick for calendar day selection
+  const handleCalendarDayClick = useCallback((day: number | null) => {
+    if (!day) return;
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const dateStr = toDateStr(date);
+    if (bulkStartDate && bulkEndDate) return;
+    if (!bulkStartDate) {
+      setBulkStartDate(dateStr);
+      setBulkEndDate('');
+      return;
+    }
+    if (bulkStartDate && !bulkEndDate) {
+      if (new Date(dateStr) >= new Date(bulkStartDate)) {
+        setBulkEndDate(dateStr);
+        if (dateStr === bulkStartDate) {
+          debouncedToast(`You selected ${new Date(dateStr).toLocaleDateString()} for attendance.`, 'success');
+        } else {
+          debouncedToast(`You selected ${new Date(bulkStartDate).toLocaleDateString()} to ${new Date(dateStr).toLocaleDateString()} for attendance.`, 'success');
+        }
+      } else {
+        setBulkStartDate(dateStr);
+        setBulkEndDate('');
+      }
+      return;
+    }
+    setBulkStartDate(dateStr);
+    setBulkEndDate('');
+  }, [bulkStartDate, bulkEndDate, currentMonth, toDateStr]);
+
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await Promise.all([
@@ -921,7 +887,7 @@ export default function TeacherDashboard() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup, loadExistingAttendance]);
 
   return (
     <div className="min-h-screen bg-[#FDF6F0]">
@@ -1433,7 +1399,7 @@ export default function TeacherDashboard() {
                     </div>
                   ) : (
                   <>
-                    {getDaysInMonth().map((day, idx) => {
+                    {daysInMonth.map((day, idx) => {
                       const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
                       const selected = day && isSelected(dateStr)
                       const hasPresentAttendance = day && existingAttendance.has(dateStr)
