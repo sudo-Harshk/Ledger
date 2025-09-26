@@ -1,4 +1,3 @@
-
 import { Button } from './ui/button'
 import { useAuth } from '../hooks/useAuth'
 import { useEffect, useState } from 'react'
@@ -44,15 +43,15 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
             <h1 className="text-2xl font-bold text-gray-900">
               Welcome back,{' '}
               {/* Desktop only: typewriter effect */}
-              <span className="hidden sm:inline text-gray-900">
+              <span className="hidden sm:inline text-[#F87171]">
                 <Typewriter
                   words={[user?.displayName || 'User']}
                   loop={1}
                   cursor={showCursor}
                   cursorStyle="|"
-                  typeSpeed={80}
-                  deleteSpeed={50}
-                  delaySpeed={1000}
+                  typeSpeed={160} // slower typing
+                  deleteSpeed={80}
+                  delaySpeed={2000} // longer pause after typing
                 />
               </span>
               {/* Mobile only: plain text */}
