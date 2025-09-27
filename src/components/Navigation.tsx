@@ -105,10 +105,6 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
         </div>
         {isMenuOpen && (
           <div className="md:hidden mt-3 border-t border-gray-200 pt-3">
-            <p className="text-sm text-gray-600 mb-2">
-              Welcome back,{' '}
-              <span className="text-gray-900">{user?.displayName || 'User'}</span>
-            </p>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
                 Role: <span className="font-medium capitalize">{user.role}</span>
