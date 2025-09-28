@@ -86,7 +86,7 @@ export default function LoginPage() {
       {/* Redesigned Header to match landing page */}
       <header className="flex items-center justify-between px-8 py-6 border-b border-[#F9C5D1] bg-[#FDF6F0]">
         <div className="flex items-center gap-2">
-          <div className="border-2 border-[#F87171] rounded-md px-2 py-1 text-[#F87171] font-bold text-lg tracking-widest">LEDGER</div>
+          <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B" }}>Ledger</div>
         </div>
         <nav className="flex gap-8 text-gray-700 font-medium text-lg">
           <button
