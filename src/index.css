@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'Qasira';
+  src: url('./assets/fonts/qasira-webfont.woff2') format('woff2'),
+       url('./assets/fonts/qasira-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Adelia';
+  src: url('./assets/fonts/adelia-webfont.woff2') format('woff2'),
+       url('./assets/fonts/adelia-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geek';
+  src: url('./assets/fonts/geek-webfont.woff2') format('woff2'),
+       url('./assets/fonts/geek-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Blackflag';
+  src: url('./assets/fonts/blackflag-webfont.woff2') format('woff2'),
+       url('./assets/fonts/blackflag-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* Custom Japanese-inspired palette for Ledger */
