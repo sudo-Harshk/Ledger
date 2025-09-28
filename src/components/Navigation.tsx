@@ -1,6 +1,6 @@
 import { Button } from './ui/button'
 import { useAuth } from '../hooks/useAuth'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 interface NavigationProps {
@@ -10,12 +10,9 @@ interface NavigationProps {
 
 export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
   const { user, logout } = useAuth()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  // Add state to control cursor visibility
-  const [showCursor, setShowCursor] = useState(true);
   useEffect(() => {
     // Hide cursor after animation (words array has only one word, so after typing is done)
-    const timeout = setTimeout(() => setShowCursor(false), ((user?.displayName?.length || 4) * 80) + 1000);
+    const timeout = setTimeout(() => {}, ((user?.displayName?.length || 4) * 80) + 1000);
     return () => clearTimeout(timeout);
   }, [user?.displayName]);
 
@@ -79,23 +76,23 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
             </div>
           </div>
         </div>
-        {isMenuOpen && (
-          <div className="md:hidden mt-3 border-t border-gray-200 pt-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
-                Role: <span className="font-medium capitalize">{user.role}</span>
-              </span>
-              <Button 
-                onClick={handleLogout}
-                variant="outline"
-                size="sm"
-                className="w-auto"
-              >
-                Logout
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Removed: isMenuOpen && ( */}
+          {/* <div className="md:hidden mt-3 border-t border-gray-200 pt-3"> */}
+            {/* <div className="flex items-center justify-between"> */}
+              {/* <span className="text-sm text-gray-600"> */}
+                {/* Role: <span className="font-medium capitalize">{user.role}</span> */}
+              {/* </span> */}
+              {/* <Button  */}
+                {/* onClick={handleLogout} */}
+                {/* variant="outline" */}
+                {/* size="sm" */}
+                {/* className="w-auto" */}
+              {/* > */}
+                {/* Logout */}
+              {/* </Button> */}
+            {/* </div> */}
+          {/* </div> */}
+        {/* ) */}
     </nav>
   )
 }

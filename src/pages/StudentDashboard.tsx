@@ -473,7 +473,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {showConfetti && <Confetti trigger={confettiTrigger} />}
-      <Navigation title="Student Dashboard" onRefresh={handleRefresh} refreshing={refreshing} />
+      <Navigation onRefresh={handleRefresh} refreshing={refreshing} />
       <div className="p-6">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Updated X ago info */}
