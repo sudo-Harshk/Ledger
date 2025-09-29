@@ -42,9 +42,6 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
           <div className="flex items-center gap-8">
             {/* Removed welcome message for cleaner navbar */}
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Role: <span className="font-medium capitalize">{user.role}</span>
-              </span>
               <Button 
                 onClick={handleLogout}
                 variant="outline"
