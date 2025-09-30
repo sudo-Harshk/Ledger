@@ -115,6 +115,16 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Info Banner: Only teacher-created users can access */}
+            <div className="mb-4">
+              <div className="rounded-xl border border-[#F9C5D1] bg-[#FDF6F0] text-[#F87171] flex items-center gap-3 px-5 py-4 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#F87171] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-base">In-house Platform</span>
+                  <span className="text-sm mt-0.5 text-black">Only users created by teachers can access Ledger. New users cannot self-register.</span>
+                </div>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md flex items-center gap-2 animate-fade-in">

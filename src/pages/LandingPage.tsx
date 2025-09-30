@@ -209,6 +209,23 @@ const LandingPage: React.FC = () => {
               >
                 Ledger App transforms attendance into a smooth, satisfying experience—no more admin headaches, just classroom harmony.
               </motion.p>
+              {/* Info Banner: Only teacher-created users can access */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18, duration: 0.3, type: 'spring', stiffness: 60 }}
+                className="w-full"
+              >
+                <div className="max-w-xl">
+                  <div className="rounded-xl border border-[#F9C5D1] bg-[#FDF6F0] text-[#F87171] flex items-center gap-3 px-5 py-4 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#F87171] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-base">In-house Platform</span>
+                      <span className="text-sm mt-0.5 text-black">Only users created by teachers can access Ledger. New users cannot self-register.</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
               <motion.button
                 className="bg-[#F87171] hover:bg-[#ef4444] text-white font-semibold py-3 px-8 rounded shadow transition-all text-lg mb-2"
                 onClick={() => navigate('/login')}
