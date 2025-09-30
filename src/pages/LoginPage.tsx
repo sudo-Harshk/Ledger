@@ -109,7 +109,7 @@ export default function LoginPage() {
         </div>
         <Card className="w-full max-w-md border-2 border-[#F87171] bg-white/90 backdrop-blur-md relative z-10">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Ledger</CardTitle>
+            <CardTitle className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B", textShadow: '0 1px 4px rgba(40,40,43,0.04)' }}>Ledger</CardTitle>
             <CardDescription>
               Sign in to your account
             </CardDescription>
