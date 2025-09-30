@@ -37,7 +37,11 @@ const DueDateBanner: React.FC<DueDateBannerProps> = ({ dueDate, daysUntilDue, pa
               ) : (
                 <span>
                   Your monthly fee is due on <span className="font-bold">{formattedDueDate}</span>.<br />
-                  You have <span className="font-bold">{daysUntilDue}</span> days remaining to make the payment.
+                  {daysUntilDue === 0 ? (
+                    <span className="font-bold text-[#F87171]">Today is the last day to make the payment.</span>
+                  ) : (
+                    <>You have <span className="font-bold">{daysUntilDue}</span> days remaining to make the payment.</>
+                  )}
                 </span>
               )}
             </CardDescription>
