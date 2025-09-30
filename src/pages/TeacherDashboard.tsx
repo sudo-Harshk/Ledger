@@ -6,7 +6,7 @@ import { Label } from '../components/ui/label'
 import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db, auth } from '../firebase'
-import { formatLocalDate, formatDateDDMMYYYY } from '../lib/utils'
+import { formatLocalDate, formatDateDDMMYYYY, dispatchAttendanceUpdatedEvent } from '../lib/utils'
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, setDoc, deleteDoc } from 'firebase/firestore'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
@@ -658,6 +658,7 @@ export default function TeacherDashboard() {
       setExistingAbsentAttendance(new Set())
       await new Promise(resolve => setTimeout(resolve, 300)) // Increased delay for better Firebase sync
       await loadExistingAttendance()
+      dispatchAttendanceUpdatedEvent();
     } catch (error) {
       console.error('Error adding bulk attendance:', error)
       debouncedToast('Failed to add bulk attendance', 'error')
@@ -679,6 +680,7 @@ export default function TeacherDashboard() {
       await loadPendingRequests()
       await loadStudentFees()
       await loadMonthlyRevenue()
+      dispatchAttendanceUpdatedEvent();
       debouncedToast(`Attendance ${status} successfully!`, 'success')
     } catch (error) {
       console.error('Error updating attendance:', error)
@@ -888,6 +890,12 @@ export default function TeacherDashboard() {
       setRefreshing(false);
     }
   }, [loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup, loadExistingAttendance]);
+
+  useEffect(() => {
+    const handler = () => loadExistingAttendance();
+    window.addEventListener('attendance-updated', handler);
+    return () => window.removeEventListener('attendance-updated', handler);
+  }, [loadExistingAttendance]);
 
   return (
     <div className="min-h-screen bg-[#FDF6F0]">

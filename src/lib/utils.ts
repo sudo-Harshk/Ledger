@@ -21,3 +21,9 @@ export function formatDateDDMMYYYY(date: Date): string {
   const year = date.getFullYear()
   return `${day}-${month}-${year}`
 }
+
+export function dispatchAttendanceUpdatedEvent() {
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('attendance-updated'));
+  }
+}

@@ -16,6 +16,7 @@ import { formatDistanceToNow, endOfMonth, differenceInDays } from 'date-fns'
 import PaidBadge from '../components/PaidBadge';
 import { CheckCircle } from 'lucide-react';
 import DueDateBanner from '../components/DueDateBanner';
+import { dispatchAttendanceUpdatedEvent } from '../lib/utils';
 
 interface AttendanceRecord {
   date: string
@@ -357,6 +358,7 @@ export default function StudentDashboard() {
       await loadAttendanceRecords()
       await loadFeeSummary()
       await loadTotalDue()
+      dispatchAttendanceUpdatedEvent();
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
       debouncedToast('Failed to mark attendance', 'error')
