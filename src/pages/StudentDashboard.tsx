@@ -1,61 +1,176 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { useAuth } from '../hooks/useAuth'
-import Navigation from '../components/Navigation'
-import { db } from '../firebase'
-import { formatLocalDate } from '../lib/utils'
-import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
-import { Confetti } from '../components/Confetti'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { useAuth } from '../hooks/useAuth';
+import Navigation from '../components/Navigation';
+import { db } from '../firebase';
+import { formatLocalDate } from '../lib/utils';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { Confetti } from '../components/Confetti';
 import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
 import { debouncedToast } from '../lib/debouncedToast';
 import Footer from '../components/Footer';
-import { Link as LinkIcon } from 'lucide-react'
-import { linkGoogleAccount } from '../lib/linkGoogleAccount'
-import { formatDistanceToNow, endOfMonth, differenceInDays } from 'date-fns'
+import { Link as LinkIcon } from 'lucide-react';
+import { linkGoogleAccount } from '../lib/linkGoogleAccount';
+import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import PaidBadge from '../components/PaidBadge';
 import { CheckCircle } from 'lucide-react';
 import DueDateBanner from '../components/DueDateBanner';
 import { dispatchAttendanceUpdatedEvent } from '../lib/utils';
 
+// --- Types ---
 interface AttendanceRecord {
-  date: string
-  status: 'pending' | 'approved' | 'rejected' | 'absent'
-  timestamp: Date
+  date: string;
+  status: 'pending' | 'approved' | 'rejected' | 'absent';
+  timestamp: Date;
 }
 
 interface FeeSummary {
-  totalDays: number
-  absentDays: number
-  monthlyFee: number
-  totalAmount: number
+  totalDays: number;
+  absentDays: number;
+  monthlyFee: number;
+  totalAmount: number;
 }
 
+// --- Extracted Card Components ---
+type ApprovedDaysCardProps = {
+  feeSummaryLoading: boolean;
+  feeSummary: FeeSummary;
+  getTodayEmoji: () => { name: string; emoji: string; webp: string; alt: string };
+};
+const ApprovedDaysCard: React.FC<ApprovedDaysCardProps> = React.memo(({ feeSummaryLoading, feeSummary, getTodayEmoji }) => (
+  <Card className="md:col-span-2 transition-all duration-200">
+    <CardHeader>
+      <CardTitle className="text-lg">Approved Days</CardTitle>
+      <CardDescription>This month's approved attendance</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {feeSummaryLoading ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-pulse rounded bg-gray-200 h-8 w-24 mr-4" />
+          <div className="animate-pulse rounded bg-gray-200 h-8 w-8" />
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-end gap-2">
+              <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
+              <span className="text-base text-muted-foreground mb-1">
+                {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
+              </span>
+            </div>
+            {(() => {
+              const emoji = getTodayEmoji();
+              return (
+                <img
+                  key={emoji.name}
+                  src={emoji.webp}
+                  alt={emoji.alt}
+                  title={emoji.name}
+                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
+                  loading="lazy"
+                />
+              );
+            })()}
+          </div>
+        </>
+      )}
+    </CardContent>
+  </Card>
+));
+
+type DailyRateCardProps = {
+  feeSummaryLoading: boolean;
+  feeSummary: FeeSummary;
+  currentMonth: Date;
+};
+const DailyRateCard: React.FC<DailyRateCardProps> = React.memo(({ feeSummaryLoading, feeSummary, currentMonth }) => (
+  <Card className="md:col-span-1 transition-all duration-200">
+    <CardHeader>
+      <CardTitle className="text-sm">Daily Rate</CardTitle>
+      <CardDescription className="text-xs">Per day</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {feeSummaryLoading ? (
+        <div className="animate-pulse rounded bg-gray-200 h-8 w-24" />
+      ) : feeSummary.monthlyFee > 0 ? (
+        <p className="text-2xl font-bold text-purple-600">
+          ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">No fee</p>
+      )}
+    </CardContent>
+  </Card>
+));
+
+type TotalDueCardProps = {
+  feeSummaryLoading: boolean;
+  feeSummary: FeeSummary;
+  totalDueAmount: number;
+  paymentStatus: string | null;
+  paymentDate: Date | null;
+};
+const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoading, feeSummary, totalDueAmount, paymentStatus, paymentDate }) => (
+  <Card className="md:col-span-1 transition-all duration-200">
+    <CardHeader>
+      <div className="flex items-center justify-between w-full">
+        <CardTitle className="text-sm">Total Due</CardTitle>
+        {paymentStatus === 'paid' && <PaidBadge paymentDate={paymentDate} />}
+      </div>
+      <CardDescription className="text-xs">Amount</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {feeSummaryLoading ? (
+        <div className="animate-pulse rounded bg-gray-200 h-8 w-24" />
+      ) : feeSummary.monthlyFee > 0 ? (
+        <div className="flex items-center justify-between w-full">
+          <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
+          {paymentStatus === 'paid' && (
+            <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No fee</p>
+      )}
+    </CardContent>
+  </Card>
+));
+
+// --- Main Dashboard ---
+
 export default function StudentDashboard() {
-  const { user } = useAuth()
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
+  const { user } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [feeSummary, setFeeSummary] = useState<FeeSummary>({
     totalDays: 0,
     absentDays: 0,
     monthlyFee: 0,
     totalAmount: 0
-  })
-  const [loading, setLoading] = useState(false)
-  const [attendanceLoading, setAttendanceLoading] = useState(false)
-  const [feeSummaryLoading, setFeeSummaryLoading] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const isFirstLoad = useRef(true)
+  });
+  const [loading, setLoading] = useState(false);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [feeSummaryLoading, setFeeSummaryLoading] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const isFirstLoad = useRef(true);
   const prevTodayStatus = useRef<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState<number>(0);
-  const [totalDueAmount, setTotalDueAmount] = useState(0)
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
-  const [paymentDate, setPaymentDate] = useState<Date | null>(null)
-  const [previousMonthPaymentStatus, setPreviousMonthPaymentStatus] = useState<string | null>(null)
+  const [totalDueAmount, setTotalDueAmount] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
+  const [paymentDate, setPaymentDate] = useState<Date | null>(null);
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
-  const [monthlyDueDate, setMonthlyDueDate] = useState<Date | null>(null);
+  const [monthlyDueDate] = useState<Date | null>(null);
+
+  // Memoized providerData and month checks
+  const providerData = useMemo(() => user?.providerData || [], [user]);
+  const isGoogleLinked = useMemo(() => providerData.some((provider: any) => provider.providerId === 'google.com'), [providerData]);
+  const now = useMemo(() => new Date(), []);
+  const isCurrentMonth = useMemo(() => currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear(), [currentMonth, now]);
+  const isPastMonth = useMemo(() => currentMonth.getFullYear() < now.getFullYear() || (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() < now.getMonth()), [currentMonth, now]);
+  const isFutureMonth = useMemo(() => currentMonth.getFullYear() > now.getFullYear() || (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() > now.getMonth()), [currentMonth, now]);
 
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
 
@@ -213,44 +328,14 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth]);
 
-  const loadPreviousMonthPaymentStatus = useCallback(async () => {
-    if (!user?.uid) return;
-    try {
-      const previousMonth = new Date(currentMonth);
-      previousMonth.setMonth(currentMonth.getMonth() - 1);
-      const previousMonthKey = getMonthKey(previousMonth);
-      
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const raw = userDoc.data().totalDueByMonth || {};
-        let previousStatus: string | null = null;
-        
-        if (typeof raw[previousMonthKey] === 'object' && raw[previousMonthKey] !== null) {
-          previousStatus = raw[previousMonthKey].status || null;
-        }
-        
-        setPreviousMonthPaymentStatus(previousStatus);
-      }
-    } catch (error) {
-      console.error('Error loading previous month payment status:', error);
-    }
-  }, [user?.uid, currentMonth]);
-
-  const calculateMonthlyDueDate = useCallback(() => {
-    const dueDate = endOfMonth(currentMonth);
-    setMonthlyDueDate(dueDate);
-  }, [currentMonth]);
-
   // Load initial data when user or month changes
   useEffect(() => {
     if (user?.uid) {
       loadAttendanceRecords()
       loadFeeSummary()
       loadTotalDue()
-      loadPreviousMonthPaymentStatus()
-      calculateMonthlyDueDate();
     }
-  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue, loadPreviousMonthPaymentStatus, calculateMonthlyDueDate])
+  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
   // Real-time listener for user document (fees, payment status, etc.)
   useEffect(() => {
@@ -277,16 +362,6 @@ export default function StudentDashboard() {
         setTotalDueAmount(due);
         setPaymentStatus(status);
         setPaymentDate(paidDate);
-        
-        // Update previous month payment status
-        const previousMonth = new Date(currentMonth);
-        previousMonth.setMonth(currentMonth.getMonth() - 1);
-        const previousMonthKey = getMonthKey(previousMonth);
-        let previousStatus = null;
-        if (typeof raw[previousMonthKey] === 'object' && raw[previousMonthKey] !== null) {
-          previousStatus = raw[previousMonthKey].status || null;
-        }
-        setPreviousMonthPaymentStatus(previousStatus);
         
         const lastUpdate = data.lastTotalDueUpdate;
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
@@ -468,11 +543,10 @@ export default function StudentDashboard() {
       await loadAttendanceRecords();
       await loadFeeSummary();
       await loadTotalDue();
-      await loadPreviousMonthPaymentStatus();
     } finally {
       setRefreshing(false);
     }
-  }, [loadAttendanceRecords, loadFeeSummary, loadTotalDue, loadPreviousMonthPaymentStatus]);
+  }, [loadAttendanceRecords, loadFeeSummary, loadTotalDue]);
 
   useEffect(() => {
     if (shouldShowPlatformStartToast) {
@@ -494,20 +568,6 @@ export default function StudentDashboard() {
   if (!user) {
     return null
   }
-
-  const providerData = user?.providerData || [];
-  const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
-
-  const now = new Date();
-  const isCurrentMonth =
-    currentMonth.getMonth() === now.getMonth() &&
-    currentMonth.getFullYear() === now.getFullYear();
-  const isPastMonth =
-    currentMonth.getFullYear() < now.getFullYear() ||
-    (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() < now.getMonth());
-  const isFutureMonth =
-    currentMonth.getFullYear() > now.getFullYear() ||
-    (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() > now.getMonth());
 
   return (
     <div className="min-h-screen bg-background">
@@ -579,94 +639,14 @@ export default function StudentDashboard() {
           </Card>
 
           {/* Medium Approved Days Card */}
-          <Card className="md:col-span-2 transition-all duration-200">
-            <CardHeader>
-              <CardTitle className="text-lg">Approved Days</CardTitle>
-              <CardDescription>This month's approved attendance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {feeSummaryLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                  <span className="ml-2 text-sm text-gray-600">Loading...</span>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-end gap-2">
-                      <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
-                      <span className="text-base text-muted-foreground mb-1">
-                        {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
-                      </span>
-                    </div>
-                    {(() => {
-                      const emoji = getTodayEmoji();
-                      return (
-                        <img
-                          key={emoji.name}
-                          src={emoji.webp}
-                          alt={emoji.alt}
-                          title={emoji.name}
-                          className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
-                          loading="lazy"
-                        />
-                      );
-                    })()}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
+          <ApprovedDaysCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} getTodayEmoji={getTodayEmoji} />
 
 
           {/* Small Daily Rate Card */}
-          <Card className="md:col-span-1 transition-all duration-200">
-            <CardHeader>
-              <CardTitle className="text-sm">Daily Rate</CardTitle>
-              <CardDescription className="text-xs">Per day</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {feeSummaryLoading ? (
-                <div className="flex items-center justify-center py-2">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                </div>
-              ) : feeSummary.monthlyFee > 0 ? (
-                <p className="text-2xl font-bold text-purple-600">
-                  ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">No fee</p>
-              )}
-            </CardContent>
-          </Card>
+          <DailyRateCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} currentMonth={currentMonth} />
 
           {/* Small Total Due Card */}
-          <Card className="md:col-span-1 transition-all duration-200">
-            <CardHeader>
-              <div className="flex items-center justify-between w-full">
-                <CardTitle className="text-sm">Total Due</CardTitle>
-                {paymentStatus === 'paid' && <PaidBadge paymentDate={paymentDate} />}
-              </div>
-              <CardDescription className="text-xs">Amount</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {feeSummaryLoading ? (
-                <div className="flex items-center justify-center py-2">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                </div>
-              ) : feeSummary.monthlyFee > 0 ? (
-                <div className="flex items-center justify-between w-full">
-                  <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
-                  {paymentStatus === 'paid' && (
-                    <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No fee</p>
-              )}
-            </CardContent>
-          </Card>
+          <TotalDueCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} totalDueAmount={totalDueAmount} paymentStatus={paymentStatus} paymentDate={paymentDate} />
         </div>
 
         {/* Calendar - hidden on mobile, visible on sm+ */}
