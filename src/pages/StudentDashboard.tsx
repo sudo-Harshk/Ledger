@@ -51,6 +51,7 @@ export default function StudentDashboard() {
   const [totalDueAmount, setTotalDueAmount] = useState(0)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
   const [paymentDate, setPaymentDate] = useState<Date | null>(null)
+  const [previousMonthPaymentStatus, setPreviousMonthPaymentStatus] = useState<string | null>(null)
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
@@ -212,6 +213,29 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth]);
 
+  const loadPreviousMonthPaymentStatus = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      const previousMonth = new Date(currentMonth);
+      previousMonth.setMonth(currentMonth.getMonth() - 1);
+      const previousMonthKey = getMonthKey(previousMonth);
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const raw = userDoc.data().totalDueByMonth || {};
+        let previousStatus: string | null = null;
+        
+        if (typeof raw[previousMonthKey] === 'object' && raw[previousMonthKey] !== null) {
+          previousStatus = raw[previousMonthKey].status || null;
+        }
+        
+        setPreviousMonthPaymentStatus(previousStatus);
+      }
+    } catch (error) {
+      console.error('Error loading previous month payment status:', error);
+    }
+  }, [user?.uid, currentMonth]);
+
   const calculateMonthlyDueDate = useCallback(() => {
     const dueDate = endOfMonth(currentMonth);
     setMonthlyDueDate(dueDate);
@@ -223,9 +247,10 @@ export default function StudentDashboard() {
       loadAttendanceRecords()
       loadFeeSummary()
       loadTotalDue()
+      loadPreviousMonthPaymentStatus()
       calculateMonthlyDueDate();
     }
-  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue, calculateMonthlyDueDate])
+  }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue, loadPreviousMonthPaymentStatus, calculateMonthlyDueDate])
 
   // Real-time listener for user document (fees, payment status, etc.)
   useEffect(() => {
@@ -252,6 +277,17 @@ export default function StudentDashboard() {
         setTotalDueAmount(due);
         setPaymentStatus(status);
         setPaymentDate(paidDate);
+        
+        // Update previous month payment status
+        const previousMonth = new Date(currentMonth);
+        previousMonth.setMonth(currentMonth.getMonth() - 1);
+        const previousMonthKey = getMonthKey(previousMonth);
+        let previousStatus = null;
+        if (typeof raw[previousMonthKey] === 'object' && raw[previousMonthKey] !== null) {
+          previousStatus = raw[previousMonthKey].status || null;
+        }
+        setPreviousMonthPaymentStatus(previousStatus);
+        
         const lastUpdate = data.lastTotalDueUpdate;
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
@@ -432,10 +468,11 @@ export default function StudentDashboard() {
       await loadAttendanceRecords();
       await loadFeeSummary();
       await loadTotalDue();
+      await loadPreviousMonthPaymentStatus();
     } finally {
       setRefreshing(false);
     }
-  }, [loadAttendanceRecords, loadFeeSummary, loadTotalDue]);
+  }, [loadAttendanceRecords, loadFeeSummary, loadTotalDue, loadPreviousMonthPaymentStatus]);
 
   useEffect(() => {
     if (shouldShowPlatformStartToast) {
@@ -486,8 +523,14 @@ export default function StudentDashboard() {
             </span>
           </div>
           {/* Due Date Reminder Banner */}
-          {monthlyDueDate && paymentStatus !== 'paid' && (
-            <DueDateBanner dueDate={monthlyDueDate} daysUntilDue={daysUntilDue} paymentStatus={paymentStatus} />
+          {monthlyDueDate && isCurrentMonth && daysUntilDue <= 5 && daysUntilDue >= 0 && paymentStatus !== 'paid' && (
+            <DueDateBanner 
+              dueDate={monthlyDueDate} 
+              daysUntilDue={daysUntilDue} 
+              paymentStatus={paymentStatus} 
+              currentMonth={currentMonth}
+              totalDueAmount={totalDueAmount}
+            />
           )}
           {/* Account Settings Card for Google Link */}
           {!isGoogleLinked && (

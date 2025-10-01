@@ -1,5 +1,5 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, differenceInDays, endOfMonth } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { CalendarIcon, AlertTriangle } from "lucide-react";
 
@@ -7,11 +7,37 @@ interface DueDateBannerProps {
   dueDate: Date;
   daysUntilDue: number;
   paymentStatus?: string | null;
+  previousMonthPaymentStatus?: string | null;
+  currentMonth: Date;
+  totalDueAmount?: number;
 }
 
-const DueDateBanner: React.FC<DueDateBannerProps> = ({ dueDate, daysUntilDue, paymentStatus }) => {
+const DueDateBanner: React.FC<DueDateBannerProps> = ({ 
+  dueDate, 
+  daysUntilDue, 
+  paymentStatus, 
+  previousMonthPaymentStatus,
+  currentMonth,
+  totalDueAmount = 0
+}) => {
+  const today = new Date();
+  const endOfCurrentMonth = endOfMonth(today);
+  const daysRemainingInMonth = differenceInDays(endOfCurrentMonth, today);
+
+  // Previous month logic
+  const previousMonth = new Date(currentMonth);
+  previousMonth.setMonth(currentMonth.getMonth() - 1);
+  const previousMonthEnd = endOfMonth(previousMonth);
+  const isPreviousMonthOverdue = previousMonthPaymentStatus !== 'paid' && differenceInDays(today, previousMonthEnd) > 0;
+
+  // Show banner if previous month is overdue, or if current month is in last 5 days and not paid
+  const shouldShowBanner = isPreviousMonthOverdue || (daysRemainingInMonth <= 5 && daysRemainingInMonth >= 0 && paymentStatus !== 'paid');
+  if (!shouldShowBanner) {
+    return null;
+  }
+
   const formattedDueDate = format(dueDate, 'EEEE, MMMM do, yyyy');
-  const isOverdue = daysUntilDue < 0 && paymentStatus !== 'paid';
+  const isOverdue = isPreviousMonthOverdue || daysUntilDue < 0;
 
   return (
     <Card className={`relative overflow-hidden w-full max-w-full ${isOverdue ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200' : 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-200'}`}>
@@ -29,10 +55,21 @@ const DueDateBanner: React.FC<DueDateBannerProps> = ({ dueDate, daysUntilDue, pa
           </CardHeader>
           <CardContent className="p-0">
             <CardDescription className="text-sm sm:text-base">
-              {isOverdue ? (
+              {isPreviousMonthOverdue ? (
+                <span>
+                  Your previous month's fee is overdue.<br />
+                  Please pay as soon as possible to avoid penalties.
+                  {totalDueAmount > 0 && (
+                    <><br />Amount due: <span className="font-bold">₹{totalDueAmount}</span></>
+                  )}
+                </span>
+              ) : isOverdue ? (
                 <span>
                   Your monthly fee was due on <span className="font-bold">{formattedDueDate}</span>.<br />
                   Please pay as soon as possible to avoid penalties.
+                  {totalDueAmount > 0 && (
+                    <><br />Amount due: <span className="font-bold">₹{totalDueAmount}</span></>
+                  )}
                 </span>
               ) : (
                 <span>
@@ -41,6 +78,9 @@ const DueDateBanner: React.FC<DueDateBannerProps> = ({ dueDate, daysUntilDue, pa
                     <span className="font-bold text-[#F87171]">Today is the last day to make the payment.</span>
                   ) : (
                     <>You have <span className="font-bold">{daysUntilDue}</span> days remaining to make the payment.</>
+                  )}
+                  {totalDueAmount > 0 && (
+                    <><br />Amount due: <span className="font-bold">₹{totalDueAmount}</span></>
                   )}
                 </span>
               )}
