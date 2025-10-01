@@ -32,6 +32,23 @@ interface FeeSummary {
   totalAmount: number;
 }
 
+// --- Card Skeleton ---
+const CardSkeleton: React.FC<{ description?: string; height?: number; className?: string }> = ({ description, height = 80, className }) => (
+  <Card className={`animate-pulse ${className || ''}`}>
+    <CardHeader>
+      <CardTitle>
+        <div className="h-6 w-32 bg-gray-200 rounded mb-2" />
+      </CardTitle>
+      {description && <CardDescription>
+        <div className="h-4 w-24 bg-gray-200 rounded" />
+      </CardDescription>}
+    </CardHeader>
+    <CardContent>
+      <div className={`bg-gray-200 rounded w-full`} style={{ height, minHeight: height }} />
+    </CardContent>
+  </Card>
+);
+
 // --- Extracted Card Components ---
 type ApprovedDaysCardProps = {
   feeSummaryLoading: boolean;
@@ -39,44 +56,39 @@ type ApprovedDaysCardProps = {
   getTodayEmoji: () => { name: string; emoji: string; webp: string; alt: string };
 };
 const ApprovedDaysCard: React.FC<ApprovedDaysCardProps> = React.memo(({ feeSummaryLoading, feeSummary, getTodayEmoji }) => (
-  <Card className="md:col-span-2 transition-all duration-200">
-    <CardHeader>
-      <CardTitle className="text-lg">Approved Days</CardTitle>
-      <CardDescription>This month's approved attendance</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {feeSummaryLoading ? (
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-pulse rounded bg-gray-200 h-8 w-24 mr-4" />
-          <div className="animate-pulse rounded bg-gray-200 h-8 w-8" />
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-end gap-2">
-              <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
-              <span className="text-base text-muted-foreground mb-1">
-                {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
-              </span>
-            </div>
-            {(() => {
-              const emoji = getTodayEmoji();
-              return (
-                <img
-                  key={emoji.name}
-                  src={emoji.webp}
-                  alt={emoji.alt}
-                  title={emoji.name}
-                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
-                  loading="lazy"
-                />
-              );
-            })()}
+  feeSummaryLoading ? (
+    <CardSkeleton description="This month's approved attendance" height={80} className="md:col-span-2 min-h-[160px]" />
+  ) : (
+    <Card className="md:col-span-2 min-h-[160px] transition-all duration-200">
+      <CardHeader>
+        <CardTitle className="text-lg">Approved Days</CardTitle>
+        <CardDescription>This month's approved attendance</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-end gap-2">
+            <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
+            <span className="text-base text-muted-foreground mb-1">
+              {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
+            </span>
           </div>
-        </>
-      )}
-    </CardContent>
-  </Card>
+          {(() => {
+            const emoji = getTodayEmoji();
+            return (
+              <img
+                key={emoji.name}
+                src={emoji.webp}
+                alt={emoji.alt}
+                title={emoji.name}
+                className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
+                loading="lazy"
+              />
+            );
+          })()}
+        </div>
+      </CardContent>
+    </Card>
+  )
 ));
 
 type DailyRateCardProps = {
@@ -85,23 +97,25 @@ type DailyRateCardProps = {
   currentMonth: Date;
 };
 const DailyRateCard: React.FC<DailyRateCardProps> = React.memo(({ feeSummaryLoading, feeSummary, currentMonth }) => (
-  <Card className="md:col-span-1 transition-all duration-200">
-    <CardHeader>
-      <CardTitle className="text-sm">Daily Rate</CardTitle>
-      <CardDescription className="text-xs">Per day</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {feeSummaryLoading ? (
-        <div className="animate-pulse rounded bg-gray-200 h-8 w-24" />
-      ) : feeSummary.monthlyFee > 0 ? (
-        <p className="text-2xl font-bold text-purple-600">
-          ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">No fee</p>
-      )}
-    </CardContent>
-  </Card>
+  feeSummaryLoading ? (
+    <CardSkeleton description="Per day" height={40} className="md:col-span-1 min-h-[120px]" />
+  ) : (
+    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200">
+      <CardHeader>
+        <CardTitle className="text-sm">Daily Rate</CardTitle>
+        <CardDescription className="text-xs">Per day</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {feeSummary.monthlyFee > 0 ? (
+          <p className="text-2xl font-bold text-purple-600">
+            ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">No fee</p>
+        )}
+      </CardContent>
+    </Card>
+  )
 ));
 
 type TotalDueCardProps = {
@@ -112,29 +126,31 @@ type TotalDueCardProps = {
   paymentDate: Date | null;
 };
 const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoading, feeSummary, totalDueAmount, paymentStatus, paymentDate }) => (
-  <Card className="md:col-span-1 transition-all duration-200">
-    <CardHeader>
-      <div className="flex items-center justify-between w-full">
-        <CardTitle className="text-sm">Total Due</CardTitle>
-        {paymentStatus === 'paid' && <PaidBadge paymentDate={paymentDate} />}
-      </div>
-      <CardDescription className="text-xs">Amount</CardDescription>
-    </CardHeader>
-    <CardContent>
-      {feeSummaryLoading ? (
-        <div className="animate-pulse rounded bg-gray-200 h-8 w-24" />
-      ) : feeSummary.monthlyFee > 0 ? (
+  feeSummaryLoading ? (
+    <CardSkeleton description="Amount" height={40} className="md:col-span-1 min-h-[120px]" />
+  ) : (
+    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200">
+      <CardHeader>
         <div className="flex items-center justify-between w-full">
-          <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
-          {paymentStatus === 'paid' && (
-            <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
-          )}
+          <CardTitle className="text-sm">Total Due</CardTitle>
+          {paymentStatus === 'paid' && <PaidBadge paymentDate={paymentDate} />}
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">No fee</p>
-      )}
-    </CardContent>
-  </Card>
+        <CardDescription className="text-xs">Amount</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {feeSummary.monthlyFee > 0 ? (
+          <div className="flex items-center justify-between w-full">
+            <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
+            {paymentStatus === 'paid' && (
+              <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No fee</p>
+        )}
+      </CardContent>
+    </Card>
+  )
 ));
 
 // --- Main Dashboard ---
