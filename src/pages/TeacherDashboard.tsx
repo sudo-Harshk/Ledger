@@ -19,6 +19,7 @@ import { onSnapshot } from 'firebase/firestore'
 import { Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { differenceInCalendarDays } from 'date-fns';
+import { debounce } from 'lodash'; // Add lodash for debounce
 
 interface PendingAttendance {
   id: string
@@ -119,6 +120,14 @@ export default function TeacherDashboard() {
     total: 0,
   });
 
+  // Error states for each section (move to top-level)
+  const [pendingRequestsError, setPendingRequestsError] = useState<string | null>(null);
+  const [studentFeesError, setStudentFeesError] = useState<string | null>(null);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+  const [monthlyFeeError, setMonthlyFeeError] = useState<string | null>(null);
+  const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
   // Cleanup timeout on component unmount
   useEffect(() => {
     return () => {
@@ -179,6 +188,7 @@ export default function TeacherDashboard() {
 
   const loadPendingRequests = useCallback(async () => {
     setPendingRequestsLoading(true)
+    setPendingRequestsError(null);
     try {
       const q = query(
         collection(db, 'attendance'),
@@ -198,6 +208,7 @@ export default function TeacherDashboard() {
       })
       setPendingRequests(requests)
     } catch (error) {
+      setPendingRequestsError('Failed to load pending attendance requests.');
       console.error('Error loading pending requests:', error)
       debouncedToast('Failed to load pending attendance requests. Please refresh the page and try again.', 'error')
     } finally {
@@ -221,6 +232,7 @@ export default function TeacherDashboard() {
 
   const loadMonthlyRevenue = useCallback(async () => {
     if (!user?.uid) return
+    setMonthlyRevenueError(null);
     try {
       const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`
       const monthlySummaryRef = doc(db, 'users', user.uid, 'monthlySummaries', monthYear)
@@ -231,65 +243,96 @@ export default function TeacherDashboard() {
         setTotalRevenue(0)
       }
     } catch (error) {
+      setMonthlyRevenueError('Failed to load monthly revenue.');
       console.error('Error loading monthly revenue:', error)
     }
   }, [user?.uid, currentMonth])
 
   const loadStudentFees = useCallback(async () => {
-    setStudentFeesLoading(true)
+    setStudentFeesLoading(true);
+    setStudentFeesError(null);
     try {
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
-      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
-      const studentsSnapshot = await getDocs(studentsQuery)
-      const fees: StudentFee[] = []
-      for (const studentDoc of studentsSnapshot.docs) {
-        const studentData = studentDoc.data()
-        const [approvedAttendanceSnapshot, absentAttendanceSnapshot] = await Promise.all([
-          getDocs(query(
-            collection(db, 'attendance'),
-            where('studentId', '==', studentDoc.id),
-            where('status', '==', 'approved'),
-            where('date', '>=', formatLocalDate(monthStart)),
-            where('date', '<=', formatLocalDate(monthEnd))
-          )),
-          getDocs(query(
-            collection(db, 'attendance'),
-            where('studentId', '==', studentDoc.id),
-            where('status', '==', 'absent'),
-            where('date', '>=', formatLocalDate(monthStart)),
-            where('date', '<=', formatLocalDate(monthEnd))
-          ))
-        ])
-        
-        const approvedDays = approvedAttendanceSnapshot.size
-        const absentDays = absentAttendanceSnapshot.size
-        const totalDaysInMonth = monthEnd.getDate()
-        const dailyRate = (studentData.monthlyFee || 0) / totalDaysInMonth
-        const totalAmount = approvedDays * dailyRate
-        fees.push({
-          studentId: studentDoc.id,
-          studentName: studentData.displayName || 'Unknown Student',
-          monthlyFee: studentData.monthlyFee || 0,
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+      const studentsSnapshot = await getDocs(studentsQuery);
+      const studentsList = studentsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as { monthlyFee?: number; displayName?: string })
+      }));
+      const studentIds = studentsList.map(s => s.id);
+      const batchSize = 30; // Firestore 'in' query limit
+      let approvedAttendanceDocs: any[] = [];
+      let absentAttendanceDocs: any[] = [];
+      for (let i = 0; i < studentIds.length; i += batchSize) {
+        const batchIds = studentIds.slice(i, i + batchSize);
+        const approvedQuery = query(
+          collection(db, 'attendance'),
+          where('status', '==', 'approved'),
+          where('date', '>=', formatLocalDate(monthStart)),
+          where('date', '<=', formatLocalDate(monthEnd)),
+          where('studentId', 'in', batchIds)
+        );
+        const absentQuery = query(
+          collection(db, 'attendance'),
+          where('status', '==', 'absent'),
+          where('date', '>=', formatLocalDate(monthStart)),
+          where('date', '<=', formatLocalDate(monthEnd)),
+          where('studentId', 'in', batchIds)
+        );
+        const [approvedSnap, absentSnap] = await Promise.all([
+          getDocs(approvedQuery),
+          getDocs(absentQuery)
+        ]);
+        approvedAttendanceDocs = approvedAttendanceDocs.concat(approvedSnap.docs);
+        absentAttendanceDocs = absentAttendanceDocs.concat(absentSnap.docs);
+      }
+      // Group attendance by studentId
+      const approvedByStudent: Record<string, number> = {};
+      approvedAttendanceDocs.forEach(doc => {
+        const data = doc.data();
+        if (!approvedByStudent[data.studentId]) approvedByStudent[data.studentId] = 0;
+        approvedByStudent[data.studentId]++;
+      });
+      const absentByStudent: Record<string, number> = {};
+      absentAttendanceDocs.forEach(doc => {
+        const data = doc.data();
+        if (!absentByStudent[data.studentId]) absentByStudent[data.studentId] = 0;
+        absentByStudent[data.studentId]++;
+      });
+      // Calculate fees for each student
+      const fees: StudentFee[] = studentsList.map(student => {
+        const approvedDays = approvedByStudent[student.id] || 0;
+        const absentDays = absentByStudent[student.id] || 0;
+        const totalDaysInMonth = monthEnd.getDate();
+        const monthlyFee = student.monthlyFee || 0;
+        const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
+        const totalAmount = approvedDays * dailyRate;
+        return {
+          studentId: student.id,
+          studentName: student.displayName || 'Unknown Student',
+          monthlyFee,
           approvedDays,
           absentDays,
-          totalAmount: Math.round(totalAmount * 100) / 100
-        })
-      }
-      setStudentFees(fees)
-      const total = fees.reduce((sum, fee) => sum + fee.totalAmount, 0)
-      await saveMonthlyRevenue(total)
+          totalAmount: Math.round(totalAmount * 100) / 100,
+        };
+      });
+      setStudentFees(fees);
+      const total = fees.reduce((sum, fee) => sum + fee.totalAmount, 0);
+      await saveMonthlyRevenue(total);
     } catch (error) {
-      console.error('Error loading student fees:', error)
-      debouncedToast('Failed to load student fee information. Please refresh the page and try again.', 'error')
+      setStudentFeesError('Failed to load student fee information.');
+      console.error('Error loading student fees:', error);
+      debouncedToast('Failed to load student fee information. Please refresh the page and try again.', 'error');
     } finally {
-      setStudentFeesLoading(false)
+      setStudentFeesLoading(false);
     }
-  }, [currentMonth, saveMonthlyRevenue])
+  }, [currentMonth, saveMonthlyRevenue]);
 
   const loadMonthlyFee = useCallback(async () => {
     if (!user?.uid) return
     setMonthlyFeeLoading(true)
+    setMonthlyFeeError(null);
     try {
       const teacherDoc = await getDoc(doc(db, 'users', user.uid))
       if (teacherDoc.exists()) {
@@ -297,6 +340,7 @@ export default function TeacherDashboard() {
         setMonthlyFee(teacherData.monthlyFee || 0)
       }
     } catch (error) {
+      setMonthlyFeeError('Failed to load monthly fee settings.');
       console.error('Error loading monthly fee:', error)
       debouncedToast('Failed to load monthly fee settings. Please refresh the page and try again.', 'error')
     } finally {
@@ -306,6 +350,7 @@ export default function TeacherDashboard() {
 
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true)
+    setStudentsError(null);
     try {
       const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
       const studentsSnapshot = await getDocs(studentsQuery)
@@ -323,6 +368,7 @@ export default function TeacherDashboard() {
       })
       setStudents(studentsList)
     } catch (error) {
+      setStudentsError('Failed to load student list.');
       console.error('Error loading students:', error)
       debouncedToast('Failed to load student list. Please refresh the page and try again.', 'error')
     } finally {
@@ -331,6 +377,7 @@ export default function TeacherDashboard() {
   }, [])
 
   const loadExistingAttendance = useCallback(async () => {
+    setAttendanceError(null);
     try {
       // Get all approved and absent attendance records and filter by date in JavaScript to avoid index requirements
       const approvedAttendanceQuery = query(
@@ -384,6 +431,7 @@ export default function TeacherDashboard() {
       setExistingAttendance(presentDates)
       setExistingAbsentAttendance(absentDates)
     } catch (error) {
+      setAttendanceError('Failed to load existing attendance data.');
       logger.error('Error loading existing attendance:', error)
       debouncedToast('Failed to load existing attendance data. Please refresh the page and try again.', 'error')
     } finally {
@@ -891,22 +939,35 @@ export default function TeacherDashboard() {
     setBulkEndDate('');
   }, [bulkStartDate, bulkEndDate, currentMonth, toDateStr]);
 
-  const handleRefresh = useCallback(async () => {
+  // Debounced main refresh handler
+  const debouncedHandleRefresh = useMemo(() => debounce(async () => {
     setRefreshing(true);
-    try {
-      await Promise.all([
-        loadPendingRequests(),
-        loadStudentFees(),
-        loadMonthlyFee(),
-        loadStudents(),
-        loadMonthlyRevenue(),
-        checkTeacherSetup(),
-        loadExistingAttendance(),
-      ]);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup, loadExistingAttendance]);
+    const results = await Promise.allSettled([
+      loadPendingRequests(),
+      loadStudentFees(),
+      loadMonthlyFee(),
+      loadStudents(),
+      loadMonthlyRevenue(),
+      checkTeacherSetup(),
+      loadExistingAttendance(),
+    ]);
+    // Show section-specific errors
+    const sectionNames = [
+      'Pending Requests',
+      'Student Fees',
+      'Monthly Fee',
+      'Students',
+      'Monthly Revenue',
+      'Teacher Setup',
+      'Attendance',
+    ];
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        toast.error(`Failed to refresh section: ${sectionNames[idx]}`);
+      }
+    });
+    setRefreshing(false);
+  }, 300), [loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup, loadExistingAttendance]);
 
   useEffect(() => {
     const handler = () => loadExistingAttendance();
@@ -916,7 +977,7 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-[#FDF6F0]">
-      <Navigation onRefresh={handleRefresh} refreshing={refreshing} />
+      <Navigation onRefresh={debouncedHandleRefresh} refreshing={refreshing} />
       
       <div className="container mx-auto px-6 py-8">
         {/* Account Settings Card for Google Link */}
@@ -972,6 +1033,7 @@ export default function TeacherDashboard() {
               <CardTitle>Monthly Fee Settings</CardTitle>
               <CardDescription>Set the monthly fee for all students</CardDescription>
             </CardHeader>
+            {monthlyFeeError && <div className="text-red-600 text-xs mb-2">{monthlyFeeError}</div>}
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4 items-end">
                 <div className="flex-1">
@@ -1005,6 +1067,7 @@ export default function TeacherDashboard() {
                 <CardTitle className="text-lg">Total Revenue</CardTitle>
                 <CardDescription>This month</CardDescription>
               </CardHeader>
+              {monthlyRevenueError && <div className="text-red-600 text-xs mb-2">{monthlyRevenueError}</div>}
               <CardContent>
                 <div className="flex flex-row items-center justify-between">
                   <div>
@@ -1040,6 +1103,7 @@ export default function TeacherDashboard() {
                 <CardTitle className="text-lg">Pending Requests</CardTitle>
                 <CardDescription>Attendance requests</CardDescription>
               </CardHeader>
+              {pendingRequestsError && <div className="text-red-600 text-xs mb-2">{pendingRequestsError}</div>}
               <CardContent>
                 <>
                   <p className="text-3xl font-bold text-orange-600">{pendingRequests.length}</p>
@@ -1079,6 +1143,8 @@ export default function TeacherDashboard() {
           </Card>
         </div>
 
+        {/* Attendance Section */}
+        {attendanceError && <div className="text-red-600 text-xs mb-2">{attendanceError}</div>}
         {/* Attendance Calendar (removed) */}
 
         {/* Main Content Grid */}
@@ -1098,8 +1164,18 @@ export default function TeacherDashboard() {
                 >
                   {showCreateUser ? 'Cancel' : 'Create New Student'}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={loadStudents}
+                  disabled={studentsLoading}
+                  className="ml-2"
+                >
+                  {studentsLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
               </div>
             </CardHeader>
+            {studentsError && <div className="text-red-600 text-xs mb-2">{studentsError}</div>}
             <CardContent>
               {showCreateUser && (
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
@@ -1254,32 +1330,10 @@ export default function TeacherDashboard() {
         ) : (
           <Card className="mb-8">
             <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <CardTitle>Student Fees Summary</CardTitle>
-                  <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => changeMonth('prev')}
-                  >
-                    ←
-                  </Button>
-                  <span className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium">
-                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => changeMonth('next')}
-                  >
-                    →
-                  </Button>
-                </div>
-              </div>
+              <CardTitle>Student Fees Summary</CardTitle>
+              <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
             </CardHeader>
+            {studentFeesError && <div className="text-red-600 text-xs mb-2">{studentFeesError}</div>}
             <CardContent>
               <div className="space-y-3 overflow-x-auto">
                 {studentFees.map((fee) => {
