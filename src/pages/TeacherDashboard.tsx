@@ -46,6 +46,23 @@ interface StudentAccount {
   totalDueByMonth?: { [key: string]: any } 
 }
 
+// --- Card Skeleton ---
+const CardSkeleton: React.FC<{ description?: string; height?: number; className?: string }> = ({ description, height = 80, className }) => (
+  <Card className={`animate-pulse ${className || ''}`}>
+    <CardHeader>
+      <CardTitle>
+        <div className="h-6 w-32 bg-gray-200 rounded mb-2" />
+      </CardTitle>
+      {description && <CardDescription>
+        <div className="h-4 w-24 bg-gray-200 rounded" />
+      </CardDescription>}
+    </CardHeader>
+    <CardContent>
+      <div className="bg-gray-200 rounded w-full" style={{ height, minHeight: height }} />
+    </CardContent>
+  </Card>
+);
+
 export default function TeacherDashboard() {
   const { user } = useAuth()
   const [pendingRequests, setPendingRequests] = useState<PendingAttendance[]>([])
@@ -980,17 +997,15 @@ export default function TeacherDashboard() {
           </Card>
 
           {/* Revenue Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Total Revenue</CardTitle>
-              <CardDescription>This month</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {financialSummaryLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : (
+          {financialSummaryLoading ? (
+            <CardSkeleton description="This month" height={80} className="min-h-[160px]" />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Total Revenue</CardTitle>
+                <CardDescription>This month</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <div className="flex flex-row items-center justify-between">
                   <div>
                     <p className="text-3xl font-bold text-green-600">
@@ -1009,34 +1024,32 @@ export default function TeacherDashboard() {
                     </span>
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Pending Requests Summary & Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Pending Requests</CardTitle>
-              <CardDescription>Attendance requests</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pendingRequestsLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-                  <span className="ml-2 text-sm text-gray-600">Loading...</span>
-                </div>
-              ) : (
+          {/* Pending Requests */}
+          {pendingRequestsLoading ? (
+            <CardSkeleton description="Attendance requests" height={80} className="min-h-[160px]" />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Pending Requests</CardTitle>
+                <CardDescription>Attendance requests</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <>
                   <p className="text-3xl font-bold text-orange-600">{pendingRequests.length}</p>
                   <p className="text-sm text-gray-600 mt-1">
                     {pendingRequests.length === 1 ? 'request' : 'requests'} pending
                   </p>
                 </>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Quick Actions */}
           <Card>
@@ -1149,45 +1162,44 @@ export default function TeacherDashboard() {
               )}
 
               {/* Students List */}
-              <div className="space-y-3">
-                <h4 className="font-medium">Existing Students ({students.length})</h4>
-                {studentsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span className="ml-2 text-sm text-gray-600">Loading students...</span>
-                  </div>
-                ) : students.length === 0 ? (
-                  <p className="text-center text-gray-500 py-4">No students found</p>
-                ) : (
-                  students.map((student) => (
-                    <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{student.displayName}</p>
-                        <p className="text-sm text-gray-600">
-                          @{student.username} • ₹{student.monthlyFee}/month
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Created: {student.createdAt.toLocaleDateString()}
-                        </p>
+              {studentsLoading ? (
+                <CardSkeleton description="Existing Students" height={120} className="min-h-[160px]" />
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-medium">Existing Students ({students.length})</h4>
+                  {students.length === 0 ? (
+                    <p className="text-center text-gray-500 py-4">No students found</p>
+                  ) : (
+                    students.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium">{student.displayName}</p>
+                          <p className="text-sm text-gray-600">
+                            @{student.username} • ₹{student.monthlyFee}/month
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Created: {student.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            Active
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteStudentAccount(student.id, student.username)}
+                            disabled={loading}
+                            className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+                          >
+                            {loading ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                          Active
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteStudentAccount(student.id, student.username)}
-                          disabled={loading}
-                          className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
-                        >
-                          {loading ? 'Deleting...' : 'Delete'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1237,41 +1249,38 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Student Fees Summary */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <CardTitle>Student Fees Summary</CardTitle>
-                <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
+        {studentFeesLoading ? (
+          <CardSkeleton description="Monthly fee calculation based on approved attendance" height={120} className="mb-8 min-h-[160px]" />
+        ) : (
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle>Student Fees Summary</CardTitle>
+                  <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeMonth('prev')}
+                  >
+                    ←
+                  </Button>
+                  <span className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium">
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeMonth('next')}
+                  >
+                    →
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => changeMonth('prev')}
-                >
-                  ←
-                </Button>
-                <span className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium">
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => changeMonth('next')}
-                >
-                  →
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {studentFeesLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                <span className="ml-2 text-sm text-gray-600">Loading student fees...</span>
-              </div>
-            ) : (
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3 overflow-x-auto">
                 {studentFees.map((fee) => {
                   const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
@@ -1340,9 +1349,9 @@ export default function TeacherDashboard() {
                   </p>
                 )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Bulk Attendance Form */}
         {showBulkAttendance && (
