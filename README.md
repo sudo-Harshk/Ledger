@@ -1,16 +1,22 @@
 # Ledger App
 
-A modern React web app for managing student attendance and calculating monthly fees, with real-time updates and role-based dashboards for students and teachers.
+A modern, Japanese-inspired React web app for managing student attendance and calculating monthly fees, with real-time updates, role-based dashboards, and beautiful UI for students and teachers.
 
 ---
 
 ## Features
-- **Student Dashboard:** Mark daily attendance, view calendar, track approved days, monitor monthly fees
-- **Teacher Dashboard:** Approve/reject attendance, set monthly fees, view revenue, add bulk attendance
-- **Authentication:** Secure login/signup with Firebase Auth
-- **Real-time Sync:** Firestore for live data
-- **Responsive UI:** Built with Tailwind CSS & shadcn/ui
+- **Student Dashboard:** Mark daily attendance, view calendar, track approved days, monitor monthly fees, see payment status
+- **Teacher Dashboard:** Approve/reject attendance, set monthly fees, view revenue, add bulk attendance, manage students, mark payments
+- **Authentication:** Secure login/signup with Firebase Auth (only teacher-created users can access; no self-registration)
+- **Real-time Sync:** Firestore for live data, real-time updates
+- **Responsive UI:** Built with Tailwind CSS, shadcn/ui, and custom Japanese-inspired palette
 - **Notifications:** Uses `react-hot-toast` for all user messages
+- **Confetti:** Fun confetti animation on first attendance approval
+- **Role-based Access:** Students and teachers see different dashboards and permissions
+- **Google Account Linking:** Optional Google login for easier access
+- **Admin Setup:** Initial teacher account setup (if enabled)
+- **Modern Animations:** Framer Motion for smooth transitions
+- **Data Fetching:** Powered by React Query for fast, reliable data
 
 ---
 
@@ -40,6 +46,7 @@ VITE_FIREBASE_APP_ID=your_app_id
 VITE_RECAPTCHA_V3_SITE_KEY=your_recaptcha_v3_site_key
 VITE_FIREBASE_APPCHECK_DEBUG_TOKEN=your_debug_token # (dev only)
 VITE_ENABLE_ADMIN_SETUP=true # (optional)
+VITE_PLATFORM_START=2025-08-01 # (optional, restricts attendance before this date)
 ```
 - Get these values from your Firebase Console (Project Settings > General).
 
@@ -67,28 +74,46 @@ Visit [http://localhost:5173](http://localhost:5173)
 ## Usage
 
 ### Students
-1. Sign up for an account
+1. Sign in with your teacher-provided account
 2. Mark daily attendance
-3. View attendance calendar
-4. Track monthly fees
+3. View attendance calendar and payment status
+4. Track monthly fees and due dates
 
 ### Teachers
 1. Set monthly fee
 2. Approve/reject attendance
-3. Add bulk attendance
-4. View revenue
+3. Add bulk attendance for students
+4. View revenue and student payment status
+5. Create/manage student accounts
+6. Mark student payments as paid
 
 ---
 
 ## Project Structure
 ```
 src/
-├── components/    # UI components
+├── components/    # UI components (ToastProvider, Confetti, banners, etc.)
 ├── contexts/      # React contexts (Auth)
-├── pages/         # Page components
-├── firebase.ts    # Firebase config
-└── main.tsx       # App entry point
+├── hooks/         # Custom hooks (useAuth)
+├── lib/           # Utilities (debouncedToast, logger, etc.)
+├── pages/         # Page components (Landing, Login, Dashboards)
+├── firebase.ts    # Firebase config & AppCheck
+├── main.tsx       # App entry point (with React Query)
+└── assets/        # Fonts, images
 ```
+
+---
+
+## Main Libraries
+- **React 19**
+- **TypeScript**
+- **Firebase (Auth, Firestore, AppCheck)**
+- **@tanstack/react-query** — Data fetching & caching
+- **react-hot-toast** — User notifications
+- **framer-motion** — Animations
+- **canvas-confetti** — Confetti effect
+- **tailwindcss** & **shadcn/ui** — Styling & UI
+- **lucide-react** — Icons
 
 ---
 
@@ -106,6 +131,7 @@ src/
 - **Teachers:** Log in with email, manage all students
 - **Role-based dashboards**
 - **Firestore rules:** Strict access control (see `firestore.rules`)
+- **No self-registration:** Only teacher-created users can access
 
 ---
 
