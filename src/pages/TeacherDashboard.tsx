@@ -19,15 +19,8 @@ import { onSnapshot } from 'firebase/firestore'
 import { Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { differenceInCalendarDays } from 'date-fns';
-import { debounce } from 'lodash'; // Add lodash for debounce
-
-interface PendingAttendance {
-  id: string
-  studentId: string
-  studentName: string
-  date: string
-  timestamp: Date
-}
+import { debounce } from 'lodash';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface StudentFee {
   studentId: string
@@ -66,9 +59,6 @@ const CardSkeleton: React.FC<{ description?: string; height?: number; className?
 
 export default function TeacherDashboard() {
   const { user } = useAuth()
-  const [pendingRequests, setPendingRequests] = useState<PendingAttendance[]>([])
-  const [studentFees, setStudentFees] = useState<StudentFee[]>([])
-  const [monthlyFee, setMonthlyFee] = useState(0)
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
@@ -77,18 +67,6 @@ export default function TeacherDashboard() {
   const monthChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // Data Loading States
-  const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false)
-  const [studentFeesLoading, setStudentFeesLoading] = useState(false)
-  const [monthlyFeeLoading, setMonthlyFeeLoading] = useState(false)
-  const [studentsLoading, setStudentsLoading] = useState(false)
-  
-  // User Management State
-  const [showCreateUser, setShowCreateUser] = useState(false)
-  const [newStudentUsername, setNewStudentUsername] = useState('')
-  const [newStudentName, setNewStudentName] = useState('')
-  const [newStudentPassword, setNewStudentPassword] = useState('')
-  const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0)
-  const [students, setStudents] = useState<StudentAccount[]>([])
   const [createUserLoading, setCreateUserLoading] = useState(false)
 
   // Monthly Fee Animation State
@@ -101,17 +79,15 @@ export default function TeacherDashboard() {
   const [bulkAttendanceLoading, setBulkAttendanceLoading] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const enableAdminSetup = import.meta.env.VITE_ENABLE_ADMIN_SETUP === 'true'
-  const [existingAttendance, setExistingAttendance] = useState<Set<string>>(new Set())
-  const [existingAbsentAttendance, setExistingAbsentAttendance] = useState<Set<string>>(new Set())
   
   // New state for enhanced bulk attendance
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present')
   // Remove toggledDates state entirely
 
   // Add after other useState hooks
-  const [totalRevenue, setTotalRevenue] = useState(0)
   const [financialSummary, setFinancialSummary] = useState<{ revenue: number; lastUpdated: any } | null>(null)
   const [financialSummaryLoading, setFinancialSummaryLoading] = useState(true)
+  // Use the monthlyFee and refetch/setter from useQuery destructuring only
 
   // Revenue preview state
   const [revenuePreview, setRevenuePreview] = useState({
@@ -121,12 +97,19 @@ export default function TeacherDashboard() {
   });
 
   // Error states for each section (move to top-level)
-  const [pendingRequestsError, setPendingRequestsError] = useState<string | null>(null);
-  const [studentFeesError, setStudentFeesError] = useState<string | null>(null);
-  const [studentsError, setStudentsError] = useState<string | null>(null);
-  const [monthlyFeeError, setMonthlyFeeError] = useState<string | null>(null);
-  const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
-  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  // Remove duplicate error state declarations (already handled by React Query)
+  // const [pendingRequestsError, setPendingRequestsError] = useState<string | null>(null);
+  // const [studentsError, setStudentsError] = useState<string | null>(null);
+  // const [monthlyFeeError, setMonthlyFeeError] = useState<string | null>(null);
+  // const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
+  // const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  // Add missing state for new student fields at the top of the component:
+  const [newStudentUsername, setNewStudentUsername] = useState('');
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentPassword, setNewStudentPassword] = useState('');
+  const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0);
+  const [showCreateUser, setShowCreateUser] = useState(false);
 
   // Cleanup timeout on component unmount
   useEffect(() => {
@@ -186,36 +169,6 @@ export default function TeacherDashboard() {
     }
   }
 
-  const loadPendingRequests = useCallback(async () => {
-    setPendingRequestsLoading(true)
-    setPendingRequestsError(null);
-    try {
-      const q = query(
-        collection(db, 'attendance'),
-        where('status', '==', 'pending')
-      )
-      const querySnapshot = await getDocs(q)
-      const requests: PendingAttendance[] = []
-      querySnapshot.forEach((doc) => {
-        const data = doc.data()
-        requests.push({
-          id: doc.id,
-          studentId: data.studentId,
-          studentName: data.studentName,
-          date: data.date,
-          timestamp: data.timestamp?.toDate() || new Date()
-        })
-      })
-      setPendingRequests(requests)
-    } catch (error) {
-      setPendingRequestsError('Failed to load pending attendance requests.');
-      console.error('Error loading pending requests:', error)
-      debouncedToast('Failed to load pending attendance requests. Please refresh the page and try again.', 'error')
-    } finally {
-      setPendingRequestsLoading(false)
-    }
-  }, [])
-
   const saveMonthlyRevenue = useCallback(async (revenue: number) => {
     if (!user?.uid) return
     try {
@@ -230,248 +183,225 @@ export default function TeacherDashboard() {
     }
   }, [user?.uid, currentMonth])
 
-  const loadMonthlyRevenue = useCallback(async () => {
-    if (!user?.uid) return
-    setMonthlyRevenueError(null);
-    try {
-      const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`
-      const monthlySummaryRef = doc(db, 'users', user.uid, 'monthlySummaries', monthYear)
-      const docSnap = await getDoc(monthlySummaryRef)
-      if (docSnap.exists()) {
-        setTotalRevenue(docSnap.data().revenue || 0)
-      } else {
-        setTotalRevenue(0)
-      }
-    } catch (error) {
-      setMonthlyRevenueError('Failed to load monthly revenue.');
-      console.error('Error loading monthly revenue:', error)
-    }
-  }, [user?.uid, currentMonth])
+  const queryClient = useQueryClient();
 
-  const loadStudentFees = useCallback(async () => {
-    setStudentFeesLoading(true);
-    setStudentFeesError(null);
-    try {
-      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
-      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
-      const studentsSnapshot = await getDocs(studentsQuery);
-      const studentsList = studentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as { monthlyFee?: number; displayName?: string })
-      }));
-      const studentIds = studentsList.map(s => s.id);
-      const batchSize = 30; // Firestore 'in' query limit
-      let approvedAttendanceDocs: any[] = [];
-      let absentAttendanceDocs: any[] = [];
-      for (let i = 0; i < studentIds.length; i += batchSize) {
-        const batchIds = studentIds.slice(i, i + batchSize);
-        const approvedQuery = query(
-          collection(db, 'attendance'),
-          where('status', '==', 'approved'),
-          where('date', '>=', formatLocalDate(monthStart)),
-          where('date', '<=', formatLocalDate(monthEnd)),
-          where('studentId', 'in', batchIds)
-        );
-        const absentQuery = query(
-          collection(db, 'attendance'),
-          where('status', '==', 'absent'),
-          where('date', '>=', formatLocalDate(monthStart)),
-          where('date', '<=', formatLocalDate(monthEnd)),
-          where('studentId', 'in', batchIds)
-        );
-        const [approvedSnap, absentSnap] = await Promise.all([
-          getDocs(approvedQuery),
-          getDocs(absentQuery)
-        ]);
-        approvedAttendanceDocs = approvedAttendanceDocs.concat(approvedSnap.docs);
-        absentAttendanceDocs = absentAttendanceDocs.concat(absentSnap.docs);
-      }
-      // Group attendance by studentId
-      const approvedByStudent: Record<string, number> = {};
-      approvedAttendanceDocs.forEach(doc => {
-        const data = doc.data();
-        if (!approvedByStudent[data.studentId]) approvedByStudent[data.studentId] = 0;
-        approvedByStudent[data.studentId]++;
-      });
-      const absentByStudent: Record<string, number> = {};
-      absentAttendanceDocs.forEach(doc => {
-        const data = doc.data();
-        if (!absentByStudent[data.studentId]) absentByStudent[data.studentId] = 0;
-        absentByStudent[data.studentId]++;
-      });
-      // Calculate fees for each student
-      const fees: StudentFee[] = studentsList.map(student => {
-        const approvedDays = approvedByStudent[student.id] || 0;
-        const absentDays = absentByStudent[student.id] || 0;
-        const totalDaysInMonth = monthEnd.getDate();
-        const monthlyFee = student.monthlyFee || 0;
-        const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
-        const totalAmount = approvedDays * dailyRate;
-        return {
-          studentId: student.id,
-          studentName: student.displayName || 'Unknown Student',
-          monthlyFee,
-          approvedDays,
-          absentDays,
-          totalAmount: Math.round(totalAmount * 100) / 100,
-        };
-      });
-      setStudentFees(fees);
-      const total = fees.reduce((sum, fee) => sum + fee.totalAmount, 0);
-      await saveMonthlyRevenue(total);
-    } catch (error) {
-      setStudentFeesError('Failed to load student fee information.');
-      console.error('Error loading student fees:', error);
-      debouncedToast('Failed to load student fee information. Please refresh the page and try again.', 'error');
-    } finally {
-      setStudentFeesLoading(false);
-    }
-  }, [currentMonth, saveMonthlyRevenue]);
+  // --- React Query fetchers ---
+  const fetchPendingRequests = async () => {
+    const q = query(collection(db, 'attendance'), where('status', '==', 'pending'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  };
 
-  const loadMonthlyFee = useCallback(async () => {
-    if (!user?.uid) return
-    setMonthlyFeeLoading(true)
-    setMonthlyFeeError(null);
-    try {
-      const teacherDoc = await getDoc(doc(db, 'users', user.uid))
+  const fetchStudents = async () => {
+    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+    const studentsSnapshot = await getDocs(studentsQuery);
+    return studentsSnapshot.docs.map(doc => ({ ...(doc.data() as StudentAccount), id: doc.id }));
+  };
+
+  const fetchMonthlyFee = async (userId: string) => {
+    const teacherDoc = await getDoc(doc(db, 'users', userId));
       if (teacherDoc.exists()) {
-        const teacherData = teacherDoc.data()
-        setMonthlyFee(teacherData.monthlyFee || 0)
-      }
-    } catch (error) {
-      setMonthlyFeeError('Failed to load monthly fee settings.');
-      console.error('Error loading monthly fee:', error)
-      debouncedToast('Failed to load monthly fee settings. Please refresh the page and try again.', 'error')
-    } finally {
-      setMonthlyFeeLoading(false)
+      return teacherDoc.data().monthlyFee || 0;
     }
-  }, [user?.uid])
+    return 0;
+  };
 
-  const loadStudents = useCallback(async () => {
-    setStudentsLoading(true)
-    setStudentsError(null);
-    try {
-      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
-      const studentsSnapshot = await getDocs(studentsQuery)
-      const studentsList: StudentAccount[] = []
-      studentsSnapshot.forEach((doc) => {
-        const data = doc.data()
-        studentsList.push({
-          id: doc.id,
-          username: data.username || 'Unknown Username',
-          displayName: data.displayName || 'Unknown Student',
-          monthlyFee: data.monthlyFee || 0,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          totalDueByMonth: data.totalDueByMonth || {}, // Add this line
-        })
-      })
-      setStudents(studentsList)
-    } catch (error) {
-      setStudentsError('Failed to load student list.');
-      console.error('Error loading students:', error)
-      debouncedToast('Failed to load student list. Please refresh the page and try again.', 'error')
-    } finally {
-      setStudentsLoading(false)
-    }
-  }, [])
-
-  const loadExistingAttendance = useCallback(async () => {
-    setAttendanceError(null);
-    try {
-      // Get all approved and absent attendance records and filter by date in JavaScript to avoid index requirements
+  const fetchExistingAttendance = async (currentMonth: Date) => {
       const approvedAttendanceQuery = query(
         collection(db, 'attendance'),
         where('status', '==', 'approved')
-      )
-      
+    );
       const absentAttendanceQuery = query(
         collection(db, 'attendance'),
         where('status', '==', 'absent')
-      )
-      
+    );
       const [approvedAttendanceSnapshot, absentAttendanceSnapshot] = await Promise.all([
         getDocs(approvedAttendanceQuery),
-        getDocs(absentAttendanceQuery)
-      ])
-      
+      getDocs(absentAttendanceQuery),
+    ]);
+    const presentDates = new Set<string>();
+    const absentDates = new Set<string>();
+    approvedAttendanceSnapshot.forEach(doc => {
+      const data = doc.data();
+      const [year, month, day] = data.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+      if (
+        recordDate.getFullYear() === currentMonth.getFullYear() &&
+        recordDate.getMonth() === currentMonth.getMonth()
+      ) {
+        presentDates.add(data.date);
+      }
+    });
+    absentAttendanceSnapshot.forEach(doc => {
+      const data = doc.data();
+      const [year, month, day] = data.date.split('-').map(Number);
+      const recordDate = new Date(year, month - 1, day);
+      if (
+        recordDate.getFullYear() === currentMonth.getFullYear() &&
+        recordDate.getMonth() === currentMonth.getMonth()
+      ) {
+        absentDates.add(data.date);
+      }
+    });
+    return { presentDates, absentDates };
+  };
 
-      
-      const presentDates = new Set<string>()
-      const absentDates = new Set<string>()
-      
-      // Process approved records
-      approvedAttendanceSnapshot.forEach((doc) => {
-        const data = doc.data()
-        // Parse the date string directly to avoid timezone issues
-        const [year, month, day] = data.date.split('-').map(Number)
-        const recordDate = new Date(year, month - 1, day) // month is 0-indexed in Date constructor
-        
-        // Check if the date falls within the current month using date components
-        if (recordDate.getFullYear() === currentMonth.getFullYear() && 
-            recordDate.getMonth() === currentMonth.getMonth()) {
-          presentDates.add(data.date)
-        }
-      })
-      
-      // Process absent records (these will be shown differently in the UI)
-      absentAttendanceSnapshot.forEach((doc) => {
-        const data = doc.data()
-        // Parse the date string directly to avoid timezone issues
-        const [year, month, day] = data.date.split('-').map(Number)
-        const recordDate = new Date(year, month - 1, day) // month is 0-indexed in Date constructor
-        
-        // Check if the date falls within the current month using date components
-        if (recordDate.getFullYear() === currentMonth.getFullYear() && 
-            recordDate.getMonth() === currentMonth.getMonth()) {
-          absentDates.add(data.date)
-        }
-      })
-      
-      setExistingAttendance(presentDates)
-      setExistingAbsentAttendance(absentDates)
-    } catch (error) {
-      setAttendanceError('Failed to load existing attendance data.');
-      logger.error('Error loading existing attendance:', error)
-      debouncedToast('Failed to load existing attendance data. Please refresh the page and try again.', 'error')
-    } finally {
-      // setRefreshAttendanceLoading(false) // Removed
+  // --- React Query hooks ---
+  const {
+    data: pendingRequests = [],
+    isLoading: pendingRequestsLoading,
+    refetch: refetchPendingRequests
+  } = useQuery({
+    queryKey: ['pendingRequests'],
+    queryFn: fetchPendingRequests,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const {
+    data: students = [],
+    isLoading: studentsLoading,
+    refetch: refetchStudents
+  } = useQuery({
+    queryKey: ['students'],
+    queryFn: fetchStudents,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const {
+    data: monthlyFee = 0,
+    isLoading: monthlyFeeLoading,
+    refetch: refetchMonthlyFee
+  } = useQuery({
+    queryKey: ['monthlyFee', user?.uid],
+    queryFn: () => fetchMonthlyFee(user?.uid || ''),
+    enabled: !!user?.uid,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const {
+    data: attendanceData = { presentDates: new Set(), absentDates: new Set() },
+    refetch: refetchAttendance
+  } = useQuery({
+    queryKey: ['existingAttendance', currentMonth],
+    queryFn: () => fetchExistingAttendance(currentMonth),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const fetchStudentFees = async (currentMonth: Date, saveMonthlyRevenue: (total: number) => Promise<void>) => {
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+    const studentsSnapshot = await getDocs(studentsQuery);
+    const studentsList = studentsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...(doc.data() as { monthlyFee?: number; displayName?: string })
+    }));
+    const studentIds = studentsList.map(s => s.id);
+    const batchSize = 30;
+    let approvedAttendanceDocs: any[] = [];
+    let absentAttendanceDocs: any[] = [];
+    for (let i = 0; i < studentIds.length; i += batchSize) {
+      const batchIds = studentIds.slice(i, i + batchSize);
+      const approvedQuery = query(
+        collection(db, 'attendance'),
+        where('status', '==', 'approved'),
+        where('date', '>=', formatLocalDate(monthStart)),
+        where('date', '<=', formatLocalDate(monthEnd)),
+        where('studentId', 'in', batchIds)
+      );
+      const absentQuery = query(
+        collection(db, 'attendance'),
+        where('status', '==', 'absent'),
+        where('date', '>=', formatLocalDate(monthStart)),
+        where('date', '<=', formatLocalDate(monthEnd)),
+        where('studentId', 'in', batchIds)
+      );
+      const [approvedSnap, absentSnap] = await Promise.all([
+        getDocs(approvedQuery),
+        getDocs(absentQuery)
+      ]);
+      approvedAttendanceDocs = approvedAttendanceDocs.concat(approvedSnap.docs);
+      absentAttendanceDocs = absentAttendanceDocs.concat(absentSnap.docs);
     }
-  }, [currentMonth])
+    // Group attendance by studentId
+    const approvedByStudent: Record<string, number> = {};
+    approvedAttendanceDocs.forEach(doc => {
+      const data = doc.data();
+      if (!approvedByStudent[data.studentId]) approvedByStudent[data.studentId] = 0;
+      approvedByStudent[data.studentId]++;
+    });
+    const absentByStudent: Record<string, number> = {};
+    absentAttendanceDocs.forEach(doc => {
+      const data = doc.data();
+      if (!absentByStudent[data.studentId]) absentByStudent[data.studentId] = 0;
+      absentByStudent[data.studentId]++;
+    });
+    // Calculate fees for each student
+    const fees: StudentFee[] = studentsList.map(student => {
+      const approvedDays = approvedByStudent[student.id] || 0;
+      const absentDays = absentByStudent[student.id] || 0;
+      const totalDaysInMonth = monthEnd.getDate();
+      const monthlyFee = student.monthlyFee || 0;
+      const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
+      const totalAmount = approvedDays * dailyRate;
+      return {
+        studentId: student.id,
+        studentName: student.displayName || 'Unknown Student',
+        monthlyFee,
+        approvedDays,
+        absentDays,
+        totalAmount: Math.round(totalAmount * 100) / 100,
+      };
+    });
+    const total = fees.reduce((sum, fee) => sum + fee.totalAmount, 0);
+    await saveMonthlyRevenue(total);
+    return fees;
+  };
+
+  const {
+    data: studentFees = [],
+    isLoading: studentFeesLoading,
+    refetch: refetchStudentFees
+  } = useQuery({
+    queryKey: ['studentFees', currentMonth],
+    queryFn: () => fetchStudentFees(currentMonth, saveMonthlyRevenue),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   // Load existing attendance when bulk attendance modal opens
   useEffect(() => {
     if (user && showBulkAttendance) {
-      loadExistingAttendance()
+      // setExistingAttendance(new Set()) // Removed
+      // setExistingAbsentAttendance(new Set()) // Removed
     }
-  }, [user, showBulkAttendance, loadExistingAttendance])
+  }, [user, showBulkAttendance]);
 
   // Auto-refresh calendar when month changes
   useEffect(() => {
     if (user) {
-      loadExistingAttendance()
+      // setExistingAttendance(new Set()) // Removed
     }
-  }, [user, currentMonth, loadExistingAttendance])
+  }, [user, currentMonth]);
 
   // Load initial data when user or month changes
   useEffect(() => {
     if (user) {
-      loadPendingRequests()
-      loadStudentFees()
-      loadMonthlyFee()
-      loadStudents()
-      loadMonthlyRevenue()
+      refetchPendingRequests()
+      refetchStudentFees()
+      refetchMonthlyFee()
+      refetchStudents()
       checkTeacherSetup()
+      // setExistingAttendance(new Set()) // Removed
     }
-  }, [user, currentMonth, loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup])
+  }, [user, currentMonth, refetchPendingRequests, refetchStudentFees, refetchMonthlyFee, refetchStudents, checkTeacherSetup]);
 
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(() => {
-      loadExistingAttendance();
+      refetchAttendance();
     }, 60000);
     return () => clearInterval(interval);
-  }, [user, loadExistingAttendance]);
+  }, [user, refetchAttendance]);
 
   // Real-time listener for monthly summary
   useEffect(() => {
@@ -571,7 +501,7 @@ export default function TeacherDashboard() {
       setNewStudentPassword('')
       setNewStudentMonthlyFee(0)
       setShowCreateUser(false)
-      await loadStudents()
+      await refetchStudents()
       debouncedToast(`Student account created successfully! Username: ${newStudentUsername}`, 'success')
     } catch (error: unknown) {
       console.error('Error creating student account:', error)
@@ -604,7 +534,7 @@ export default function TeacherDashboard() {
       })
       await batch.commit()
       debouncedToast('Monthly fee updated successfully!', 'success')
-      await loadStudentFees()
+      await refetchStudentFees()
       setIsMonthlyFeeUpdated(true)
       setTimeout(() => setIsMonthlyFeeUpdated(false), 500)
     } catch (error) {
@@ -714,15 +644,15 @@ export default function TeacherDashboard() {
       setBulkEndDate('')
       setDefaultAttendanceStatus('present')
       setShowBulkAttendance(false)
-      await loadPendingRequests()
-      await loadStudentFees()
+      await refetchPendingRequests()
+      await refetchStudentFees()
       
       // Force a complete refresh of attendance data to ensure calendar updates
       // Clear existing data first, then reload with a small delay for Firebase sync
-      setExistingAttendance(new Set())
-      setExistingAbsentAttendance(new Set())
+      // setExistingAttendance(new Set()) // Removed
+      // setExistingAbsentAttendance(new Set()) // Removed
       await new Promise(resolve => setTimeout(resolve, 300)) // Increased delay for better Firebase sync
-      await loadExistingAttendance()
+      await refetchAttendance()
       dispatchAttendanceUpdatedEvent();
     } catch (error) {
       console.error('Error adding bulk attendance:', error)
@@ -735,16 +665,14 @@ export default function TeacherDashboard() {
   const approveAttendance = async (requestId: string, status: 'approved' | 'rejected') => {
     if (!user?.uid) return
     setLoading(true)
-    setStudentFeesLoading(true); // Show loader immediately
     try {
       await updateDoc(doc(db, 'attendance', requestId), {
         status: status,
         approvedBy: user.uid,
         approvedAt: new Date()
       })
-      await loadPendingRequests()
-      await loadStudentFees()
-      await loadMonthlyRevenue()
+      await refetchPendingRequests()
+      await refetchStudentFees()
       dispatchAttendanceUpdatedEvent();
       debouncedToast(`Attendance ${status} successfully!`, 'success')
     } catch (error) {
@@ -752,7 +680,6 @@ export default function TeacherDashboard() {
       debouncedToast('Failed to update attendance', 'error')
     } finally {
       setLoading(false)
-      setStudentFeesLoading(false); // Hide loader after data is fetched
     }
   }
 
@@ -773,8 +700,8 @@ export default function TeacherDashboard() {
     if (!day) return 'bg-white';
     const selected = isSelected(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
     const inRange = isInRange(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
-    const hasPresentAttendance = existingAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
-    const hasAbsentAttendance = existingAbsentAttendance.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    const hasPresentAttendance = attendanceData.presentDates.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
+    const hasAbsentAttendance = attendanceData.absentDates.has(day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '');
     if (selected) return 'bg-blue-600 text-white';
     if (inRange) {
       return defaultAttendanceStatus === 'present' ? 'bg-blue-100 text-blue-800' : 'bg-red-50 text-red-700';
@@ -786,7 +713,7 @@ export default function TeacherDashboard() {
       return 'bg-red-50 text-red-700 border-red-200';
     }
     return 'bg-gray-50';
-  }, [currentMonth, existingAttendance, existingAbsentAttendance, defaultAttendanceStatus, isSelected, isInRange, toDateStr]);
+  }, [currentMonth, attendanceData.presentDates, attendanceData.absentDates, defaultAttendanceStatus, isSelected, isInRange, toDateStr]);
 
   // Removed unused helpers to satisfy TypeScript build
 
@@ -813,8 +740,8 @@ export default function TeacherDashboard() {
       await batch.commit()
 
       debouncedToast(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`, 'success')
-      await loadStudents()
-      await loadStudentFees()
+      await refetchStudents()
+      await refetchStudentFees()
     } catch (error: unknown) {
       console.error('Error deleting student account:', error)
       if (error instanceof Error) {
@@ -857,7 +784,7 @@ export default function TeacherDashboard() {
       toast.dismiss(loadingToast);
       toast.success('Payment recorded!');
       // Optionally refresh student fees after marking as paid
-      await loadStudentFees();
+      await refetchStudentFees();
     } catch (error: any) {
       toast.dismiss();
       toast.error('Failed to record payment: ' + (error?.message || 'Unknown error'));
@@ -897,18 +824,18 @@ export default function TeacherDashboard() {
       }
       if (newMonth < PLATFORM_START && prev >= PLATFORM_START) {
         debouncedToast('Started using platform from August 2025', 'error');
-        loadExistingAttendance();
+        refetchAttendance();
         return new Date();
       }
       if (newMonth < PLATFORM_START) {
-        loadExistingAttendance();
+        refetchAttendance();
         return new Date();
       }
-      loadExistingAttendance();
+      refetchAttendance();
       return newMonth;
     });
-    setExistingAbsentAttendance(new Set());
-  }, [PLATFORM_START, loadExistingAttendance]);
+    // setExistingAbsentAttendance(new Set()); // Removed
+  }, [PLATFORM_START, refetchAttendance]);
 
   // Implement handleCalendarDayClick for calendar day selection
   const handleCalendarDayClick = useCallback((day: number | null) => {
@@ -943,13 +870,12 @@ export default function TeacherDashboard() {
   const debouncedHandleRefresh = useMemo(() => debounce(async () => {
     setRefreshing(true);
     const results = await Promise.allSettled([
-      loadPendingRequests(),
-      loadStudentFees(),
-      loadMonthlyFee(),
-      loadStudents(),
-      loadMonthlyRevenue(),
+      refetchPendingRequests(),
+      refetchStudentFees(),
+      refetchMonthlyFee(),
+      refetchStudents(),
       checkTeacherSetup(),
-      loadExistingAttendance(),
+      refetchAttendance(),
     ]);
     // Show section-specific errors
     const sectionNames = [
@@ -957,7 +883,6 @@ export default function TeacherDashboard() {
       'Student Fees',
       'Monthly Fee',
       'Students',
-      'Monthly Revenue',
       'Teacher Setup',
       'Attendance',
     ];
@@ -967,13 +892,20 @@ export default function TeacherDashboard() {
       }
     });
     setRefreshing(false);
-  }, 300), [loadPendingRequests, loadStudentFees, loadMonthlyFee, loadStudents, loadMonthlyRevenue, checkTeacherSetup, loadExistingAttendance]);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] }),
+      queryClient.invalidateQueries({ queryKey: ['students'] }),
+      queryClient.invalidateQueries({ queryKey: ['monthlyFee'] }),
+      queryClient.invalidateQueries({ queryKey: ['existingAttendance'] }),
+      queryClient.invalidateQueries({ queryKey: ['studentFees'] }),
+    ]);
+  }, 300), [refetchPendingRequests, refetchStudentFees, refetchMonthlyFee, refetchStudents, checkTeacherSetup, refetchAttendance]);
 
   useEffect(() => {
-    const handler = () => loadExistingAttendance();
+    const handler = () => refetchAttendance();
     window.addEventListener('attendance-updated', handler);
     return () => window.removeEventListener('attendance-updated', handler);
-  }, [loadExistingAttendance]);
+  }, [refetchAttendance]);
 
   return (
     <div className="min-h-screen bg-[#FDF6F0]">
@@ -1033,7 +965,7 @@ export default function TeacherDashboard() {
               <CardTitle>Monthly Fee Settings</CardTitle>
               <CardDescription>Set the monthly fee for all students</CardDescription>
             </CardHeader>
-            {monthlyFeeError && <div className="text-red-600 text-xs mb-2">{monthlyFeeError}</div>}
+            {/* monthlyFeeError && <div className="text-red-600 text-xs mb-2">{monthlyFeeError}</div> // Removed */}
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4 items-end">
                 <div className="flex-1">
@@ -1042,7 +974,7 @@ export default function TeacherDashboard() {
                     id="monthlyFee"
                     type="number"
                     value={monthlyFee}
-                    onChange={(e) => setMonthlyFee(Number(e.target.value))}
+                    onChange={() => refetchMonthlyFee()}
                     placeholder="Enter monthly fee"
                     className={`mt-1 transition-all duration-300 ${isMonthlyFeeUpdated ? 'bg-blue-100 border-blue-400' : ''}`}
                   />
@@ -1067,12 +999,12 @@ export default function TeacherDashboard() {
                 <CardTitle className="text-lg">Total Revenue</CardTitle>
                 <CardDescription>This month</CardDescription>
               </CardHeader>
-              {monthlyRevenueError && <div className="text-red-600 text-xs mb-2">{monthlyRevenueError}</div>}
+              {/* monthlyRevenueError && <div className="text-red-600 text-xs mb-2">{monthlyRevenueError}</div> // Removed */}
               <CardContent>
                 <div className="flex flex-row items-center justify-between">
                   <div>
                     <p className="text-3xl font-bold text-green-600">
-                      ₹{financialSummary?.revenue ?? totalRevenue}
+                      ₹{financialSummary?.revenue ?? 0}
                     </p>
                     <p className="text-sm text-gray-600 mt-1">
                       {studentFees.filter(fee => fee.monthlyFee > 0).length} students
@@ -1103,7 +1035,7 @@ export default function TeacherDashboard() {
                 <CardTitle className="text-lg">Pending Requests</CardTitle>
                 <CardDescription>Attendance requests</CardDescription>
               </CardHeader>
-              {pendingRequestsError && <div className="text-red-600 text-xs mb-2">{pendingRequestsError}</div>}
+              {/* pendingRequestsError && <div className="text-red-600 text-xs mb-2">{pendingRequestsError}</div> // Removed */}
               <CardContent>
                 <>
                   <p className="text-3xl font-bold text-orange-600">{pendingRequests.length}</p>
@@ -1130,7 +1062,7 @@ export default function TeacherDashboard() {
                       setBulkEndDate('')
                       // setToggledDates(new Set()) // Removed
                       // setDefaultAttendanceStatus('present') // Removed
-                      setExistingAbsentAttendance(new Set())
+                      // setExistingAbsentAttendance(new Set()) // Removed
                     }
                     setShowBulkAttendance(!showBulkAttendance)
                   }}
@@ -1144,7 +1076,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Attendance Section */}
-        {attendanceError && <div className="text-red-600 text-xs mb-2">{attendanceError}</div>}
+        {/* attendanceError && <div className="text-red-600 text-xs mb-2">{attendanceError}</div> // Removed */}
         {/* Attendance Calendar (removed) */}
 
         {/* Main Content Grid */}
@@ -1167,7 +1099,7 @@ export default function TeacherDashboard() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={loadStudents}
+                  onClick={() => refetchStudents()}
                   disabled={studentsLoading}
                   className="ml-2"
                 >
@@ -1175,7 +1107,7 @@ export default function TeacherDashboard() {
                 </Button>
               </div>
             </CardHeader>
-            {studentsError && <div className="text-red-600 text-xs mb-2">{studentsError}</div>}
+            {/* studentsError && <div className="text-red-600 text-xs mb-2">{studentsError}</div> // Removed */}
             <CardContent>
               {showCreateUser && (
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
@@ -1185,7 +1117,8 @@ export default function TeacherDashboard() {
                       <Label htmlFor="studentName">Student Name</Label>
                       <Input
                         id="studentName"
-                        value={newStudentName}
+                        type="text"
+                        value={newStudentName || ''}
                         onChange={(e) => setNewStudentName(e.target.value)}
                         placeholder="Enter student's full name"
                         className="mt-1"
@@ -1196,7 +1129,7 @@ export default function TeacherDashboard() {
                       <Input
                         id="studentUsername"
                         type="text"
-                        value={newStudentUsername}
+                        value={newStudentUsername || ''}
                         onChange={(e) => setNewStudentUsername(e.target.value)}
                         placeholder="Enter student's username"
                         className="mt-1"
@@ -1207,7 +1140,7 @@ export default function TeacherDashboard() {
                       <Input
                         id="studentPassword"
                         type="password"
-                        value={newStudentPassword}
+                        value={newStudentPassword || ''}
                         onChange={(e) => setNewStudentPassword(e.target.value)}
                         placeholder="Enter password"
                         className="mt-1"
@@ -1218,7 +1151,7 @@ export default function TeacherDashboard() {
                       <Input
                         id="studentMonthlyFee"
                         type="number"
-                        value={newStudentMonthlyFee}
+                        value={newStudentMonthlyFee || 0}
                         onChange={(e) => setNewStudentMonthlyFee(Number(e.target.value))}
                         placeholder="Enter monthly fee"
                         className="mt-1"
@@ -1254,7 +1187,19 @@ export default function TeacherDashboard() {
                             @{student.username} • ₹{student.monthlyFee}/month
                           </p>
                           <p className="text-xs text-gray-500">
-                            Created: {student.createdAt.toLocaleDateString()}
+                            Created: {(() => {
+                              const d = student.createdAt;
+                              if (!d) return '';
+                              if (typeof d === 'object' && !(d instanceof Date) && typeof (d as any).toDate === 'function') {
+                                return (d as any).toDate().toLocaleDateString();
+                              } else if (typeof d === 'string' || typeof d === 'number') {
+                                return new Date(d).toLocaleDateString();
+                              } else if (d instanceof Date) {
+                                return d.toLocaleDateString();
+                              } else {
+                                return '';
+                              }
+                            })()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1290,12 +1235,12 @@ export default function TeacherDashboard() {
                 <p className="text-center text-gray-500 py-8">No pending requests</p>
               ) : (
                 <div className="space-y-3">
-                  {pendingRequests.map((request) => (
+                  {pendingRequests.map((request: any) => (
                     <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <p className="font-medium">{request.studentName}</p>
+                        <p className="font-medium">{request.studentName || ''}</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(request.date).toLocaleDateString()} at {request.timestamp.toLocaleTimeString()}
+                          {request.date ? new Date(request.date).toLocaleDateString() : ''} at {request.timestamp ? new Date(request.timestamp).toLocaleTimeString() : ''}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -1330,10 +1275,10 @@ export default function TeacherDashboard() {
         ) : (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Student Fees Summary</CardTitle>
-              <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
+                  <CardTitle>Student Fees Summary</CardTitle>
+                  <CardDescription>Monthly fee calculation based on approved attendance</CardDescription>
             </CardHeader>
-            {studentFeesError && <div className="text-red-600 text-xs mb-2">{studentFeesError}</div>}
+            {/* studentFeesError && <div className="text-red-600 text-xs mb-2">{studentFeesError}</div> // Removed */}
             <CardContent>
               <div className="space-y-3 overflow-x-auto">
                 {studentFees.map((fee) => {
@@ -1458,7 +1403,7 @@ export default function TeacherDashboard() {
 
 
               {/* Selection Calendar - hidden on mobile, visible on sm+ */}
-              <div className="hidden sm:block mb-4" key={`calendar-${existingAttendance.size}-${existingAbsentAttendance.size}`}> 
+              <div className="hidden sm:block mb-4" key={`calendar-${attendanceData.presentDates.size}-${attendanceData.absentDates.size}`}> 
                 <div className="overflow-x-auto">
                   <div className="min-w-[560px] grid grid-cols-7 gap-1">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -1473,8 +1418,8 @@ export default function TeacherDashboard() {
                     {daysInMonth.map((day, idx) => {
                       const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : ''
                       const selected = day && isSelected(dateStr)
-                      const hasPresentAttendance = day && existingAttendance.has(dateStr)
-                      const hasAbsentAttendance = day && existingAbsentAttendance.has(dateStr)
+                      const hasPresentAttendance = day && attendanceData.presentDates.has(dateStr)
+                      const hasAbsentAttendance = day && attendanceData.absentDates.has(dateStr)
                       return (
                         <div
                           key={idx}
@@ -1746,7 +1691,7 @@ export default function TeacherDashboard() {
                     setBulkEndDate('')
                     // setToggledDates(new Set()) // Removed
                     setDefaultAttendanceStatus('present')
-                    setExistingAbsentAttendance(new Set())
+                    // setExistingAbsentAttendance(new Set()) // Removed
                   }}
                 >
                   Cancel
