@@ -9,70 +9,7 @@ import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import Footer from '../components/Footer'
 
-// ScrambleText component for cipher/decipher animation
-const ScrambleText: React.FC<{ text: string; active?: boolean }> = ({ text, active = false }) => {
-  const [display, setDisplay] = useState(text);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-  // Scramble the text
-  const scramble = () => {
-    setDisplay(prev =>
-      prev
-        .split('')
-        .map(char => (char === ' ' ? ' ' : chars[Math.floor(Math.random() * chars.length)]))
-        .join('')
-    );
-  };
-
-  // Restore the original text
-  const restore = () => {
-    setDisplay(text);
-  };
-
-  // On mouse enter: restore text and clear any scramble
-  const handleMouseEnter = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    restore();
-  };
-
-  // On mouse leave: start scramble animation
-  const handleMouseLeave = () => {
-    let iterations = 0;
-    const maxIterations = 12; // controls duration
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      scramble();
-      iterations++;
-      if (iterations >= maxIterations) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        restore();
-      }
-    }, 40);
-  };
-
-  // Clean up interval on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  return (
-    <span
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        display: 'inline-block',
-        transition: 'color 0.2s, border-bottom 0.2s',
-        cursor: 'pointer',
-        borderBottom: active ? '2px solid #F87171' : '2px solid transparent',
-      }}
-    >
-      {display}
-    </span>
-  );
-};
+// Removed ScrambleText component
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -151,15 +88,10 @@ export default function LoginPage() {
       {/* Redesigned Header to match landing page */}
       <header className="flex items-center justify-between px-8 py-6 border-b border-[#F9C5D1] bg-[#FDF6F0]">
         <div className="flex items-center gap-2">
-          <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B" }}>Ledger</div>
+          <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B" }} onClick={() => navigate('/')}>Ledger</div>
         </div>
         <nav className="flex gap-8 text-gray-700 font-medium text-lg">
-          <button
-            onClick={() => navigate('/')} 
-            className="bg-transparent border-none outline-none cursor-pointer transition-colors pb-1"
-          >
-            <ScrambleText text="Home" active={false} />
-          </button>
+          {/* Removed Home button */}
         </nav>
       </header>
       <main className="flex-1 flex items-center justify-center p-4 relative">
