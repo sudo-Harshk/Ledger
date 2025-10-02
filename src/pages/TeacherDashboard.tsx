@@ -287,6 +287,34 @@ export default function TeacherDashboard() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Real-time listener for attendance data (bulk attendance UI)
+  useEffect(() => {
+    if (!user) return;
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    // Listen for all students' attendance for the current month
+    const q = query(
+      collection(db, 'attendance'),
+      where('date', '>=', formatLocalDate(monthStart)),
+      where('date', '<=', formatLocalDate(monthEnd))
+    );
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const presentDates = new Set();
+      const absentDates = new Set();
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.status === 'approved') {
+          presentDates.add(data.date);
+        } else if (data.status === 'absent') {
+          absentDates.add(data.date);
+        }
+      });
+      // Only update if data changed (optional, for performance)
+      setAttendanceData({ presentDates, absentDates });
+    });
+    return () => unsubscribe();
+  }, [user, currentMonth]);
+
   const fetchStudentFees = async (currentMonth: Date, saveMonthlyRevenue: (total: number) => Promise<void>) => {
     const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);

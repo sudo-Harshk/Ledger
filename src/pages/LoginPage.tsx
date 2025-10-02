@@ -9,6 +9,71 @@ import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import Footer from '../components/Footer'
 
+// ScrambleText component for cipher/decipher animation
+const ScrambleText: React.FC<{ text: string; active?: boolean }> = ({ text, active = false }) => {
+  const [display, setDisplay] = useState(text);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  // Scramble the text
+  const scramble = () => {
+    setDisplay(prev =>
+      prev
+        .split('')
+        .map(char => (char === ' ' ? ' ' : chars[Math.floor(Math.random() * chars.length)]))
+        .join('')
+    );
+  };
+
+  // Restore the original text
+  const restore = () => {
+    setDisplay(text);
+  };
+
+  // On mouse enter: restore text and clear any scramble
+  const handleMouseEnter = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    restore();
+  };
+
+  // On mouse leave: start scramble animation
+  const handleMouseLeave = () => {
+    let iterations = 0;
+    const maxIterations = 12; // controls duration
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      scramble();
+      iterations++;
+      if (iterations >= maxIterations) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        restore();
+      }
+    }, 40);
+  };
+
+  // Clean up interval on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return (
+    <span
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        display: 'inline-block',
+        transition: 'color 0.2s, border-bottom 0.2s',
+        cursor: 'pointer',
+        borderBottom: active ? '2px solid #F87171' : '2px solid transparent',
+      }}
+    >
+      {display}
+    </span>
+  );
+};
+
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -90,16 +155,10 @@ export default function LoginPage() {
         </div>
         <nav className="flex gap-8 text-gray-700 font-medium text-lg">
           <button
-            onClick={() => navigate('/')}
-            className="bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 border-transparent hover:border-[#F87171]"
+            onClick={() => navigate('/')} 
+            className="bg-transparent border-none outline-none cursor-pointer transition-colors pb-1"
           >
-            Home
-          </button>
-          <button
-            onClick={() => navigate('/?section=team')}
-            className="bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 border-transparent hover:border-[#F87171]"
-          >
-            Team
+            <ScrambleText text="Home" active={false} />
           </button>
         </nav>
       </header>
