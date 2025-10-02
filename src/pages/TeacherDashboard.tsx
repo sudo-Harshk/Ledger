@@ -85,6 +85,7 @@ export default function TeacherDashboard() {
   // Remove toggledDates state entirely
 
   // Add after other useState hooks
+  const [attendanceData, setAttendanceData] = useState({ presentDates: new Set(), absentDates: new Set() });
   const [financialSummary, setFinancialSummary] = useState<{ revenue: number; lastUpdated: any } | null>(null)
   const [financialSummaryLoading, setFinancialSummaryLoading] = useState(true)
   // Use the monthlyFee and refetch/setter from useQuery destructuring only
@@ -279,12 +280,18 @@ export default function TeacherDashboard() {
   });
 
   const {
-    data: attendanceData = { presentDates: new Set(), absentDates: new Set() },
+    data: attendanceQueryData = { presentDates: new Set(), absentDates: new Set() },
     refetch: refetchAttendance
   } = useQuery({
     queryKey: ['existingAttendance', currentMonth],
     queryFn: () => fetchExistingAttendance(currentMonth),
     staleTime: 1000 * 60 * 5,
+    onSuccess: (data) => {
+      setAttendanceData({
+        presentDates: new Set(data.presentDates),
+        absentDates: new Set(data.absentDates)
+      });
+    }
   });
 
   // Real-time listener for attendance data (bulk attendance UI)
