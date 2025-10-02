@@ -9,13 +9,10 @@ A modern, Japanese-inspired React web app for managing student attendance and ca
 - **Teacher Dashboard:** Approve/reject attendance, set monthly fees, view revenue, add bulk attendance, manage students, mark payments
 - **Authentication:** Secure login/signup with Firebase Auth (only teacher-created users can access; no self-registration)
 - **Real-time Sync:** Firestore for live data, real-time updates
-- **Responsive UI:** Built with Tailwind CSS, shadcn/ui, and custom Japanese-inspired palette
 - **Notifications:** Uses `react-hot-toast` for all user messages
-- **Confetti:** Fun confetti animation on first attendance approval
 - **Role-based Access:** Students and teachers see different dashboards and permissions
 - **Google Account Linking:** Optional Google login for easier access
 - **Admin Setup:** Initial teacher account setup (if enabled)
-- **Modern Animations:** Framer Motion for smooth transitions
 - **Data Fetching:** Powered by React Query for fast, reliable data
 
 ---
