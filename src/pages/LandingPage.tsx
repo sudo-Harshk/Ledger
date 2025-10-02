@@ -38,6 +38,71 @@ const navLinks = [
   { label: 'Team', value: 'team' },
 ];
 
+// ScrambleText component for cipher/decipher animation
+const ScrambleText: React.FC<{ text: string; active?: boolean }> = ({ text, active = false }) => {
+  const [display, setDisplay] = React.useState(text);
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+  // Scramble the text
+  const scramble = React.useCallback(() => {
+    setDisplay(prev =>
+      prev
+        .split('')
+        .map(char => (char === ' ' ? ' ' : chars[Math.floor(Math.random() * chars.length)]))
+        .join('')
+    );
+  }, [chars]);
+
+  // Restore the original text
+  const restore = React.useCallback(() => {
+    setDisplay(text);
+  }, [text]);
+
+  // On mouse enter: restore text and clear any scramble
+  const handleMouseEnter = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    restore();
+  };
+
+  // On mouse leave: start scramble animation
+  const handleMouseLeave = () => {
+    let iterations = 0;
+    const maxIterations = 12; // controls duration
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      scramble();
+      iterations++;
+      if (iterations >= maxIterations) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        restore();
+      }
+    }, 40);
+  };
+
+  // Clean up interval on unmount
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return (
+    <span
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        display: 'inline-block',
+        transition: 'color 0.2s, border-bottom 0.2s',
+        cursor: 'pointer',
+        borderBottom: active ? '2px solid #F87171' : '2px solid transparent',
+      }}
+    >
+      {display}
+    </span>
+  );
+};
+
 // 3D Rotating Card Component
 const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties; children: React.ReactNode }> = ({ className = '', style = {}, children }) => {
   const [isHovering, setIsHovering] = useState(false);
@@ -161,9 +226,12 @@ const LandingPage: React.FC = () => {
             <button
               key={link.value}
               onClick={() => setCurrentSection(link.value)}
-              className={`bg-transparent border-none outline-none cursor-pointer hover:text-[#F87171] transition-colors border-b-2 pb-1 ${currentSection === link.value ? 'text-[#F87171] border-[#F87171]' : 'border-transparent'}`}
+              className={
+                `bg-transparent border-none outline-none cursor-pointer transition-colors pb-1 ` +
+                (currentSection === link.value ? 'text-[#F87171]' : '')
+              }
             >
-              {link.label}
+              <ScrambleText text={link.label} active={currentSection === link.value} />
             </button>
           ))}
         </nav>
