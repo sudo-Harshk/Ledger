@@ -97,13 +97,6 @@ export default function TeacherDashboard() {
     total: 0,
   });
 
-  // Error states for each section (move to top-level)
-  // Remove duplicate error state declarations (already handled by React Query)
-  // const [pendingRequestsError, setPendingRequestsError] = useState<string | null>(null);
-  // const [studentsError, setStudentsError] = useState<string | null>(null);
-  // const [monthlyFeeError, setMonthlyFeeError] = useState<string | null>(null);
-  // const [monthlyRevenueError, setMonthlyRevenueError] = useState<string | null>(null);
-  // const [attendanceError, setAttendanceError] = useState<string | null>(null);
 
   // Add missing state for new student fields at the top of the component:
   const [newStudentUsername, setNewStudentUsername] = useState('');
@@ -286,13 +279,15 @@ export default function TeacherDashboard() {
     queryKey: ['existingAttendance', currentMonth],
     queryFn: () => fetchExistingAttendance(currentMonth),
     staleTime: 1000 * 60 * 5,
-    onSuccess: (data) => {
-      setAttendanceData({
-        presentDates: new Set(data.presentDates),
-        absentDates: new Set(data.absentDates)
-      });
-    }
   });
+
+  // Add a useEffect to update attendanceData when attendanceQueryData changes
+  useEffect(() => {
+    setAttendanceData({
+      presentDates: new Set(attendanceQueryData.presentDates),
+      absentDates: new Set(attendanceQueryData.absentDates)
+    });
+  }, [attendanceQueryData]);
 
   // Real-time listener for attendance data (bulk attendance UI)
   useEffect(() => {
