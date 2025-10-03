@@ -1,9 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@/components/ui';
 import { useAuth } from '../hooks/useAuth'
 import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'

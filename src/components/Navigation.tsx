@@ -1,4 +1,4 @@
-import { Button } from './ui/button'
+import { Button } from '@/components/ui';
 import { useAuth } from '../hooks/useAuth'
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'

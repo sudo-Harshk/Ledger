@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { useAuth } from '../hooks/useAuth';
 import Navigation from '../components/Navigation';
 import { db } from '../firebase';
