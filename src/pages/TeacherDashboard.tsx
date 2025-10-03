@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import Navigation from '../components/Navigation'
 import { db, auth } from '../firebase'
 import { formatLocalDate, formatDateDDMMYYYY, dispatchAttendanceUpdatedEvent } from '../lib/utils'
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, writeBatch, setDoc, deleteDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import logger from '../lib/logger'
 import { debouncedToast } from '../lib/debouncedToast';
@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import { differenceInCalendarDays } from 'date-fns';
 import { debounce } from 'lodash';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { writeBatch, deleteDoc } from 'firebase/firestore';
 
 interface StudentFee {
   studentId: string
@@ -183,59 +184,81 @@ export default function TeacherDashboard() {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   };
 
-  const fetchStudents = async () => {
-    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
-    const studentsSnapshot = await getDocs(studentsQuery);
-    return studentsSnapshot.docs.map(doc => ({ ...(doc.data() as StudentAccount), id: doc.id }));
-  };
+  // --- Pagination state ---
+  const [students, setStudents] = useState<StudentAccount[]>([]);
+  const [lastVisibleStudent, setLastVisibleStudent] = useState<any>(null);
+  const [firstVisibleStudent, setFirstVisibleStudent] = useState<any>(null);
+  const [pageSize] = useState(10);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
-  const fetchMonthlyFee = async (userId: string) => {
-    const teacherDoc = await getDoc(doc(db, 'users', userId));
-      if (teacherDoc.exists()) {
-      return teacherDoc.data().monthlyFee || 0;
+  // --- Fetch paginated students with error handling and user dependency ---
+  const fetchStudentsPage = useCallback(
+    async (direction: 'next' | 'prev' = 'next') => {
+      setLoadingStudents(true);
+      let studentsQuery;
+      try {
+        if (direction === 'next' && lastVisibleStudent) {
+          studentsQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'student'),
+            orderBy('createdAt'),
+            startAfter(lastVisibleStudent),
+            limit(pageSize)
+          );
+        } else if (direction === 'prev' && firstVisibleStudent) {
+          // For simplicity, just reload the first page (implementing true prev is more complex)
+          studentsQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'student'),
+            orderBy('createdAt'),
+            limit(pageSize)
+          );
+          setLastVisibleStudent(null);
+          setFirstVisibleStudent(null);
+        } else {
+          studentsQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'student'),
+            orderBy('createdAt'),
+            limit(pageSize)
+          );
+          setLastVisibleStudent(null);
+          setFirstVisibleStudent(null);
+        }
+        const snapshot = await getDocs(studentsQuery);
+        const studentsList = snapshot.docs.map(doc => ({ ...(doc.data() as StudentAccount), id: doc.id }));
+        setStudents(studentsList);
+        setFirstVisibleStudent(snapshot.docs[0]);
+        setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
+      } catch (error) {
+        toast.error('Failed to fetch students. Please try again.');
+        setStudents([]);
+      } finally {
+        setLoadingStudents(false);
+      }
+    }, [lastVisibleStudent, firstVisibleStudent, pageSize]);
+
+  // --- Refetch students, always reset pagination unless direction is provided ---
+  const refetchStudents = async (direction?: 'next' | 'prev') => {
+    if (direction) {
+      await fetchStudentsPage(direction);
+    } else {
+      setLastVisibleStudent(null);
+      setFirstVisibleStudent(null);
+      await fetchStudentsPage();
     }
-    return 0;
   };
 
-  const fetchExistingAttendance = async (currentMonth: Date) => {
-      const approvedAttendanceQuery = query(
-        collection(db, 'attendance'),
-        where('status', '==', 'approved')
-    );
-      const absentAttendanceQuery = query(
-        collection(db, 'attendance'),
-        where('status', '==', 'absent')
-    );
-      const [approvedAttendanceSnapshot, absentAttendanceSnapshot] = await Promise.all([
-        getDocs(approvedAttendanceQuery),
-      getDocs(absentAttendanceQuery),
-    ]);
-    const presentDates = new Set<string>();
-    const absentDates = new Set<string>();
-    approvedAttendanceSnapshot.forEach(doc => {
-      const data = doc.data();
-      const [year, month, day] = data.date.split('-').map(Number);
-      const recordDate = new Date(year, month - 1, day);
-      if (
-        recordDate.getFullYear() === currentMonth.getFullYear() &&
-        recordDate.getMonth() === currentMonth.getMonth()
-      ) {
-        presentDates.add(data.date);
-      }
-    });
-    absentAttendanceSnapshot.forEach(doc => {
-      const data = doc.data();
-      const [year, month, day] = data.date.split('-').map(Number);
-      const recordDate = new Date(year, month - 1, day);
-      if (
-        recordDate.getFullYear() === currentMonth.getFullYear() &&
-        recordDate.getMonth() === currentMonth.getMonth()
-      ) {
-        absentDates.add(data.date);
-      }
-    });
-    return { presentDates, absentDates };
-  };
+  // --- Fetch students when user is available ---
+  useEffect(() => {
+    if (user) {
+      refetchStudents();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Fetch monthly summaries for students on current page
+  // Remove old attendance aggregation logic and related queries/hooks
 
   // --- React Query hooks ---
   const {
@@ -245,16 +268,6 @@ export default function TeacherDashboard() {
   } = useQuery({
     queryKey: ['pendingRequests'],
     queryFn: fetchPendingRequests,
-    staleTime: 1000 * 60 * 5,
-  });
-
-  const {
-    data: students = [],
-    isLoading: studentsLoading,
-    refetch: refetchStudents
-  } = useQuery({
-    queryKey: ['students'],
-    queryFn: fetchStudents,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -280,9 +293,22 @@ export default function TeacherDashboard() {
 
   // Add a useEffect to update attendanceData when attendanceQueryData changes
   useEffect(() => {
-    setAttendanceData({
-      presentDates: new Set(attendanceQueryData.presentDates),
-      absentDates: new Set(attendanceQueryData.absentDates)
+    setAttendanceData(prev => {
+      const toStringSet = (input: unknown): Set<string> => {
+        if (input instanceof Set) return new Set(Array.from(input) as string[]);
+        if (Array.isArray(input)) return new Set(input as string[]);
+        return new Set();
+      };
+      const newPresent = toStringSet(attendanceQueryData.presentDates);
+      const newAbsent = toStringSet(attendanceQueryData.absentDates);
+      const prevPresent = prev.presentDates as Set<string>;
+      const prevAbsent = prev.absentDates as Set<string>;
+      // Compare sets by size and values
+      const setsEqual = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every(x => b.has(x));
+      if (setsEqual(newPresent, prevPresent) && setsEqual(newAbsent, prevAbsent)) {
+        return prev;
+      }
+      return { presentDates: newPresent, absentDates: newAbsent };
     });
   }, [attendanceQueryData]);
 
@@ -416,11 +442,10 @@ export default function TeacherDashboard() {
       refetchPendingRequests()
       refetchStudentFees()
       refetchMonthlyFee()
-      refetchStudents()
       checkTeacherSetup()
       // setExistingAttendance(new Set()) // Removed
     }
-  }, [user, currentMonth, refetchPendingRequests, refetchStudentFees, refetchMonthlyFee, refetchStudents, checkTeacherSetup]);
+  }, [user, currentMonth, refetchPendingRequests, refetchStudentFees, refetchMonthlyFee, checkTeacherSetup]);
 
   useEffect(() => {
     if (!user) return;
@@ -674,11 +699,7 @@ export default function TeacherDashboard() {
       await refetchPendingRequests()
       await refetchStudentFees()
       
-      // Force a complete refresh of attendance data to ensure calendar updates
-      // Clear existing data first, then reload with a small delay for Firebase sync
-      // setExistingAttendance(new Set()) // Removed
-      // setExistingAbsentAttendance(new Set()) // Removed
-      await new Promise(resolve => setTimeout(resolve, 300)) // Increased delay for better Firebase sync
+      await new Promise(resolve => setTimeout(resolve, 300)) 
       await refetchAttendance()
       dispatchAttendanceUpdatedEvent();
     } catch (error) {
@@ -934,6 +955,36 @@ export default function TeacherDashboard() {
     return () => window.removeEventListener('attendance-updated', handler);
   }, [refetchAttendance]);
 
+  // --- Add missing fetchers ---
+  const fetchMonthlyFee = async (uid: string) => {
+    if (!uid) return 0;
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      return data.monthlyFee || 0;
+    }
+    return 0;
+  };
+
+  const fetchExistingAttendance = async (currentMonth: Date) => {
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const q = query(
+      collection(db, 'attendance'),
+      where('date', '>=', formatLocalDate(monthStart)),
+      where('date', '<=', formatLocalDate(monthEnd))
+    );
+    const snapshot = await getDocs(q);
+    const presentDates = new Set();
+    const absentDates = new Set();
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.status === 'approved') presentDates.add(data.date);
+      if (data.status === 'absent') absentDates.add(data.date);
+    });
+    return { presentDates: Array.from(presentDates), absentDates: Array.from(absentDates) };
+  };
+
   return (
     <div className="min-h-screen bg-[#FDF6F0]">
       <Navigation onRefresh={debouncedHandleRefresh} refreshing={refreshing} />
@@ -1127,10 +1178,10 @@ export default function TeacherDashboard() {
                   size="sm"
                   variant="outline"
                   onClick={() => refetchStudents()}
-                  disabled={studentsLoading}
+                  disabled={loadingStudents}
                   className="ml-2"
                 >
-                  {studentsLoading ? 'Refreshing...' : 'Refresh'}
+                  {loadingStudents ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </div>
             </CardHeader>
@@ -1198,7 +1249,7 @@ export default function TeacherDashboard() {
               )}
 
               {/* Students List */}
-              {studentsLoading ? (
+              {loadingStudents ? (
                 <CardSkeleton description="Existing Students" height={120} className="min-h-[160px]" />
               ) : (
                 <div className="space-y-3">

@@ -48,7 +48,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
               providerData: firebaseUser.providerData,
             }
             logger.debug('Setting user state')
-            setUser(userInfo)
+            setUser(prevUser => {
+              if (
+                prevUser &&
+                prevUser.uid === userInfo.uid &&
+                prevUser.username === userInfo.username &&
+                prevUser.role === userInfo.role &&
+                prevUser.displayName === userInfo.displayName &&
+                JSON.stringify(prevUser.providerData) === JSON.stringify(userInfo.providerData)
+              ) {
+                return prevUser;
+              }
+              return userInfo;
+            });
           } else {
             // User exists in Auth but not in Firestore - wait a bit for sync
             logger.warn('User authenticated but no Firestore document found - waiting for sync...')
@@ -71,7 +83,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     displayName: userData.displayName,
                     providerData: firebaseUser.providerData,
                   }
-                  setUser(userInfo)
+                  setUser(prevUser => {
+                    if (
+                      prevUser &&
+                      prevUser.uid === userInfo.uid &&
+                      prevUser.username === userInfo.username &&
+                      prevUser.role === userInfo.role &&
+                      prevUser.displayName === userInfo.displayName &&
+                      JSON.stringify(prevUser.providerData) === JSON.stringify(userInfo.providerData)
+                    ) {
+                      return prevUser;
+                    }
+                    return userInfo;
+                  });
                 } else {
                   // Still no document after retry - this is an incomplete account
                   logger.error('User document still not found after retry - incomplete account')
