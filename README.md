@@ -13,7 +13,7 @@ A modern, Japanese-inspired React web app for managing student attendance and ca
 - **Role-based Access:** Students and teachers see different dashboards and permissions
 - **Google Account Linking:** Optional Google login for easier access
 - **Admin Setup:** Initial teacher account setup (if enabled)
-- **Data Fetching:** Powered by React Query for fast, reliable data
+- **Clean Architecture:** Modular components with custom hooks and barrel file imports
 
 ---
 
@@ -87,30 +87,75 @@ Visit [http://localhost:5173](http://localhost:5173)
 ---
 
 ## Project Structure
+
+### Clean Architecture with Barrel Files
 ```
 src/
-├── components/    # UI components (ToastProvider, Confetti, banners, etc.)
-├── contexts/      # React contexts (Auth)
-├── hooks/         # Custom hooks (useAuth)
-├── lib/           # Utilities (debouncedToast, logger, etc.)
-├── pages/         # Page components (Landing, Login, Dashboards)
-├── firebase.ts    # Firebase config & AppCheck
-├── main.tsx       # App entry point (with React Query)
-└── assets/        # Fonts, images
+├── components/
+│   ├── ui/                    # UI components (Button, Card, Input, etc.)
+│   │   └── index.ts          # Barrel file for UI components
+│   ├── teacher-dashboard/     # Teacher dashboard specific components
+│   │   ├── AccountSettingsCard.tsx
+│   │   ├── StudentManagementCard.tsx
+│   │   ├── BulkAttendanceCard.tsx
+│   │   └── index.ts          # Barrel file for teacher dashboard components
+│   ├── Navigation.tsx        # Layout components
+│   ├── Footer.tsx
+│   └── index.ts              # Barrel file for layout components
+├── hooks/                     # Custom hooks with clean separation
+│   ├── useAuth.ts            # Authentication logic
+│   ├── useStudents.ts        # Student management
+│   ├── usePendingRequests.ts # Real-time pending requests
+│   ├── useMonthlyFee.ts      # Monthly fee management
+│   ├── useFinancialSummary.ts # Financial data
+│   ├── useBulkAttendance.ts  # Bulk attendance operations
+│   ├── useStudentFees.ts     # Student fee calculations
+│   ├── useAttendanceData.ts  # Real-time attendance data
+│   ├── useTeacherSetup.ts    # Admin teacher setup
+│   ├── useCalendar.ts        # Calendar state management
+│   └── index.ts              # Barrel file for all hooks
+├── lib/                       # Utility functions
+│   ├── utils.ts              # General utilities
+│   ├── logger.ts             # Logging utilities
+│   ├── debouncedToast.ts     # Toast notifications
+│   ├── linkGoogleAccount.ts  # Google account linking
+│   ├── errorHandler.ts       # Global error handling
+│   └── index.ts              # Barrel file for utilities
+├── contexts/                  # React contexts
+│   ├── AuthContext.tsx       # Authentication context
+│   └── AuthContextTypes.ts   # Type definitions
+├── pages/                     # Page components
+│   ├── LandingPage.tsx
+│   ├── LoginPage.tsx
+│   ├── StudentDashboard.tsx
+│   └── TeacherDashboard.tsx  # Clean layout component (55 lines)
+├── firebase.ts               # Firebase configuration
+├── main.tsx                  # App entry point
+└── assets/                   # Fonts, images
+```
+
+### Import Examples
+```typescript
+// Clean, organized imports using barrel files
+import { useAuth, useStudents, useCalendar } from '@/hooks';
+import { Navigation, Footer } from '@/components';
+import { StudentManagementCard, BulkAttendanceCard } from '@/components/teacher-dashboard';
+import { debouncedToast, formatLocalDate } from '@/lib';
 ```
 
 ---
 
 ## Main Libraries
-- **React 19**
-- **TypeScript**
-- **Firebase (Auth, Firestore, AppCheck)**
-- **@tanstack/react-query** — Data fetching & caching
+- **React 19** - Modern React with hooks
+- **TypeScript** - Type safety and better DX
+- **Firebase (Auth, Firestore, AppCheck)** - Backend and authentication
+- **Firestore onSnapshot** — Real-time data fetching and live updates
 - **react-hot-toast** — User notifications
 - **framer-motion** — Animations
 - **canvas-confetti** — Confetti effect
-- **tailwindcss** & **shadcn/ui** — Styling & UI
+- **tailwindcss** & **shadcn/ui** — Styling & UI components
 - **lucide-react** — Icons
+- **date-fns** — Date utilities
 
 ---
 
@@ -132,10 +177,31 @@ src/
 
 ---
 
+## Development Notes
+
+### Code Quality
+- **ESLint** configured for code quality
+- **TypeScript** for type safety
+- **Absolute imports** with `@/` alias
+- **Barrel files** for clean imports
+- **Custom hooks** for reusable logic
+- **Error boundaries** and global error handling
+
+### Performance
+- **Real-time updates** with Firestore listeners
+- **Optimized re-renders** with React hooks
+- **Code splitting** with Vite
+- **Lazy loading** for better performance
+
+---
+
 ## Contributing
 - Fork & branch for your feature/fix
 - Run `npm run lint` before PR
-- Follow code style & update docs if needed
+- Follow the established architecture patterns
+- Use custom hooks for business logic
+- Keep components focused and small
+- Update docs if needed
 
 ---
 
