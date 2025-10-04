@@ -28,9 +28,9 @@ export default function TeacherDashboard() {
   const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
 
   return (
-    <div className="min-h-screen bg-[#FDF6F0]">
+    <div className="min-h-screen bg-[#FDF6F0] flex flex-col">
       <Navigation />
-      <div className="container mx-auto px-6 py-8">
+      <main className="flex-grow container mx-auto px-6 py-8">
         <AccountSettingsCard show={true} userRole={user.role} isGoogleLinked={isGoogleLinked} />
         <InitialSetupCard />
         
@@ -52,8 +52,8 @@ export default function TeacherDashboard() {
         <StudentFeesSummaryCard />
         <BulkAttendanceCard showBulkAttendance={showBulkAttendance} setShowBulkAttendance={setShowBulkAttendance} />
         
-        <Footer />
-                      </div>
-                      </div>
+      </main>
+      <Footer />
+    </div>
   );
 }

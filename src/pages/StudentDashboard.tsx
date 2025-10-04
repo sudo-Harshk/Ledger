@@ -585,190 +585,192 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {showConfetti && <Confetti trigger={confettiTrigger} />}
       <Navigation onRefresh={handleRefresh} refreshing={refreshing} />
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto space-y-6">
-          {/* Updated X ago info */}
-          <div className="flex items-center gap-2 mb-2" title={lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : ''}>
-            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span className="text-sm font-medium text-muted-foreground">
-              {lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
-            </span>
-          </div>
-          {/* Due Date Reminder Banner */}
-          {monthlyDueDate && isCurrentMonth && daysUntilDue <= 5 && daysUntilDue >= 0 && paymentStatus !== 'paid' && (
-            <DueDateBanner 
-              dueDate={monthlyDueDate} 
-              daysUntilDue={daysUntilDue} 
-              paymentStatus={paymentStatus} 
-              currentMonth={currentMonth}
-              totalDueAmount={totalDueAmount}
-            />
-          )}
-          {/* Account Settings Card for Google Link */}
-          {!isGoogleLinked && (
-            <Card className="mb-8">
+      <main className="flex-grow">
+        <div className="p-6">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* Updated X ago info */}
+            <div className="flex items-center gap-2 mb-2" title={lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : ''}>
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span className="text-sm font-medium text-muted-foreground">
+                {lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
+              </span>
+            </div>
+            {/* Due Date Reminder Banner */}
+            {monthlyDueDate && isCurrentMonth && daysUntilDue <= 5 && daysUntilDue >= 0 && paymentStatus !== 'paid' && (
+              <DueDateBanner 
+                dueDate={monthlyDueDate} 
+                daysUntilDue={daysUntilDue} 
+                paymentStatus={paymentStatus} 
+                currentMonth={currentMonth}
+                totalDueAmount={totalDueAmount}
+              />
+            )}
+            {/* Account Settings Card for Google Link */}
+            {!isGoogleLinked && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>Link your Google account for easier login and account recovery.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" onClick={linkGoogleAccount} className="w-full sm:w-auto">
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                    Link Google Account
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {/* Dashboard Header (no refresh button here anymore) */}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+            </div>
+            {/* Quick Actions - Bento Design */}
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            {/* Large Attendance Card */}
+            <Card className="md:col-span-2 transition-all duration-200">
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Link your Google account for easier login and account recovery.</CardDescription>
+                <CardTitle className="text-lg">Mark Attendance</CardTitle>
+                <CardDescription>Mark today's attendance</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" onClick={linkGoogleAccount} className="w-full sm:w-auto">
-                  <LinkIcon className="mr-2 h-4 w-4" />
-                  Link Google Account
+                <Button 
+                  onClick={markAttendance}
+                  disabled={loading || memoHasMarkedAttendanceToday || !isCurrentMonth}
+                  className={`w-full ${memoHasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
+                >
+                  {loading
+                    ? 'Marking...'
+                    : memoHasMarkedAttendanceToday
+                      ? 'Marked Today'
+                      : isPastMonth
+                        ? 'Disabled for Past months'
+                        : isFutureMonth
+                          ? 'Disabled for Future months'
+                          : 'Mark Today'}
                 </Button>
               </CardContent>
             </Card>
-          )}
-          {/* Dashboard Header (no refresh button here anymore) */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+
+            {/* Medium Approved Days Card */}
+            <ApprovedDaysCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} getTodayEmoji={getTodayEmoji} />
+
+
+            {/* Small Daily Rate Card */}
+            <DailyRateCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} currentMonth={currentMonth} />
+
+            {/* Small Total Due Card */}
+            <TotalDueCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} totalDueAmount={totalDueAmount} paymentStatus={paymentStatus} paymentDate={paymentDate} />
           </div>
-          {/* Quick Actions - Bento Design */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          {/* Large Attendance Card */}
-          <Card className="md:col-span-2 transition-all duration-200">
+
+          {/* Calendar - hidden on mobile, visible on sm+ */}
+          <Card className="hidden sm:block">
             <CardHeader>
-              <CardTitle className="text-lg">Mark Attendance</CardTitle>
-              <CardDescription>Mark today's attendance</CardDescription>
+              <div className="flex justify-between items-center">
+                <CardTitle>Attendance Calendar</CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeMonth('prev')}
+                    className="transition-all duration-200"
+                  >
+                    ←
+                  </Button>
+                  <span className="text-lg font-medium">
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeMonth('next')}
+                    className="transition-all duration-200"
+                  >
+                    →
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={markAttendance}
-                disabled={loading || memoHasMarkedAttendanceToday || !isCurrentMonth}
-                className={`w-full ${memoHasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
-              >
-                {loading
-                  ? 'Marking...'
-                  : memoHasMarkedAttendanceToday
-                    ? 'Marked Today'
-                    : isPastMonth
-                      ? 'Disabled for Past months'
-                      : isFutureMonth
-                        ? 'Disabled for Future months'
-                        : 'Mark Today'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Medium Approved Days Card */}
-          <ApprovedDaysCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} getTodayEmoji={getTodayEmoji} />
-
-
-          {/* Small Daily Rate Card */}
-          <DailyRateCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} currentMonth={currentMonth} />
-
-          {/* Small Total Due Card */}
-          <TotalDueCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} totalDueAmount={totalDueAmount} paymentStatus={paymentStatus} paymentDate={paymentDate} />
-        </div>
-
-        {/* Calendar - hidden on mobile, visible on sm+ */}
-        <Card className="hidden sm:block">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Attendance Calendar</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => changeMonth('prev')}
-                  className="transition-all duration-200"
-                >
-                  ←
-                </Button>
-                <span className="text-lg font-medium">
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => changeMonth('next')}
-                  className="transition-all duration-200"
-                >
-                  →
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {currentMonth < PLATFORM_START ? (
-              <div className="text-center text-red-600 font-semibold py-8">
-                Started using platform from August 2025
-              </div>
-            ) : (
-              <>
-                {attendanceLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
-                  </div>
-                ) : (
-                  <div className="w-full">
-                    <div className="grid grid-cols-7 gap-1 w-full">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
-                        {day}
-                      </div>
-                    ))}
-                    {daysInMonth.map((day, index) => {
-                      const status = getAttendanceStatus(day)
-                      return (
-                        <div
-                          key={index}
-                          className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
-                            status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
-                          }`}
-                        >
-                          {day && (
-                            <>
-                              <span className="font-medium select-none text-sm sm:text-base">{day}</span>
-                              {status && (
-                                <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
-                                  <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
-                                </span>
-                              )}
-                            </>
-                          )}
+              {currentMonth < PLATFORM_START ? (
+                <div className="text-center text-red-600 font-semibold py-8">
+                  Started using platform from August 2025
+                </div>
+              ) : (
+                <>
+                  {attendanceLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      <div className="grid grid-cols-7 gap-1 w-full">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
+                          {day}
                         </div>
-                      )
-                    })}
+                      ))}
+                      {daysInMonth.map((day, index) => {
+                        const status = getAttendanceStatus(day)
+                        return (
+                          <div
+                            key={index}
+                            className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
+                              status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
+                            }`}
+                          >
+                            {day && (
+                              <>
+                                <span className="font-medium select-none text-sm sm:text-base">{day}</span>
+                                {status && (
+                                  <span className="pointer-events-none absolute bottom-1 right-1" title={status} aria-label={status}>
+                                    <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor(status)}`}></span>
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )
+                      })}
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-4 flex gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span>Approved</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <span>Pending</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                      <span>Absent</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span>Rejected</span>
                     </div>
                   </div>
-                )}
-                <div className="mt-4 flex gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>Approved</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span>Pending</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                    <span>Absent</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span>Rejected</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-        {/* Alternative content for mobile */}
-        <Card className="sm:hidden">
-          <CardContent>
-            <div className="text-center text-muted-foreground py-8">
-              Calendar view is available on larger screens.
-            </div>
-          </CardContent>
-        </Card>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          {/* Alternative content for mobile */}
+          <Card className="sm:hidden">
+            <CardContent>
+              <div className="text-center text-muted-foreground py-8">
+                Calendar view is available on larger screens.
+              </div>
+            </CardContent>
+          </Card>
+          </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   )
