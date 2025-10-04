@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useMonthlyFee, useAuth } from '@/hooks';
 
 export default function MonthlyFeeSettingsCard() {
