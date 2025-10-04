@@ -1,5 +1,4 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
-import React from 'react';
 import { usePendingRequests, useAuth } from '@/hooks';
 
 export default function PendingAttendanceRequestsCard() {
