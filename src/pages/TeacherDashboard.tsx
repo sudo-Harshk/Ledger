@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks';
+import { useAuth, useBulkAttendance, useStudents } from '@/hooks';
 import { Navigation, Footer } from '@/components';
 import { 
   AccountSettingsCard,
@@ -20,6 +20,9 @@ export default function TeacherDashboard() {
   if (!user) {
     return null;
   }
+  
+  const { students } = useStudents();
+  const { showBulkAttendance, setShowBulkAttendance, setBulkStartDate, setBulkEndDate } = useBulkAttendance(user?.uid, students);
 
   const providerData = user?.providerData || [];
   const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
@@ -38,7 +41,7 @@ export default function TeacherDashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <PendingRequestsCard />
-          <QuickActionsCard />
+          <QuickActionsCard showBulkAttendance={showBulkAttendance} setShowBulkAttendance={setShowBulkAttendance} setBulkStartDate={setBulkStartDate} setBulkEndDate={setBulkEndDate} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -47,7 +50,7 @@ export default function TeacherDashboard() {
                 </div>
         
         <StudentFeesSummaryCard />
-        <BulkAttendanceCard />
+        <BulkAttendanceCard showBulkAttendance={showBulkAttendance} setShowBulkAttendance={setShowBulkAttendance} />
         
         <Footer />
                       </div>

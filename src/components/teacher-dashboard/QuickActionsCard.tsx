@@ -1,10 +1,14 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
-import React from 'react';
-import { useBulkAttendance, useStudents } from '@/hooks';
 
-export default function QuickActionsCard() {
-  const { students } = useStudents();
-  const { showBulkAttendance, setShowBulkAttendance, setBulkStartDate, setBulkEndDate } = useBulkAttendance(undefined, students);
+interface QuickActionsCardProps {
+  showBulkAttendance: boolean;
+  setShowBulkAttendance: (show: boolean) => void;
+  setBulkStartDate: (date: string) => void;
+  setBulkEndDate: (date: string) => void;
+}
+
+export default function QuickActionsCard({ showBulkAttendance, setShowBulkAttendance, setBulkStartDate, setBulkEndDate }: QuickActionsCardProps) {
+  
   return (
     <Card>
       <CardHeader>

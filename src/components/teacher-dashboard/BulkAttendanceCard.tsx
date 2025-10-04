@@ -1,14 +1,17 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
 import { useBulkAttendance, useStudents, useAuth, useCalendar, useAttendanceData } from '@/hooks';
 
-export default function BulkAttendanceCard() {
+interface BulkAttendanceCardProps {
+  showBulkAttendance: boolean;
+  setShowBulkAttendance: (show: boolean) => void;
+}
+
+export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAttendance }: BulkAttendanceCardProps) {
   const { user } = useAuth();
   const { students } = useStudents();
   const { currentMonth, daysInMonth, changeMonth } = useCalendar();
   const attendanceData = useAttendanceData(currentMonth);
   const {
-    showBulkAttendance,
-    setShowBulkAttendance,
     bulkStartDate,
     setBulkStartDate,
     bulkEndDate,
