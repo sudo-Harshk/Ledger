@@ -1,11 +1,16 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMonthlyFee, useAuth } from '@/hooks';
 
 export default function MonthlyFeeSettingsCard() {
   const { user } = useAuth();
   const { monthlyFee, loading, isUpdated, updateMonthlyFee } = useMonthlyFee(user?.uid);
   const [inputValue, setInputValue] = useState(monthlyFee);
+
+  // Sync input value with fetched monthly fee
+  useEffect(() => {
+    setInputValue(monthlyFee);
+  }, [monthlyFee]);
 
   const handleUpdate = () => {
     updateMonthlyFee(inputValue);

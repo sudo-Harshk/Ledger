@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '@/firebase';
@@ -21,6 +21,34 @@ export const useStudents = () => {
   const [pageSize] = useState(10);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [createUserLoading, setCreateUserLoading] = useState(false);
+
+  // Initial fetch function (separate from pagination)
+  const initialFetchStudents = useCallback(async () => {
+    setLoadingStudents(true);
+    try {
+      const studentsQuery = query(
+        collection(db, 'users'),
+        where('role', '==', 'student'),
+        orderBy('createdAt'),
+        limit(pageSize)
+      );
+      const snapshot = await getDocs(studentsQuery);
+      const studentsList = snapshot.docs.map(doc => ({ ...(doc.data() as StudentAccount), id: doc.id }));
+      setStudents(studentsList);
+      setFirstVisibleStudent(snapshot.docs[0]);
+      setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
+    } catch (error) {
+      toast.error('Failed to fetch students. Please try again.');
+      setStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [pageSize]);
+
+  // Automatically fetch students when hook is initialized
+  useEffect(() => {
+    initialFetchStudents();
+  }, [initialFetchStudents]);
 
   // Fetch paginated students
   const fetchStudentsPage = useCallback(
@@ -76,7 +104,7 @@ export const useStudents = () => {
     } else {
       setLastVisibleStudent(null);
       setFirstVisibleStudent(null);
-      await fetchStudentsPage();
+      await initialFetchStudents();
     }
   };
 

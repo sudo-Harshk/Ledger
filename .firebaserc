@@ -1,5 +1,27 @@
 {
   "projects": {
-    "default": "ledger-90834"
-  }
+    "default": "ledger-90834",
+    "staging": "ledger-app-staging",
+    "production": "ledger-90834"
+  },
+  "targets": {
+    "ledger-app-staging": {
+      "hosting": {
+        "production": [
+          "ledger-90834"
+        ],
+        "staging": [
+          "ledger-app-staging"
+        ]
+      }
+    },
+    "ledger-90834": {
+      "hosting": {
+        "production": [
+          "ledger-90834"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

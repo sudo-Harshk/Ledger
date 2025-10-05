@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { formatLocalDate } from '@/lib';
@@ -18,7 +18,7 @@ export const useStudentFees = (currentMonth: Date) => {
   const [loading, setLoading] = useState(false);
 
   // Fetch student fees
-  const fetchStudentFees = async () => {
+  const fetchStudentFees = useCallback(async () => {
     setLoading(true);
     try {
       const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -96,7 +96,7 @@ export const useStudentFees = (currentMonth: Date) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentMonth]);
 
   // Handle mark as paid
   const handleMarkAsPaid = async (studentId: string, monthKey: string) => {
@@ -137,7 +137,7 @@ export const useStudentFees = (currentMonth: Date) => {
   // Load data when month changes
   useEffect(() => {
     fetchStudentFees();
-  }, [currentMonth]);
+  }, [currentMonth, fetchStudentFees]);
 
   return {
     studentFees,
