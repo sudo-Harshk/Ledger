@@ -300,6 +300,33 @@ export default function StudentDashboard() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
+  const saveTotalDue = useCallback(async (amount: number) => {
+    if (!user?.uid) return;
+    try {
+      const monthKey = getMonthKey(currentMonth);
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      let totalDueByMonth: { [key: string]: { due: number, status: string } } = {};
+      if (userDoc.exists()) {
+        // Accept both old and new formats for backward compatibility
+        const raw = userDoc.data().totalDueByMonth || {};
+        for (const key in raw) {
+          if (typeof raw[key] === 'number') {
+            totalDueByMonth[key] = { due: raw[key], status: 'unpaid' };
+          } else {
+            totalDueByMonth[key] = raw[key];
+          }
+        }
+      }
+      totalDueByMonth[monthKey] = { due: amount, status: totalDueByMonth[monthKey]?.status || 'unpaid' };
+      await setDoc(userRef, {
+        totalDueByMonth,
+        lastTotalDueUpdate: new Date(),
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving total due amount:', error);
+    }
+  }, [user?.uid, currentMonth]);
 
   const loadTotalDue = useCallback(async () => {
     if (!user?.uid) return;

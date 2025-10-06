@@ -31,7 +31,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         try {
-          logger.info('Auth state changed - User authenticated')
           
           // Get user data from Firestore
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
@@ -115,7 +114,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(null)
         }
       } else {
-        logger.info('Auth state changed - User signed out')
         setUser(null)
       }
       setLoading(false)
@@ -132,7 +130,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (username: string, password: string) => {
     try {
-      logger.info('Attempting login')
       
       let loginEmail = username
       
@@ -163,7 +160,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       const result = await signInWithEmailAndPassword(auth, loginEmail, password)
-      logger.info('Login successful')
       
       // Check if user document exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
@@ -186,7 +182,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const loginWithGoogle = async () => {
     try {
-      logger.info('Attempting Google login')
       const provider = new GoogleAuthProvider()
       const result = await signInWithPopup(auth, provider)
       const additionalInfo = getAdditionalUserInfo(result)
@@ -198,7 +193,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         debouncedToast('Account not registered. Please contact your teacher.', 'error')
         throw new Error('Account not registered. Please contact your teacher.')
       }
-      logger.info('Google login successful')
       // Check if user document exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
       if (!userDoc.exists()) {
