@@ -38,6 +38,9 @@ export const useStudents = () => {
       setFirstVisibleStudent(snapshot.docs[0]);
       setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
     } catch (error) {
+      console.error('useStudents error details:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
       toast.error('Failed to fetch students. Please try again.');
       setStudents([]);
     } finally {

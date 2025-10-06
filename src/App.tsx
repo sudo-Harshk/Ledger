@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import './App.css'
 import ToastProvider from './components/ToastProvider';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -13,6 +13,40 @@ const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 
 function App() {
+  // Global error handler for unhandled promise rejections
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      console.error('Promise rejection details:', {
+        reason: event.reason,
+        type: typeof event.reason,
+        stack: event.reason?.stack
+      });
+      
+      // Prevent the default behavior (which would log to console)
+      event.preventDefault();
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      console.error('Global error:', event.error);
+      console.error('Error details:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
   // Protected Route Component - moved inside App function to be within AuthProvider
   function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: string[] }) {
     const { user, loading } = useAuth()

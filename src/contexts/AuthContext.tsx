@@ -111,6 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
         } catch (error: unknown) {
           logger.error('Error fetching user data:', error)
+          console.error('AuthContext error details:', error)
           setUser(null)
         }
       } else {

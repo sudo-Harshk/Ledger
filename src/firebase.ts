@@ -1,3 +1,18 @@
+// --- ADD THESE DEBUG LOGS ---
+console.log("==============================");
+console.log("LEDGER APP DEBUG LOGS");
+console.log("Vite Mode:", import.meta.env.MODE);
+console.log("Project ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
+console.log("reCAPTCHA Site Key:", import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY);
+console.log("API Key:", import.meta.env.VITE_FIREBASE_API_KEY);
+console.log("Auth Domain:", import.meta.env.VITE_FIREBASE_AUTH_DOMAIN);
+console.log("Storage Bucket:", import.meta.env.VITE_FIREBASE_STORAGE_BUCKET);
+console.log("Messaging Sender ID:", import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID);
+console.log("App ID:", import.meta.env.VITE_FIREBASE_APP_ID);
+console.log("App Check Debug Token:", import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN);
+console.log("==============================");
+// -----------------------------
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import logger from './lib/logger'
@@ -40,10 +55,14 @@ if (!import.meta.env.PROD) {
 }
 
 // Initialize App Check with reCAPTCHA v3 in all environments
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider(checkEnvVar('VITE_RECAPTCHA_V3_SITE_KEY')),
-  isTokenAutoRefreshEnabled: true,
-});
+if (import.meta.env.MODE !== 'staging') {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(checkEnvVar('VITE_RECAPTCHA_V3_SITE_KEY')),
+    isTokenAutoRefreshEnabled: true,
+  });
+} else {
+  console.log("App Check disabled for staging environment");
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
