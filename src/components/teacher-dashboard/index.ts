@@ -8,3 +8,4 @@ export { default as StudentManagementCard } from './StudentManagementCard';
 export { default as PendingAttendanceRequestsCard } from './PendingAttendanceRequestsCard';
 export { default as StudentFeesSummaryCard } from './StudentFeesSummaryCard';
 export { default as BulkAttendanceCard } from './BulkAttendanceCard';
+export { FeeRecalculationCard } from './FeeRecalculationCard';

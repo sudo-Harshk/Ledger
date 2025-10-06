@@ -10,6 +10,7 @@ export default function StudentManagementCard() {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentUsername, setNewStudentUsername] = useState('');
+  const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0);
 
@@ -19,6 +20,7 @@ export default function StudentManagementCard() {
     const success = await createStudentAccount(
       newStudentUsername,
       newStudentName,
+      newStudentEmail,
       newStudentPassword,
       newStudentMonthlyFee,
       user.uid
@@ -28,6 +30,7 @@ export default function StudentManagementCard() {
       // Reset form
       setNewStudentUsername('');
       setNewStudentName('');
+      setNewStudentEmail('');
       setNewStudentPassword('');
       setNewStudentMonthlyFee(0);
       setShowCreateUser(false);
@@ -87,6 +90,17 @@ export default function StudentManagementCard() {
                 />
               </div>
               <div>
+                <Label htmlFor="studentEmail">Email</Label>
+                <Input
+                  id="studentEmail"
+                  type="email"
+                  value={newStudentEmail || ''}
+                  onChange={(e) => setNewStudentEmail(e.target.value)}
+                  placeholder="Enter student's email (e.g., student@gmail.com)"
+                  className="mt-1"
+                />
+              </div>
+              <div>
                 <Label htmlFor="studentPassword">Password</Label>
                 <Input
                   id="studentPassword"
@@ -134,7 +148,7 @@ export default function StudentManagementCard() {
                   <div>
                     <p className="font-medium">{student.displayName}</p>
                     <p className="text-sm text-gray-600">
-                      @{student.username} • ₹{student.monthlyFee}/month
+                      @{student.username} • {student.email} • ₹{student.monthlyFee}/month
                     </p>
                     <p className="text-xs text-gray-500">
                       Created: {(() => {

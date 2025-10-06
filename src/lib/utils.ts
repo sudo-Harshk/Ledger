@@ -27,3 +27,27 @@ export function dispatchAttendanceUpdatedEvent() {
     window.dispatchEvent(new Event('attendance-updated'));
   }
 }
+
+export function dispatchStudentUpdatedEvent() {
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('student-updated'));
+  }
+}
+
+export function dispatchFeeUpdatedEvent() {
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('fee-updated'));
+  }
+}
+
+export function dispatchPaymentUpdatedEvent() {
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('payment-updated'));
+  }
+}
+
+export function dispatchAccountUpdatedEvent() {
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('account-updated'));
+  }
+}

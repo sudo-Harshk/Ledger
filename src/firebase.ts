@@ -71,7 +71,16 @@ export const db = getFirestore(app);
 auth.onAuthStateChanged((user) => {
   if (user) {
     logger.info('Firebase Auth initialized successfully');
+    console.log("AUTH DEBUG: User authenticated:", {
+      uid: user.uid,
+      email: user.email,
+      emailVerified: user.emailVerified,
+      displayName: user.displayName
+    });
+  } else {
+    console.log("AUTH DEBUG: No user authenticated");
   }
-}, () => {
+}, (error) => {
   logger.error('Firebase Auth initialization error');
+  console.error("AUTH DEBUG: Auth state change error:", error);
 });

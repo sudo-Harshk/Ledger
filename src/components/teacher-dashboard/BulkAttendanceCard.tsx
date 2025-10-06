@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
-import { useBulkAttendance, useStudents, useAuth, useCalendar, useAttendanceData } from '@/hooks';
+import { useBulkAttendance, useStudents, useAuth, useCalendar } from '@/hooks';
 
 interface BulkAttendanceCardProps {
   showBulkAttendance: boolean;
@@ -10,7 +10,6 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
   const { user } = useAuth();
   const { students } = useStudents();
   const { currentMonth, daysInMonth, changeMonth } = useCalendar();
-  const attendanceData = useAttendanceData(currentMonth);
   const {
     bulkStartDate,
     setBulkStartDate,
@@ -19,6 +18,9 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
     bulkAttendanceLoading,
     defaultAttendanceStatus,
     setDefaultAttendanceStatus,
+    selectedStudents,
+    toggleStudentSelection,
+    selectAllStudents,
     revenuePreview,
     addBulkAttendance,
     getCellClasses,
@@ -26,7 +28,9 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
   } = useBulkAttendance(user?.uid, students);
   
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
+  
   if (!showBulkAttendance) return null;
+  
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -34,6 +38,39 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
         <CardDescription>Enter a date range to add approved attendance for all students.</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Student Selection */}
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-medium text-gray-800">
+              Select Students to Track ({selectedStudents.length}/{students.length})
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={selectAllStudents}
+              className="text-xs"
+            >
+              Select All
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+            {students.map((student) => (
+              <label 
+                key={student.id}
+                className="flex items-center gap-2 p-2 bg-white rounded border cursor-pointer hover:bg-gray-50 transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedStudents.includes(student.id)}
+                  onChange={() => toggleStudentSelection(student.id)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-800">{student.displayName}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Month navigation for selection calendar */}
         <div className="flex items-center justify-between mb-3">
           <Label className="text-sm font-medium">Select Date Range</Label>
@@ -83,7 +120,7 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
                 daysInMonth.map((day: number | null, idx: number) => (
                   <div
                     key={idx}
-                    className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day, attendanceData)}`}
+                    className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day)}`}
                     onClick={() => handleCalendarDayClick(day, currentMonth)}
                   >
                     {day && <span className="font-medium select-none">{day}</span>}
@@ -212,7 +249,7 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Preview:</h4>
             <p className="text-sm text-blue-700">
-              Will mark <strong>{students.length}</strong> students as <strong>{defaultAttendanceStatus === 'present' ? 'Present' : 'Absent'}</strong>{' '}
+              Will mark <strong>{selectedStudents.length}</strong> selected students as <strong>{defaultAttendanceStatus === 'present' ? 'Present' : 'Absent'}</strong>{' '}
               {bulkStartDate === bulkEndDate ? (
                 <>for <strong>{bulkStartDate}</strong></>
               ) : (
@@ -220,7 +257,7 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
               )}
             </p>
             <p className="text-sm text-blue-600 mt-2">
-              Total records: <strong>{students.length * ((bulkStartDate === bulkEndDate) ? 1 : Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
+              Total records: <strong>{selectedStudents.length * ((bulkStartDate === bulkEndDate) ? 1 : Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
             </p>
             {/* Revenue Preview */}
             {defaultAttendanceStatus === 'present' && revenuePreview.days > 0 && revenuePreview.dailyRate > 0 && (
@@ -236,7 +273,7 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
         <div className="flex gap-2">
           <Button
             onClick={addBulkAttendance}
-            disabled={bulkAttendanceLoading || !bulkStartDate || !bulkEndDate}
+            disabled={bulkAttendanceLoading || !bulkStartDate || !bulkEndDate || selectedStudents.length === 0}
           >
             {bulkAttendanceLoading ? 'Applying...' : 'Apply Attendance'}
           </Button>

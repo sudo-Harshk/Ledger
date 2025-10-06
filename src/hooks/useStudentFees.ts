@@ -11,6 +11,9 @@ interface StudentFee {
   approvedDays: number;
   absentDays: number;
   totalAmount: number;
+  paymentStatus?: string;
+  paymentDate?: Date;
+  amountPaid?: number;
 }
 
 export const useStudentFees = (currentMonth: Date) => {
@@ -80,6 +83,15 @@ export const useStudentFees = (currentMonth: Date) => {
         const monthlyFee = student.monthlyFee || 0;
         const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
         const totalAmount = approvedDays * dailyRate;
+        
+        // Get payment status from totalDueByMonth
+        const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+        const totalDueByMonth = (student as any).totalDueByMonth || {};
+        const monthData = totalDueByMonth[monthKey] || {};
+        const paymentStatus = monthData.status || 'unpaid';
+        const paymentDate = monthData.paymentDate?.toDate ? monthData.paymentDate.toDate() : null;
+        const amountPaid = monthData.amountPaid || 0;
+        
         return {
           studentId: student.id,
           studentName: student.displayName || 'Unknown Student',
@@ -87,6 +99,9 @@ export const useStudentFees = (currentMonth: Date) => {
           approvedDays,
           absentDays,
           totalAmount: Math.round(totalAmount * 100) / 100,
+          paymentStatus,
+          paymentDate,
+          amountPaid,
         };
       });
       setStudentFees(fees);
@@ -105,27 +120,46 @@ export const useStudentFees = (currentMonth: Date) => {
       const userRef = doc(db, 'users', studentId);
       const userDoc = await getDoc(userRef);
       if (!userDoc.exists()) throw new Error('Student not found');
+      
       const totalDueByMonth = userDoc.data().totalDueByMonth || {};
       const monthDue = totalDueByMonth[monthKey];
       let dueAmount = 0;
+      
       if (typeof monthDue === 'object' && monthDue !== null) {
         dueAmount = monthDue.due;
       } else if (typeof monthDue === 'number') {
         dueAmount = monthDue;
       } else {
-        throw new Error('No due found for this month');
+        throw new Error('No due amount found for this month. Please recalculate fees first.');
       }
+
+      if (dueAmount <= 0) {
+        throw new Error('No amount due for this month');
+      }
+
       await updateDoc(userRef, {
         [`totalDueByMonth.${monthKey}.status`]: 'paid',
         [`totalDueByMonth.${monthKey}.amountPaid`]: dueAmount,
         [`totalDueByMonth.${monthKey}.paymentDate`]: (await import('firebase/firestore')).serverTimestamp(),
       });
+      
       toast.dismiss(loadingToast);
-      toast.success('Payment recorded!');
+      toast.success(`Payment of ₹${dueAmount} recorded successfully!`);
       await fetchStudentFees();
     } catch (error: any) {
-      toast.dismiss();
-      toast.error('Failed to record payment: ' + (error?.message || 'Unknown error'));
+      toast.dismiss(loadingToast);
+      console.error('Mark as paid error:', error);
+      
+      // Provide more specific error messages
+      if (error.code === 'permission-denied') {
+        toast.error('Permission denied. Please ensure you have teacher/admin access.');
+      } else if (error.message?.includes('No due amount found')) {
+        toast.error(error.message);
+      } else if (error.message?.includes('No amount due')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to record payment: ' + (error?.message || 'Unknown error'));
+      }
     }
   };
 

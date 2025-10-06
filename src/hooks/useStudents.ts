@@ -1,13 +1,29 @@
-import { useState, useCallback, useEffect } from 'react';
-import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, deleteDoc, writeBatch, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  limit, 
+  startAfter, 
+  endBefore,
+  doc,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+  limitToLast
+} from 'firebase/firestore';
+import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { db, auth } from '@/firebase';
 import { debouncedToast } from '@/lib';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 interface StudentAccount {
   id: string;
   username: string;
+  email: string;
+  role: string;
   displayName: string;
   monthlyFee: number;
   createdAt: Date;
@@ -54,60 +70,54 @@ export const useStudents = () => {
   }, [initialFetchStudents]);
 
   // Fetch paginated students
-  const fetchStudentsPage = useCallback(
-    async (direction: 'next' | 'prev' = 'next') => {
-      setLoadingStudents(true);
+  const fetchStudentsPage = useCallback(async (direction: 'next' | 'prev') => {
+    setLoadingStudents(true);
+    try {
       let studentsQuery;
-      try {
-        if (direction === 'next' && lastVisibleStudent) {
-          studentsQuery = query(
-            collection(db, 'users'),
-            where('role', '==', 'student'),
-            orderBy('createdAt'),
-            startAfter(lastVisibleStudent),
-            limit(pageSize)
-          );
-        } else if (direction === 'prev' && firstVisibleStudent) {
-          // For simplicity, just reload the first page
-          studentsQuery = query(
-            collection(db, 'users'),
-            where('role', '==', 'student'),
-            orderBy('createdAt'),
-            limit(pageSize)
-          );
-          setLastVisibleStudent(null);
-          setFirstVisibleStudent(null);
-        } else {
-          studentsQuery = query(
-            collection(db, 'users'),
-            where('role', '==', 'student'),
-            orderBy('createdAt'),
-            limit(pageSize)
-          );
-          setLastVisibleStudent(null);
-          setFirstVisibleStudent(null);
-        }
-        const snapshot = await getDocs(studentsQuery);
+      
+      if (direction === 'next' && lastVisibleStudent) {
+        studentsQuery = query(
+          collection(db, 'users'),
+          where('role', '==', 'student'),
+          orderBy('createdAt'),
+          startAfter(lastVisibleStudent),
+          limit(pageSize)
+        );
+      } else if (direction === 'prev' && firstVisibleStudent) {
+        studentsQuery = query(
+          collection(db, 'users'),
+          where('role', '==', 'student'),
+          orderBy('createdAt'),
+          endBefore(firstVisibleStudent),
+          limitToLast(pageSize)
+        );
+      } else {
+        // Fallback to initial fetch
+        return await initialFetchStudents();
+      }
+
+      const snapshot = await getDocs(studentsQuery);
+      if (!snapshot.empty) {
         const studentsList = snapshot.docs.map(doc => ({ ...(doc.data() as StudentAccount), id: doc.id }));
         setStudents(studentsList);
         setFirstVisibleStudent(snapshot.docs[0]);
         setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
-      } catch (error) {
-        toast.error('Failed to fetch students. Please try again.');
-        setStudents([]);
-      } finally {
-        setLoadingStudents(false);
       }
-    }, [lastVisibleStudent, firstVisibleStudent, pageSize]);
+    } catch (error) {
+      console.error('Error fetching students page:', error);
+      toast.error('Failed to fetch students. Please try again.');
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, [lastVisibleStudent, firstVisibleStudent, pageSize, initialFetchStudents]);
 
-  // Refetch students
-  const refetchStudents = async (direction?: 'next' | 'prev') => {
-    if (direction) {
-      await fetchStudentsPage(direction);
-    } else {
-      setLastVisibleStudent(null);
-      setFirstVisibleStudent(null);
+  // Refetch students (used after creating/deleting)
+  const refetchStudents = async () => {
+    try {
       await initialFetchStudents();
+    } catch (error) {
+      console.error('Error refetching students:', error);
+      toast.error('Failed to refresh students list.');
     }
   };
 
@@ -115,11 +125,12 @@ export const useStudents = () => {
   const createStudentAccount = async (
     newStudentUsername: string,
     newStudentName: string,
+    newStudentEmail: string,
     newStudentPassword: string,
     newStudentMonthlyFee: number,
     userUid: string
   ) => {
-    if (!newStudentUsername || !newStudentName || !newStudentPassword) {
+    if (!newStudentUsername || !newStudentName || !newStudentEmail || !newStudentPassword) {
       debouncedToast('Please fill in all fields', 'error');
       return;
     }
@@ -136,6 +147,14 @@ export const useStudents = () => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newStudentEmail)) {
+      debouncedToast('Please enter a valid email address', 'error');
+      return;
+    }
+
+    // Check if username already exists
     const existingStudentsQuery = query(
       collection(db, 'users'), 
       where('username', '==', newStudentUsername),
@@ -147,18 +166,27 @@ export const useStudents = () => {
       return;
     }
 
+    // Check if email already exists
+    const existingEmailQuery = query(
+      collection(db, 'users'), 
+      where('email', '==', newStudentEmail)
+    );
+    const existingEmail = await getDocs(existingEmailQuery);
+    if (!existingEmail.empty) {
+      debouncedToast(`Email "${newStudentEmail}" is already in use. Please choose a different email.`, 'error');
+      return;
+    }
+
     setCreateUserLoading(true);
     try {
-      const timestamp = Date.now();
-      const uniqueEmail = `${newStudentUsername}_${timestamp}@ledger.student`;
       const { user: firebaseUser } = await createUserWithEmailAndPassword(
         auth, 
-        uniqueEmail, 
+        newStudentEmail, 
         newStudentPassword
       );
       await setDoc(doc(db, 'users', firebaseUser.uid), {
         username: newStudentUsername,
-        email: uniqueEmail,
+        email: newStudentEmail,
         role: 'student',
         displayName: newStudentName,
         monthlyFee: newStudentMonthlyFee,
@@ -171,15 +199,24 @@ export const useStudents = () => {
     } catch (error: unknown) {
       console.error('Error creating student account:', error);
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
-        debouncedToast('Username is already taken. Please choose a different username.', 'error');
+        debouncedToast('Email is already in use. Please choose a different email.', 'error');
       } else if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/weak-password') {
         debouncedToast('Password is too weak. Please use a stronger password (at least 6 characters).', 'error');
+      } else if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/invalid-email') {
+        debouncedToast('Please enter a valid email address.', 'error');
       } else if (error instanceof Error) {
         debouncedToast(`Failed to create account: ${error.message}`, 'error');
       } else {
         debouncedToast('Failed to create account. Please try again.', 'error');
       }
-      return false; // Failure
+      // If Firebase Auth user was created but Firestore write failed, clean up
+      if (auth.currentUser) {
+        try {
+          await deleteUser(auth.currentUser);
+        } catch (deleteError) {
+          console.error('Error cleaning up Firebase Auth user:', deleteError);
+        }
+      }
     } finally {
       setCreateUserLoading(false);
     }
@@ -222,6 +259,7 @@ export const useStudents = () => {
     createUserLoading,
     refetchStudents,
     createStudentAccount,
-    deleteStudentAccount
+    deleteStudentAccount,
+    fetchStudentsPage
   };
 };

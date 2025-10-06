@@ -236,43 +236,58 @@ export default function StudentDashboard() {
       if (userDoc.exists()) {
         const userData = userDoc.data()
         const monthlyFee = userData.monthlyFee || 0
-        
-        // Get approved and absent attendance for current month view
-        const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-        const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
-        
-        const [approvedSnapshot, absentSnapshot] = await Promise.all([
-          getDocs(query(
-            collection(db, 'attendance'),
-            where('studentId', '==', user.uid),
-            where('status', '==', 'approved'),
-            where('date', '>=', formatLocalDate(monthStart)),
-            where('date', '<=', formatLocalDate(monthEnd))
-          )),
-          getDocs(query(
-            collection(db, 'attendance'),
-            where('studentId', '==', user.uid),
-            where('status', '==', 'absent'),
-            where('date', '>=', formatLocalDate(monthStart)),
-            where('date', '<=', formatLocalDate(monthEnd))
-          ))
-        ])
-        
-        const approvedDays = approvedSnapshot.size
-        const absentDays = absentSnapshot.size
-        
-        // Calculate daily rate: monthly fee / total days in month
-        const totalDaysInMonth = monthEnd.getDate()
-        const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0
-        const totalAmount = approvedDays * dailyRate
-        
-        setFeeSummary({
-          totalDays: approvedDays,
-          absentDays,
-          monthlyFee,
-          totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
-        })
-        await saveTotalDue(Math.round(totalAmount * 100) / 100)
+
+        // Get month key for database storage
+        const monthKey = getMonthKey(currentMonth);
+        const savedFeeData = userData.totalDueByMonth?.[monthKey];
+
+        if (savedFeeData && typeof savedFeeData === 'object') {
+          // Use teacher-calculated data
+          setFeeSummary({
+            totalDays: savedFeeData.approvedDays || 0,
+            absentDays: 0, // Can add this to calculation if needed
+            monthlyFee,
+            totalAmount: savedFeeData.due || 0
+          });
+        } else {
+          // Fallback: calculate for display only (don't save)
+          const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
+          const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+          
+          const [approvedSnapshot, absentSnapshot] = await Promise.all([
+            getDocs(query(
+              collection(db, 'attendance'),
+              where('studentId', '==', user.uid),
+              where('status', '==', 'approved'),
+              where('date', '>=', formatLocalDate(monthStart)),
+              where('date', '<=', formatLocalDate(monthEnd))
+            )),
+            getDocs(query(
+              collection(db, 'attendance'),
+              where('studentId', '==', user.uid),
+              where('status', '==', 'absent'),
+              where('date', '>=', formatLocalDate(monthStart)),
+              where('date', '<=', formatLocalDate(monthEnd))
+            ))
+          ])
+          
+          const approvedDays = approvedSnapshot.size
+          const absentDays = absentSnapshot.size
+          
+          // Calculate daily rate: monthly fee / total days in month
+          const totalDaysInMonth = monthEnd.getDate()
+          const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0
+          const totalAmount = approvedDays * dailyRate
+          
+          setFeeSummary({
+            totalDays: approvedDays,
+            absentDays,
+            monthlyFee,
+            totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
+          });
+          
+          // Note: No longer calling saveTotalDue - teachers will handle calculations
+        }
       }
     } catch (error) {
       debouncedToast('Failed to load fee summary. Please refresh the page and try again.', 'error')
@@ -285,33 +300,6 @@ export default function StudentDashboard() {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  const saveTotalDue = useCallback(async (amount: number) => {
-    if (!user?.uid) return;
-    try {
-      const monthKey = getMonthKey(currentMonth);
-      const userRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      let totalDueByMonth: { [key: string]: { due: number, status: string } } = {};
-      if (userDoc.exists()) {
-        // Accept both old and new formats for backward compatibility
-        const raw = userDoc.data().totalDueByMonth || {};
-        for (const key in raw) {
-          if (typeof raw[key] === 'number') {
-            totalDueByMonth[key] = { due: raw[key], status: 'unpaid' };
-          } else {
-            totalDueByMonth[key] = raw[key];
-          }
-        }
-      }
-      totalDueByMonth[monthKey] = { due: amount, status: totalDueByMonth[monthKey]?.status || 'unpaid' };
-      await setDoc(userRef, {
-        totalDueByMonth,
-        lastTotalDueUpdate: new Date(),
-      }, { merge: true });
-    } catch (error) {
-      console.error('Error saving total due amount:', error);
-    }
-  }, [user?.uid, currentMonth]);
 
   const loadTotalDue = useCallback(async () => {
     if (!user?.uid) return;

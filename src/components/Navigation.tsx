@@ -1,15 +1,20 @@
 import { Button } from '@/components/ui';
 import { useAuth } from '../hooks/useAuth'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
 
 interface NavigationProps {
   onRefresh?: () => void
   refreshing?: boolean
+  showRecalculate?: boolean
 }
 
-export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
+export default function Navigation({ onRefresh, refreshing, showRecalculate = false }: NavigationProps) {
   const { user, logout } = useAuth()
+  const [selectedMonth] = useState(new Date())
+  const { isRecalculating, recalculateAllStudents } = useStudentFeeRecalculation()
+  
   useEffect(() => {
     // Hide cursor after animation (words array has only one word, so after typing is done)
     const timeout = setTimeout(() => {}, ((user?.displayName?.length || 4) * 80) + 1000);
@@ -23,6 +28,14 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
     } catch (error) {
       console.error('Logout failed:', error)
       toast.error('Logout failed. Please try again.')
+    }
+  }
+
+  const handleRecalculate = async () => {
+    await recalculateAllStudents(selectedMonth)
+    // Refresh all dashboard cards after recalculating
+    if (onRefresh) {
+      onRefresh()
     }
   }
 
@@ -50,7 +63,17 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
               >
                 Logout
               </Button>
-              {onRefresh && (
+              {showRecalculate ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRecalculate}
+                  disabled={isRecalculating}
+                  className="transition-all duration-200"
+                >
+                  {isRecalculating ? 'Recalculating...' : 'Recalculate'}
+                </Button>
+              ) : onRefresh ? (
                 <Button
                   variant="outline"
                   size="icon"
@@ -69,7 +92,7 @@ export default function Navigation({ onRefresh, refreshing }: NavigationProps) {
                     </svg>
                   )}
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

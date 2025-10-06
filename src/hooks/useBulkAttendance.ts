@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch, doc, onSnapshot, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { formatLocalDate, debouncedToast } from '@/lib';
+import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { differenceInCalendarDays } from 'date-fns';
+import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 
 export const useBulkAttendance = (userUid: string | undefined, students: any[]) => {
   const [showBulkAttendance, setShowBulkAttendance] = useState(false);
@@ -10,15 +11,33 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
   const [bulkEndDate, setBulkEndDate] = useState('');
   const [bulkAttendanceLoading, setBulkAttendanceLoading] = useState(false);
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present');
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [filteredAttendanceData, setFilteredAttendanceData] = useState({
+    presentDates: new Set(),
+    absentDates: new Set(),
+    studentAttendanceData: {} as Record<string, { presentDates: Set<string>, absentDates: Set<string> }>
+  });
   const [revenuePreview, setRevenuePreview] = useState({
     days: 0,
     dailyRate: 0,
     total: 0,
   });
+  const { recalculateAllStudents } = useStudentFeeRecalculation();
+
+  // Auto-select students based on count
+  useEffect(() => {
+    if (students.length === 1) {
+      // Auto-select single student
+      setSelectedStudents([students[0].id]);
+    } else if (students.length > 1 && selectedStudents.length === 0) {
+      // Auto-select all students if none selected and multiple students exist
+      setSelectedStudents(students.map(s => s.id));
+    }
+  }, [students, selectedStudents.length]);
 
   // Calculate revenue preview
   useEffect(() => {
-    if (!bulkStartDate || !bulkEndDate || defaultAttendanceStatus !== 'present' || students.length === 0) {
+    if (!bulkStartDate || !bulkEndDate || defaultAttendanceStatus !== 'present' || selectedStudents.length === 0) {
       setRevenuePreview({ days: 0, dailyRate: 0, total: 0 });
       return;
     }
@@ -34,12 +53,83 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     
     let total = 0;
     let dailyRate = 0;
-    if (students.length > 0) {
-      dailyRate = students.reduce((sum, s) => sum + (s.monthlyFee / daysInMonth), 0);
+    if (selectedStudents.length > 0) {
+      const selectedStudentData = students.filter(s => selectedStudents.includes(s.id));
+      dailyRate = selectedStudentData.reduce((sum, s) => sum + (s.monthlyFee / daysInMonth), 0);
       total = dailyRate * days;
     }
     setRevenuePreview({ days, dailyRate, total });
-  }, [bulkStartDate, bulkEndDate, students, defaultAttendanceStatus]);
+  }, [bulkStartDate, bulkEndDate, selectedStudents, students, defaultAttendanceStatus]);
+
+  // Load filtered attendance data based on selected students
+  useEffect(() => {
+    if (selectedStudents.length === 0) {
+      setFilteredAttendanceData({
+        presentDates: new Set(),
+        absentDates: new Set(),
+        studentAttendanceData: {}
+      });
+      return;
+    }
+
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    
+    const q = query(
+      collection(db, 'attendance'),
+      where('date', '>=', formatLocalDate(monthStart)),
+      where('date', '<=', formatLocalDate(monthEnd))
+    );
+    
+    const unsubscribe = onSnapshot(q, 
+      (querySnapshot: QuerySnapshot<DocumentData>) => {
+        try {
+          const presentDates = new Set();
+          const absentDates = new Set();
+          const studentAttendanceData: Record<string, { presentDates: Set<string>, absentDates: Set<string> }> = {};
+          
+          // Initialize student data structures
+          selectedStudents.forEach(studentId => {
+            studentAttendanceData[studentId] = {
+              presentDates: new Set(),
+              absentDates: new Set()
+            };
+          });
+
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const studentId = data.studentId;
+            
+            // Only process data for selected students
+            if (selectedStudents.includes(studentId)) {
+              if (data.status === 'approved') {
+                presentDates.add(data.date);
+                studentAttendanceData[studentId].presentDates.add(data.date);
+              } else if (data.status === 'absent') {
+                absentDates.add(data.date);
+                studentAttendanceData[studentId].absentDates.add(data.date);
+              }
+            }
+          });
+          
+          setFilteredAttendanceData({ presentDates, absentDates, studentAttendanceData });
+        } catch (error) {
+          console.error('Error processing filtered attendance data:', error);
+        }
+      },
+      (error) => {
+        console.error('Error in filtered attendance data listener:', error);
+      }
+    );
+
+    return () => {
+      try {
+        unsubscribe();
+      } catch (error) {
+        console.error('Error unsubscribing from filtered attendance data:', error);
+      }
+    };
+  }, [selectedStudents]);
 
   // Add bulk attendance
   const addBulkAttendance = async () => {
@@ -69,7 +159,14 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
       return;
     }
     
-    const totalRecords = daysCount * studentsSnapshot.size;
+    // Filter to only selected students
+    const filteredStudents = studentsSnapshot.docs.filter(doc => selectedStudents.includes(doc.id));
+    if (filteredStudents.length === 0) {
+      debouncedToast('No students selected for attendance', 'error');
+      return;
+    }
+    
+    const totalRecords = daysCount * filteredStudents.length;
     const maxBatchSize = 500;
     
     if (totalRecords > maxBatchSize) {
@@ -97,7 +194,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
         const dateStr = formatLocalDate(currentDate);
         const finalStatus = defaultAttendanceStatus;
         
-        for (const studentDoc of studentsSnapshot.docs) {
+        for (const studentDoc of filteredStudents) {
           const studentData = studentDoc.data();
           const attendanceId = `${studentDoc.id}_${dateStr}`;
           currentBatch.set(doc(db, 'attendance', attendanceId), {
@@ -136,8 +233,23 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
         await currentBatch.commit();
       }
       
-      const studentsCount = studentsSnapshot.size;
+      const studentsCount = filteredStudents.length;
       debouncedToast(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`, 'success');
+      
+      // Dispatch event to refresh dashboard
+      dispatchAttendanceUpdatedEvent();
+      
+      // Auto-recalculate fees for selected students if present attendance was added
+      if (presentRecords > 0) {
+        try {
+          debouncedToast('Recalculating fees for selected students...', 'info');
+          await recalculateAllStudents(startDate);
+          debouncedToast('Fees recalculated successfully!', 'success');
+        } catch (recalcError) {
+          console.error('Error recalculating fees after bulk attendance:', recalcError);
+          debouncedToast('Bulk attendance added, but failed to update fees. Please recalculate manually.', 'error');
+        }
+      }
       
       // Reset form
       setBulkStartDate('');
@@ -168,13 +280,14 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     return d >= s && d <= e;
   }, [bulkStartDate, bulkEndDate]);
 
-  const getCellClasses = useCallback((day: number | null, attendanceData: any): string => {
+  const getCellClasses = useCallback((day: number | null): string => {
     if (!day) return 'bg-white';
     const dateStr = day ? toDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), day)) : '';
     const selected = isSelected(dateStr);
     const inRange = isInRange(dateStr);
-    const hasPresentAttendance = attendanceData.presentDates.has(dateStr);
-    const hasAbsentAttendance = attendanceData.absentDates.has(dateStr);
+    
+    const hasPresentAttendance = filteredAttendanceData.presentDates.has(dateStr);
+    const hasAbsentAttendance = filteredAttendanceData.absentDates.has(dateStr);
     
     if (selected) return 'bg-blue-600 text-white';
     if (inRange) {
@@ -187,7 +300,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
       return 'bg-red-50 text-red-700 border-red-200';
     }
     return 'bg-gray-50';
-  }, [defaultAttendanceStatus, isSelected, isInRange, toDateStr]);
+  }, [defaultAttendanceStatus, isSelected, isInRange, toDateStr, filteredAttendanceData]);
 
   const handleCalendarDayClick = useCallback((day: number | null, currentMonth: Date) => {
     if (!day) return;
@@ -217,6 +330,23 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     setBulkEndDate('');
   }, [bulkStartDate, bulkEndDate, toDateStr]);
 
+  // Student selection helpers
+  const toggleStudentSelection = (studentId: string) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const selectAllStudents = () => {
+    setSelectedStudents(students.map(s => s.id));
+  };
+
+  const deselectAllStudents = () => {
+    setSelectedStudents([]);
+  };
+
   return {
     showBulkAttendance,
     setShowBulkAttendance,
@@ -227,6 +357,12 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     bulkAttendanceLoading,
     defaultAttendanceStatus,
     setDefaultAttendanceStatus,
+    selectedStudents,
+    setSelectedStudents,
+    toggleStudentSelection,
+    selectAllStudents,
+    deselectAllStudents,
+    filteredAttendanceData,
     revenuePreview,
     addBulkAttendance,
     isSelected,

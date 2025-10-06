@@ -18,11 +18,10 @@ export default function StudentFeesSummaryCard() {
             const totalDaysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
             const dailyRate = fee.monthlyFee > 0 ? fee.monthlyFee / totalDaysInMonth : 0;
             const monthKey = getMonthKey(currentMonth);
-            // Payment status will be handled by the handleMarkAsPaid function
-            // For now, we'll show the mark as paid button for all fees
-            let paymentStatus = null;
-            let paymentDate = null;
-            let amountPaid = null;
+            // Get payment status from fee data
+            const paymentStatus = fee.paymentStatus || 'unpaid';
+            const paymentDate = fee.paymentDate;
+            const amountPaid = fee.amountPaid;
             return (
               <div key={fee.studentId} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 sm:p-3 border rounded-lg min-w-[260px]">
                 <div className="flex-1 min-w-0">
