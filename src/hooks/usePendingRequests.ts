@@ -75,7 +75,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
       if (status === 'approved' && studentId) {
         try {
           await recalculateSingleStudent(studentId, attendanceDate, false);
-          debouncedToast(`Attendance approved and fees updated!`, 'success');
+          debouncedToast(`Attendance approved!`, 'success');
         } catch (recalcError) {
           console.error('Error recalculating fees after approval:', recalcError);
           debouncedToast(`Attendance approved, but failed to update fees. Please recalculate manually.`, 'error');

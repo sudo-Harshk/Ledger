@@ -165,8 +165,8 @@ export const useStudentFeeRecalculation = () => {
   }, [recalculateStudentFees]);
 
   // Recalculate fees for all students
-  const recalculateAllStudents = useCallback(async (month: Date) => {
-    return await recalculateStudentFees({ month });
+  const recalculateAllStudents = useCallback(async (month: Date, showToast = true) => {
+    return await recalculateStudentFees({ month, showToast });
   }, [recalculateStudentFees]);
 
   return {

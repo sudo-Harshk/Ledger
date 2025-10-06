@@ -1,31 +1,50 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
-import { useBulkAttendance, useStudents, useAuth, useCalendar } from '@/hooks';
 
 interface BulkAttendanceCardProps {
   showBulkAttendance: boolean;
   setShowBulkAttendance: (show: boolean) => void;
+  bulkStartDate: string;
+  bulkEndDate: string;
+  setBulkStartDate: (date: string) => void;
+  setBulkEndDate: (date: string) => void;
+  bulkAttendanceLoading: boolean;
+  defaultAttendanceStatus: 'present' | 'absent';
+  setDefaultAttendanceStatus: (status: 'present' | 'absent') => void;
+  selectedStudents: string[];
+  toggleStudentSelection: (studentId: string) => void;
+  selectAllStudents: () => void;
+  revenuePreview: { days: number; dailyRate: number; total: number };
+  addBulkAttendance: () => Promise<void>;
+  getCellClasses: (day: number | null, currentMonth: Date) => string;
+  handleCalendarDayClick: (day: number | null, currentMonth: Date) => void;
+  students: any[];
+  currentMonth: Date;
+  daysInMonth: (number | null)[];
+  changeMonth: (direction: 'prev' | 'next') => void;
 }
 
-export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAttendance }: BulkAttendanceCardProps) {
-  const { user } = useAuth();
-  const { students } = useStudents();
-  const { currentMonth, daysInMonth, changeMonth } = useCalendar();
-  const {
-    bulkStartDate,
-    setBulkStartDate,
-    bulkEndDate,
-    setBulkEndDate,
-    bulkAttendanceLoading,
-    defaultAttendanceStatus,
-    setDefaultAttendanceStatus,
-    selectedStudents,
-    toggleStudentSelection,
-    selectAllStudents,
-    revenuePreview,
-    addBulkAttendance,
-    getCellClasses,
-    handleCalendarDayClick
-  } = useBulkAttendance(user?.uid, students);
+export default function BulkAttendanceCard({ 
+  showBulkAttendance, 
+  setShowBulkAttendance,
+  bulkStartDate,
+  bulkEndDate,
+  setBulkStartDate,
+  setBulkEndDate,
+  bulkAttendanceLoading,
+  defaultAttendanceStatus,
+  setDefaultAttendanceStatus,
+  selectedStudents,
+  toggleStudentSelection,
+  selectAllStudents,
+  revenuePreview,
+  addBulkAttendance,
+  getCellClasses,
+  handleCalendarDayClick,
+  students,
+  currentMonth,
+  daysInMonth,
+  changeMonth
+}: BulkAttendanceCardProps) {
   
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
   
@@ -120,7 +139,7 @@ export default function BulkAttendanceCard({ showBulkAttendance, setShowBulkAtte
                 daysInMonth.map((day: number | null, idx: number) => (
                   <div
                     key={idx}
-                    className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day)}`}
+                    className={`relative p-2 text-center border rounded-md min-h-[40px] flex items-center justify-center ${(!bulkStartDate || !bulkEndDate) ? 'cursor-pointer' : ''} ${getCellClasses(day, currentMonth)}`}
                     onClick={() => handleCalendarDayClick(day, currentMonth)}
                   >
                     {day && <span className="font-medium select-none">{day}</span>}

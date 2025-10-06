@@ -5,7 +5,7 @@ import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from 
 import { differenceInCalendarDays } from 'date-fns';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 
-export const useBulkAttendance = (userUid: string | undefined, students: any[]) => {
+export const useBulkAttendance = (userUid: string | undefined, students: any[], currentMonth: Date, refreshTrigger?: number) => {
   const [showBulkAttendance, setShowBulkAttendance] = useState(false);
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');
@@ -13,8 +13,8 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
   const [defaultAttendanceStatus, setDefaultAttendanceStatus] = useState<'present' | 'absent'>('present');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [filteredAttendanceData, setFilteredAttendanceData] = useState({
-    presentDates: new Set(),
-    absentDates: new Set(),
+    presentDates: new Set<string>(),
+    absentDates: new Set<string>(),
     studentAttendanceData: {} as Record<string, { presentDates: Set<string>, absentDates: Set<string> }>
   });
   const [revenuePreview, setRevenuePreview] = useState({
@@ -65,15 +65,15 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
   useEffect(() => {
     if (selectedStudents.length === 0) {
       setFilteredAttendanceData({
-        presentDates: new Set(),
-        absentDates: new Set(),
+        presentDates: new Set<string>(),
+        absentDates: new Set<string>(),
         studentAttendanceData: {}
       });
       return;
     }
 
-    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
     
     const q = query(
       collection(db, 'attendance'),
@@ -84,15 +84,15 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     const unsubscribe = onSnapshot(q, 
       (querySnapshot: QuerySnapshot<DocumentData>) => {
         try {
-          const presentDates = new Set();
-          const absentDates = new Set();
+          const presentDates = new Set<string>();
+          const absentDates = new Set<string>();
           const studentAttendanceData: Record<string, { presentDates: Set<string>, absentDates: Set<string> }> = {};
           
           // Initialize student data structures
           selectedStudents.forEach(studentId => {
             studentAttendanceData[studentId] = {
-              presentDates: new Set(),
-              absentDates: new Set()
+              presentDates: new Set<string>(),
+              absentDates: new Set<string>()
             };
           });
 
@@ -129,7 +129,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
         console.error('Error unsubscribing from filtered attendance data:', error);
       }
     };
-  }, [selectedStudents]);
+  }, [selectedStudents, currentMonth, refreshTrigger]);
 
   // Add bulk attendance
   const addBulkAttendance = async () => {
@@ -242,9 +242,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
       // Auto-recalculate fees for selected students if present attendance was added
       if (presentRecords > 0) {
         try {
-          debouncedToast('Recalculating fees for selected students...', 'info');
-          await recalculateAllStudents(startDate);
-          debouncedToast('Fees recalculated successfully!', 'success');
+          await recalculateAllStudents(startDate, false); // Disable toast notifications
         } catch (recalcError) {
           console.error('Error recalculating fees after bulk attendance:', recalcError);
           debouncedToast('Bulk attendance added, but failed to update fees. Please recalculate manually.', 'error');
@@ -280,9 +278,9 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
     return d >= s && d <= e;
   }, [bulkStartDate, bulkEndDate]);
 
-  const getCellClasses = useCallback((day: number | null): string => {
+  const getCellClasses = useCallback((day: number | null, currentMonth: Date): string => {
     if (!day) return 'bg-white';
-    const dateStr = day ? toDateStr(new Date(new Date().getFullYear(), new Date().getMonth(), day)) : '';
+    const dateStr = day ? toDateStr(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)) : '';
     const selected = isSelected(dateStr);
     const inRange = isInRange(dateStr);
     
@@ -300,7 +298,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[]) 
       return 'bg-red-50 text-red-700 border-red-200';
     }
     return 'bg-gray-50';
-  }, [defaultAttendanceStatus, isSelected, isInRange, toDateStr, filteredAttendanceData]);
+  }, [defaultAttendanceStatus, isSelected, isInRange, toDateStr, filteredAttendanceData, currentMonth]);
 
   const handleCalendarDayClick = useCallback((day: number | null, currentMonth: Date) => {
     if (!day) return;

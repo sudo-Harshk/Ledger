@@ -3,11 +3,15 @@ import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useFinancialSummary, useAuth, useCalendar, useStudentFees } from '@/hooks';
 
-export default function RevenueSummaryCard() {
+interface RevenueSummaryCardProps {
+  refreshKey?: number;
+}
+
+export default function RevenueSummaryCard({ refreshKey }: RevenueSummaryCardProps) {
   const { user } = useAuth();
   const { currentMonth } = useCalendar();
   const { studentFees } = useStudentFees(currentMonth);
-  const { financialSummary, loading } = useFinancialSummary(user?.uid, currentMonth);
+  const { financialSummary, loading } = useFinancialSummary(user?.uid, currentMonth, refreshKey);
   return loading ? (
     <Card className="min-h-[160px] animate-pulse" />
   ) : (
