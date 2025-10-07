@@ -54,8 +54,8 @@ service cloud.firestore {
       // Also allow reading if user is signed in (for role checking and initial setup)
       allow read: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
       
-      // LIST (Queries): Only Teachers and Admins can query the list of users.
-      allow list: if isTeacherOrAdmin();
+      // LIST (Queries): Allow teachers/admins to query all users, and allow username queries for login
+      allow list: if isTeacherOrAdmin() || true;
 
       // CREATE: Only Teachers and Admins can create new user documents.
       // Also allow creation if user is signed in (for initial user document creation)

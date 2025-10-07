@@ -13,12 +13,12 @@ import {
   StudentFeesSummaryCard,
   BulkAttendanceCard
 } from '@/components/teacher-dashboard/index';
-import DebugBulkAttendance from '@/components/DebugBulkAttendance';
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Don't render if user is not available
   if (!user) {
@@ -43,9 +43,8 @@ export default function TeacherDashboard() {
     revenuePreview,
     addBulkAttendance,
     getCellClasses,
-    handleCalendarDayClick,
-    filteredAttendanceData
-  } = useBulkAttendance(user?.uid, students, currentMonth, refreshKey);
+    handleCalendarDayClick
+  } = useBulkAttendance(user?.uid, students, currentMonth, refreshKey, isInitialLoad);
 
   const providerData = user?.providerData || [];
   const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
@@ -62,6 +61,15 @@ export default function TeacherDashboard() {
     } finally {
       setIsRefreshing(false);
     }
+  }, []);
+
+  // Mark initial load as complete after a short delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 100); // Very short delay to allow initial render
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Auto-refresh when data changes
@@ -114,14 +122,8 @@ export default function TeacherDashboard() {
                 </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 mb-8">
-          <StudentFeesSummaryCard key={`fees-summary-${refreshKey}`} />
+          <StudentFeesSummaryCard key={`fees-summary-${refreshKey}`} currentMonth={currentMonth} refreshKey={refreshKey} />
         </div>
-        <DebugBulkAttendance 
-          students={students}
-          selectedStudents={selectedStudents}
-          filteredAttendanceData={filteredAttendanceData}
-          currentMonth={currentMonth}
-        />
         <BulkAttendanceCard 
           key={`bulk-attendance-${refreshKey}`}
           showBulkAttendance={showBulkAttendance} 

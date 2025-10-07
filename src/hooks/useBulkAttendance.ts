@@ -5,7 +5,7 @@ import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from 
 import { differenceInCalendarDays } from 'date-fns';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 
-export const useBulkAttendance = (userUid: string | undefined, students: any[], currentMonth: Date, refreshTrigger?: number) => {
+export const useBulkAttendance = (userUid: string | undefined, students: any[], currentMonth: Date, refreshTrigger?: number, isInitialLoad?: boolean) => {
   const [showBulkAttendance, setShowBulkAttendance] = useState(false);
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');
@@ -63,6 +63,10 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[], 
 
   // Load filtered attendance data based on selected students
   useEffect(() => {
+    if (isInitialLoad) {
+      return; // Skip loading on initial render for better performance
+    }
+    
     if (selectedStudents.length === 0) {
       setFilteredAttendanceData({
         presentDates: new Set<string>(),
@@ -129,7 +133,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: any[], 
         console.error('Error unsubscribing from filtered attendance data:', error);
       }
     };
-  }, [selectedStudents, currentMonth, refreshTrigger]);
+  }, [selectedStudents, currentMonth, refreshTrigger, isInitialLoad]);
 
   // Add bulk attendance
   const addBulkAttendance = async () => {

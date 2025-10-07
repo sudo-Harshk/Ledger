@@ -1,9 +1,13 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
-import { useStudentFees, useCalendar } from '@/hooks';
+import { useStudentFees } from '@/hooks';
 
-export default function StudentFeesSummaryCard() {
-  const { currentMonth } = useCalendar();
-  const { studentFees, loading, handleMarkAsPaid, getMonthKey } = useStudentFees(currentMonth);
+interface StudentFeesSummaryCardProps {
+  currentMonth: Date;
+  refreshKey?: number;
+}
+
+export default function StudentFeesSummaryCard({ currentMonth, refreshKey }: StudentFeesSummaryCardProps) {
+  const { studentFees, loading, handleMarkAsPaid, getMonthKey } = useStudentFees(currentMonth, refreshKey);
   return loading ? (
     <Card className="mb-8 min-h-[160px] animate-pulse" />
   ) : (

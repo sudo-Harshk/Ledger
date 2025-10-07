@@ -47,19 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               providerData: firebaseUser.providerData,
             }
             logger.debug('Setting user state')
-            setUser(prevUser => {
-              if (
-                prevUser &&
-                prevUser.uid === userInfo.uid &&
-                prevUser.username === userInfo.username &&
-                prevUser.role === userInfo.role &&
-                prevUser.displayName === userInfo.displayName &&
-                JSON.stringify(prevUser.providerData) === JSON.stringify(userInfo.providerData)
-              ) {
-                return prevUser;
-              }
-              return userInfo;
-            });
+            setUser(userInfo);
           } else {
             // User exists in Auth but not in Firestore - wait a bit for sync
             logger.warn('User authenticated but no Firestore document found - waiting for sync...')
@@ -69,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               clearTimeout(timeoutId)
             }
             
-            // Wait for Firestore to sync, then check again
+            // Wait for Firestore to sync, then check again (reduced delay)
             timeoutId = setTimeout(async () => {
               try {
                 const retryDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
@@ -82,19 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     displayName: userData.displayName,
                     providerData: firebaseUser.providerData,
                   }
-                  setUser(prevUser => {
-                    if (
-                      prevUser &&
-                      prevUser.uid === userInfo.uid &&
-                      prevUser.username === userInfo.username &&
-                      prevUser.role === userInfo.role &&
-                      prevUser.displayName === userInfo.displayName &&
-                      JSON.stringify(prevUser.providerData) === JSON.stringify(userInfo.providerData)
-                    ) {
-                      return prevUser;
-                    }
-                    return userInfo;
-                  });
+                  setUser(userInfo);
                 } else {
                   // Still no document after retry - this is an incomplete account
                   logger.error('User document still not found after retry - incomplete account')
@@ -106,7 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 await signOut(auth)
                 setUser(null)
               }
-            }, 3000) // Increased delay to 3 seconds
+            }, 1000) // Reduced delay to 1 second
           }
         } catch (error: unknown) {
           logger.error('Error fetching user data:', error)
@@ -136,13 +112,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // If it doesn't contain @, treat it as a username and look up the email
       if (!username.includes('@')) {
         // This is a username login (student)
-        const usersQuery = query(
-          collection(db, 'users'), 
-          where('username', '==', username)
-        )
-        const userDocs = await getDocs(usersQuery)
+        logger.debug('Username login detected; looking up email for username:', username)
+        let userDocs;
+        try {
+          const usersQuery = query(
+            collection(db, 'users'), 
+            where('username', '==', username)
+          )
+          userDocs = await getDocs(usersQuery)
+        } catch (queryError) {
+          logger.error('Error querying users collection:', queryError)
+          throw new Error('Unable to verify username. Please try again or contact your teacher.')
+        }
         
         if (userDocs.empty) {
+          logger.debug('No user found with username:', username)
           throw new Error('Username not found. Please check your username and try again.')
         }
         
@@ -150,10 +134,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         loginEmail = userData.email
         
         if (!loginEmail) {
+          logger.debug('User found but no email in user data:', userData)
           throw new Error('Invalid account configuration. Please contact your teacher.')
         }
         
-        logger.debug('Username login detected; resolving email')
+        logger.debug('Username login detected; resolved email:', loginEmail)
       } else {
         // This is an email login (teacher)
         logger.debug('Email login detected for teacher')
@@ -171,7 +156,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Your account is incomplete. Please contact your administrator.')
       }
     } catch (error: unknown) {
-      logger.error('Login error')
+      logger.error('Login error:', error)
       if (error instanceof Error) {
         throw error
       } else {

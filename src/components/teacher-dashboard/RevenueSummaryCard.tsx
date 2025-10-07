@@ -10,7 +10,7 @@ interface RevenueSummaryCardProps {
 
 export default function RevenueSummaryCard({ refreshKey, currentMonth }: RevenueSummaryCardProps) {
   const { user } = useAuth();
-  const { studentFees } = useStudentFees(currentMonth);
+  const { studentFees } = useStudentFees(currentMonth, refreshKey);
   const { financialSummary, loading } = useFinancialSummary(user?.uid, currentMonth, refreshKey);
   return loading ? (
     <Card className="min-h-[160px] animate-pulse" />
@@ -30,11 +30,11 @@ export default function RevenueSummaryCard({ refreshKey, currentMonth }: Revenue
               {studentFees.filter(fee => fee.monthlyFee > 0).length} students
             </p>
           </div>
-          <div className="flex items-center gap-2 group" title={financialSummary?.lastUpdated ? financialSummary.lastUpdated.toDate().toLocaleString() : ''}>
+          <div className="flex items-center gap-2 group" title={financialSummary?.lastUpdated ? (financialSummary.lastUpdated.toDate ? financialSummary.lastUpdated.toDate().toLocaleString() : financialSummary.lastUpdated.toLocaleString()) : ''}>
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground group-hover:underline cursor-help">
               {financialSummary?.lastUpdated
-                ? `Updated ${formatDistanceToNow(financialSummary.lastUpdated.toDate())} ago`
+                ? `Updated ${formatDistanceToNow(financialSummary.lastUpdated.toDate ? financialSummary.lastUpdated.toDate() : financialSummary.lastUpdated)} ago`
                 : 'Loading...'}
             </span>
           </div>

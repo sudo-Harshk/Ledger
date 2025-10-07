@@ -16,7 +16,7 @@ interface StudentFee {
   amountPaid?: number;
 }
 
-export const useStudentFees = (currentMonth: Date) => {
+export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
   const [studentFees, setStudentFees] = useState<StudentFee[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -168,10 +168,10 @@ export const useStudentFees = (currentMonth: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  // Load data when month changes
+  // Load data when month changes or refresh is triggered
   useEffect(() => {
     fetchStudentFees();
-  }, [currentMonth, fetchStudentFees]);
+  }, [currentMonth, fetchStudentFees, refreshTrigger]);
 
   return {
     studentFees,

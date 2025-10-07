@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, getDoc, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 
 interface FinancialSummary {
@@ -18,14 +18,23 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
     const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`;
     const summaryDocRef = doc(db, 'users', userUid, 'monthlySummaries', monthYear);
     
-    // If refreshTrigger is provided, force a fresh fetch
+    // If refreshTrigger is provided, force a fresh fetch and update timestamp
     if (refreshTrigger !== undefined) {
-      getDoc(summaryDocRef).then((docSnapshot: DocumentSnapshot<DocumentData>) => {
+      getDoc(summaryDocRef).then(async (docSnapshot: DocumentSnapshot<DocumentData>) => {
         try {
           if (docSnapshot.exists()) {
+            const data = docSnapshot.data();
+            const currentTime = Timestamp.now();
+            
+            // Update the lastUpdated timestamp in the database
+            await setDoc(summaryDocRef, {
+              revenue: data.revenue || 0,
+              lastUpdated: currentTime,
+            }, { merge: true });
+            
             setFinancialSummary({
-              revenue: docSnapshot.data().revenue || 0,
-              lastUpdated: docSnapshot.data().lastUpdated || null,
+              revenue: data.revenue || 0,
+              lastUpdated: currentTime,
             });
           } else {
             setFinancialSummary(null);

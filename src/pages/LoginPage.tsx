@@ -20,6 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const justLoggedIn = useRef(false)
+  const isMounted = useRef(true)
 
   useEffect(() => {
     if (user) {
@@ -39,6 +40,13 @@ export default function LoginPage() {
     }
   }, [user, navigate, location.pathname])
 
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -48,15 +56,20 @@ export default function LoginPage() {
       justLoggedIn.current = true
       // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error.message);
-        debouncedToast(error.message, 'error');
-      } else {
-        setError('Failed to login. Please try again.');
-        debouncedToast('Failed to login. Please try again.', 'error');
+      // Only update state if component is still mounted
+      if (isMounted.current) {
+        if (error instanceof Error) {
+          setError(error.message);
+          debouncedToast(error.message, 'error');
+        } else {
+          setError('Failed to login. Please try again.');
+          debouncedToast('Failed to login. Please try again.', 'error');
+        }
       }
     } finally {
-      setLoading(false)
+      if (isMounted.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -68,15 +81,19 @@ export default function LoginPage() {
       justLoggedIn.current = true;
       // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setError(error.message);
-        debouncedToast(error.message, 'error');
-      } else {
-        setError('Failed to login with Google. Please try again.');
-        debouncedToast('Failed to login with Google. Please try again.', 'error');
+      if (isMounted.current) {
+        if (error instanceof Error) {
+          setError(error.message);
+          debouncedToast(error.message, 'error');
+        } else {
+          setError('Failed to login with Google. Please try again.');
+          debouncedToast('Failed to login with Google. Please try again.', 'error');
+        }
       }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   }
 
