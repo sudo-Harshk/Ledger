@@ -5,7 +5,7 @@ import { linkGoogleAccount } from '../../lib/linkGoogleAccount';
 export default function AccountSettingsCard({ show, userRole, isGoogleLinked }: { show: boolean, userRole: string, isGoogleLinked: boolean }) {
   if (!show || userRole !== 'teacher' || isGoogleLinked) return null;
   return (
-    <Card className="mb-8">
+    <Card className="mb-8 bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <CardTitle>Account Settings</CardTitle>
         <CardDescription>Link your Google account for easier login and account recovery.</CardDescription>

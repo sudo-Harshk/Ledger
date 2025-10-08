@@ -16,10 +16,10 @@ const SegmentedControl: React.FC<{
     {TIMEZONE_OPTIONS.map(opt => (
       <button
         key={opt.tz}
-        className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[#F87171] text-base select-none
+        className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-palette-golden text-base select-none
           ${value === opt.tz
-            ? 'bg-[#F87171]/10 text-[#F87171] border border-[#F87171] shadow'
-            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'}
+            ? 'bg-palette-golden/10 text-palette-deep-red border border-palette-golden shadow'
+            : 'bg-card-elevated text-palette-dark-teal border border-palette-golden/30 hover:bg-card-base'}
         `}
         onClick={() => onChange(opt.tz)}
         aria-pressed={value === opt.tz}
@@ -49,7 +49,7 @@ const FooterClock: React.FC<{ timezone: string }> = ({ timezone }) => {
   const abbr = opt?.abbr || '';
   const timeString = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: timezone });
   return (
-    <div className="flex items-center gap-1 text-base font-mono font-bold text-[#F87171] ml-4">
+    <div className="flex items-center gap-1 text-base font-mono font-bold text-palette-deep-red ml-4">
       <span>{timeString}</span>
       <span className="text-xs font-semibold ml-1">{abbr}</span>
     </div>
@@ -70,14 +70,14 @@ const Footer: React.FC<FooterProps> = ({ hideTimeAndControl, timezone, setTimezo
 
   if (hideTimeAndControl) {
     return (
-      <footer className="w-full flex items-center justify-center px-4 h-20 md:h-16 border-t border-[#F9C5D1] bg-[#FDF6F0] mt-auto z-10 relative overflow-hidden">
-        <div className="text-gray-400 text-sm text-center w-full">&copy; {new Date().getFullYear()} Ledger App. Inspired by Japanese design.</div>
+      <footer className="w-full flex items-center justify-center px-4 h-20 md:h-16 border-t border-palette-dark-teal bg-palette-light-cream mt-auto z-10 relative overflow-hidden">
+        <div className="text-palette-dark-teal text-sm text-center w-full">&copy; {new Date().getFullYear()} Ledger App. Inspired by Japanese design.</div>
       </footer>
     );
   }
   return (
-    <footer className="w-full flex flex-col md:flex-row md:items-center md:justify-between px-4 h-20 md:h-16 border-t border-[#F9C5D1] bg-[#FDF6F0] mt-auto z-10 relative gap-2 overflow-hidden">
-      <div className="text-gray-400 text-sm text-left w-full md:w-auto">&copy; {new Date().getFullYear()} Ledger App. Inspired by Japanese design.</div>
+    <footer className="w-full flex flex-col md:flex-row md:items-center md:justify-between px-4 h-20 md:h-16 border-t border-palette-dark-teal bg-palette-light-cream mt-auto z-10 relative gap-2 overflow-hidden">
+      <div className="text-palette-dark-teal text-sm text-left w-full md:w-auto">&copy; {new Date().getFullYear()} Ledger App. Inspired by Japanese design.</div>
       <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 w-full md:w-auto justify-end">
         <SegmentedControl value={tz} onChange={onChange} />
         {showClock && <FooterClock timezone={tz} />}

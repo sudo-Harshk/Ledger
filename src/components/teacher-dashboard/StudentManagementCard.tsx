@@ -37,7 +37,7 @@ export default function StudentManagementCard() {
     }
   };
   return (
-    <Card>
+    <Card className="bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>

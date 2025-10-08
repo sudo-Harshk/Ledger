@@ -16,7 +16,7 @@ export default function MonthlyFeeSettingsCard() {
     updateMonthlyFee(inputValue);
   };
   return (
-    <Card className="md:col-span-2">
+    <Card className="md:col-span-2 bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <CardTitle>Monthly Fee Settings</CardTitle>
         <CardDescription>Set the monthly fee for all students</CardDescription>

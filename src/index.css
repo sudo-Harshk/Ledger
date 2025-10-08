@@ -34,6 +34,29 @@
     --input: 15 32% 90%;
     --ring: 4 90% 65%;                 /* #F87171 */
     --radius: 0.5rem;
+    
+    /* New color palette system */
+    --palette-dark-teal: 198 33% 30%;   /* #335c67 - headers, borders */
+    --palette-light-cream: 50 100% 85%; /* #fff3b0 - main background */
+    --palette-golden: 35 70% 55%;       /* #e09f3e - accents, buttons */
+    --palette-deep-red: 358 55% 38%;    /* #9e2a2b - primary actions */
+    --palette-dark-red: 358 85% 18%;    /* #540b0e - text, emphasis */
+    
+    /* Color layering system using new palette */
+    --background-base: 50 100% 90%;     /* Lightest cream - highest elevation */
+    --background-1: 50 100% 85%;        /* #fff3b0 - main background */
+    --background-2: 50 100% 80%;        /* Slightly darker cream - medium */
+    --background-3: 50 100% 75%;        /* Darker cream - deepest */
+    
+    /* Card layering system */
+    --card-elevated: 0 0% 100%;         /* Pure white - highest priority */
+    --card-base: 50 100% 90%;           /* Light cream - standard cards */
+    --card-deep: 50 100% 85%;           /* #fff3b0 - supporting elements */
+    
+    /* Input layering */
+    --input-elevated: 0 0% 100%;        /* Pure white for focus states */
+    --input-base: 50 100% 95%;          /* Very light cream */
+    --input-deep: 50 100% 90%;          /* Light cream */
   }
 
   .dark {

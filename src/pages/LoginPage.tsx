@@ -98,59 +98,59 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col bg-palette-light-cream">
       {/* Redesigned Header to match landing page */}
-      <header className="flex items-center justify-between px-8 py-6 border-b border-[#F9C5D1] bg-[#FDF6F0]">
+      <header className="flex items-center justify-between px-8 py-6 border-b border-palette-dark-teal bg-palette-light-cream">
         <div className="flex items-center gap-2">
-          <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B" }} onClick={() => navigate('/')}>Ledger</div>
+          <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }} onClick={() => navigate('/')}>Ledger</div>
         </div>
-        <nav className="flex gap-8 text-gray-700 font-medium text-lg">
+        <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
           {/* Removed Home button */}
         </nav>
       </header>
       <main className="flex-1 flex items-center justify-center p-4 relative">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-          <div className="w-96 h-96 rounded-full bg-gradient-to-br from-[#F87171]/40 via-[#F9C5D1]/60 to-[#FDF6F0]/0 blur-3xl opacity-80"></div>
+          <div className="w-96 h-96 rounded-full bg-gradient-to-br from-palette-golden/30 via-palette-deep-red/20 to-palette-light-cream/0 blur-3xl opacity-60"></div>
         </div>
-        <Card className="w-full max-w-md border-2 border-[#F87171] bg-white/90 backdrop-blur-md relative z-10">
+        <Card className="w-full max-w-md bg-card-elevated shadow-xl relative z-10 border-0">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B", textShadow: '0 1px 4px rgba(40,40,43,0.04)' }}>Ledger</CardTitle>
+            <CardTitle className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e", textShadow: '0 1px 4px rgba(84,11,14,0.1)' }}>Ledger</CardTitle>
             <CardDescription>
               Sign in to your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Info Banner: Only teacher-created users can access */}
-            <div className="mb-4">
-              <div className="rounded-xl border border-[#F9C5D1] bg-[#FDF6F0] text-[#F87171] flex items-center gap-3 px-5 py-4 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#F87171] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
-                <div className="flex flex-col">
-                  <span className="font-semibold text-base">In-house Platform</span>
-                  <span className="text-sm mt-0.5 text-black">Only users created by teachers can access Ledger. New users cannot self-register.</span>
-                </div>
-              </div>
-            </div>
+             {/* Info Banner: Only teacher-created users can access */}
+             <div className="mb-4">
+               <div className="rounded-xl border border-palette-golden bg-card-base text-palette-deep-red flex items-center gap-3 px-5 py-4 shadow-sm">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-palette-deep-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
+                 <div className="flex flex-col">
+                   <span className="font-semibold text-base">In-house Platform</span>
+                   <span className="text-sm mt-0.5 text-palette-dark-red">Only users created by teachers can access Ledger. New users cannot self-register.</span>
+                 </div>
+               </div>
+             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-md flex items-center gap-2 animate-fade-in">
-                  <svg className="h-5 w-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
-                  </svg>
-                  <span>{error}</span>
-                </div>
-              )}
+               {error && (
+                 <div className="p-3 text-sm text-palette-dark-red bg-card-deep border border-palette-golden rounded-md flex items-center gap-2 animate-fade-in">
+                   <svg className="h-5 w-5 text-palette-deep-red flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+                   </svg>
+                   <span>{error}</span>
+                 </div>
+               )}
               <div className="space-y-2">
                 <Label htmlFor="username">Username or Email</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username or email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  className="transition-all duration-200 focus:scale-105"
-                />
+                 <Input
+                   id="username"
+                   type="text"
+                   placeholder="Enter your username or email"
+                   value={username}
+                   onChange={(e) => setUsername(e.target.value)}
+                   required
+                   className="transition-all duration-200 focus:scale-105 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
+                 />
                 <p className="text-xs text-gray-400 mt-1">
                   Students: Use your username &bull; Teachers: Use your email
                 </p>
@@ -158,27 +158,27 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="transition-all duration-200 focus:scale-105 pr-12"
-                  />
+                   <Input
+                     id="password"
+                     type={showPassword ? 'text' : 'password'}
+                     placeholder="Enter your password"
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     required
+                     className="transition-all duration-200 focus:scale-105 pr-12 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
+                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
                     <button
                       type="button"
                       tabIndex={0}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       onClick={() => setShowPassword((v) => !v)}
-                      className="p-1 rounded-full bg-white/80 hover:bg-white shadow focus:outline-none border border-gray-200 transition-colors focus:ring-2 focus:ring-[#F87171] relative group"
+                       className="p-1 rounded-full bg-input-elevated hover:bg-input-elevated shadow focus:outline-none border border-palette-golden/30 transition-colors focus:ring-2 focus:ring-palette-golden relative group"
                     >
                       {showPassword ? (
-                        <FiEyeOff className="h-5 w-5 text-gray-500 hover:text-gray-700 transition-all duration-200" />
+                         <FiEyeOff className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
                       ) : (
-                        <FiEye className="h-5 w-5 text-gray-500 hover:text-gray-700 transition-all duration-200" />
+                         <FiEye className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
                       )}
                       <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-[#222] text-white text-xs shadow-lg z-50 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-150">
                         {showPassword ? 'Hide' : 'Show'}
@@ -200,12 +200,12 @@ export default function LoginPage() {
                 )}
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-              {/* Divider */}
-              <div className="flex items-center my-4">
-                <div className="flex-grow border-t border-gray-200" />
-                <span className="mx-4 text-xs text-muted-foreground">Or sign in with</span>
-                <div className="flex-grow border-t border-gray-200" />
-              </div>
+               {/* Divider */}
+                 <div className="flex items-center my-4">
+                 <div className="flex-grow border-t border-palette-golden/30" />
+                 <span className="mx-4 text-xs text-palette-dark-teal">Or sign in with</span>
+                 <div className="flex-grow border-t border-palette-golden/30" />
+               </div>
               {/* Google Sign-In Button */}
               <Button
                 type="button"

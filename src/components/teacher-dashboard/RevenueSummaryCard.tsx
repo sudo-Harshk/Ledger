@@ -13,9 +13,9 @@ export default function RevenueSummaryCard({ refreshKey, currentMonth }: Revenue
   const { studentFees } = useStudentFees(currentMonth, refreshKey);
   const { financialSummary, loading } = useFinancialSummary(user?.uid, currentMonth, refreshKey);
   return loading ? (
-    <Card className="min-h-[160px] animate-pulse" />
+    <Card className="min-h-[160px] animate-pulse bg-card-elevated shadow-lg border border-palette-golden/30" />
   ) : (
-    <Card>
+    <Card className="bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <CardTitle className="text-lg">Total Revenue</CardTitle>
         <CardDescription>This month</CardDescription>
@@ -23,10 +23,10 @@ export default function RevenueSummaryCard({ refreshKey, currentMonth }: Revenue
       <CardContent>
         <div className="flex flex-row items-center justify-between">
           <div>
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-3xl font-bold text-palette-golden">
               ₹{financialSummary?.revenue ?? 0}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-palette-dark-teal mt-1">
               {studentFees.filter(fee => fee.monthlyFee > 0).length} students
             </p>
           </div>

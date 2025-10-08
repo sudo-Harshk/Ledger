@@ -45,11 +45,11 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200 py-4 pl-4 pr-6 w-full">
+    <nav className="bg-palette-light-cream border-b border-palette-dark-teal py-4 pl-4 pr-6 w-full shadow-sm">
       <div className="flex items-center justify-between w-full">
         {/* Logo on the far left */}
         <div className="flex-shrink-0">
-          <span className="font-bold text-lg sm:text-xl md:text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#28282B" }}>Ledger</span>
+          <span className="font-bold text-lg sm:text-xl md:text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</span>
         </div>
           {/* Main navbar content: welcome, role, actions */}
           <div className="flex items-center gap-8">
@@ -95,7 +95,7 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
                   aria-label="Refresh all dashboard data"
                   onClick={onRefresh}
                   disabled={refreshing}
-                  className="transition-all duration-200 hover:bg-blue-50 focus:bg-blue-50 hover:text-blue-700 focus:text-blue-700 border-blue-200"
+                  className="transition-all duration-200 hover:bg-palette-golden/10 focus:bg-palette-golden/10 hover:text-palette-deep-red focus:text-palette-deep-red border-palette-golden/30"
                   title="Refresh all dashboard data from database"
                 >
                   {refreshing ? (

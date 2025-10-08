@@ -49,7 +49,25 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+  			// New color palette
+  			'palette-dark-teal': 'hsl(var(--palette-dark-teal))',
+  			'palette-light-cream': 'hsl(var(--palette-light-cream))',
+  			'palette-golden': 'hsl(var(--palette-golden))',
+  			'palette-deep-red': 'hsl(var(--palette-deep-red))',
+  			'palette-dark-red': 'hsl(var(--palette-dark-red))',
+  			
+  			// Color layering system
+  			'bg-base': 'hsl(var(--background-base))',
+  			'bg-1': 'hsl(var(--background-1))',
+  			'bg-2': 'hsl(var(--background-2))',
+  			'bg-3': 'hsl(var(--background-3))',
+  			'card-elevated': 'hsl(var(--card-elevated))',
+  			'card-base': 'hsl(var(--card-base))',
+  			'card-deep': 'hsl(var(--card-deep))',
+  			'input-elevated': 'hsl(var(--input-elevated))',
+  			'input-base': 'hsl(var(--input-base))',
+  			'input-deep': 'hsl(var(--input-deep))'
   		}
   	}
   },

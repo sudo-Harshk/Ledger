@@ -100,7 +100,7 @@ export default function TeacherDashboard() {
   }, [handleRefresh]);
 
   return (
-    <div className="min-h-screen bg-[#FDF6F0] flex flex-col">
+    <div className="min-h-screen bg-palette-light-cream flex flex-col">
       <Navigation showRecalculate={true} onRefresh={handleRefresh} refreshing={isRefreshing} />
       <main className="flex-grow container mx-auto px-6 py-8">
         <AccountSettingsCard show={true} userRole={user.role} isGoogleLinked={isGoogleLinked} />

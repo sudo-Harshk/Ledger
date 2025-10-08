@@ -58,7 +58,7 @@ const ApprovedDaysCard: React.FC<ApprovedDaysCardProps> = React.memo(({ feeSumma
   feeSummaryLoading ? (
     <CardSkeleton description="This month's approved attendance" height={80} className="md:col-span-2 min-h-[160px]" />
   ) : (
-    <Card className="md:col-span-2 min-h-[160px] transition-all duration-200">
+    <Card className="md:col-span-2 min-h-[160px] transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <CardTitle className="text-lg">Approved Days</CardTitle>
         <CardDescription>This month's approved attendance</CardDescription>
@@ -66,8 +66,8 @@ const ApprovedDaysCard: React.FC<ApprovedDaysCardProps> = React.memo(({ feeSumma
       <CardContent>
         <div className="flex items-center justify-between w-full">
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-bold text-green-600 leading-none">{feeSummary.totalDays}</span>
-            <span className="text-base text-muted-foreground mb-1">
+            <span className="text-4xl font-bold text-palette-golden leading-none">{feeSummary.totalDays}</span>
+            <span className="text-base text-palette-dark-teal mb-1">
               {feeSummary.totalDays === 1 ? 'day approved' : 'days approved'}
             </span>
           </div>
@@ -99,18 +99,18 @@ const DailyRateCard: React.FC<DailyRateCardProps> = React.memo(({ feeSummaryLoad
   feeSummaryLoading ? (
     <CardSkeleton description="Per day" height={40} className="md:col-span-1 min-h-[120px]" />
   ) : (
-    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200">
+    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <CardTitle className="text-sm">Daily Rate</CardTitle>
         <CardDescription className="text-xs">Per day</CardDescription>
       </CardHeader>
       <CardContent>
         {feeSummary.monthlyFee > 0 ? (
-          <p className="text-2xl font-bold text-purple-600">
+          <p className="text-2xl font-bold text-palette-deep-red">
             ₹{Math.round((feeSummary.monthlyFee / new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate()) * 100) / 100}
           </p>
         ) : (
-          <p className="text-sm text-muted-foreground">No fee</p>
+          <p className="text-sm text-palette-dark-teal">No fee</p>
         )}
       </CardContent>
     </Card>
@@ -128,7 +128,7 @@ const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoadin
   feeSummaryLoading ? (
     <CardSkeleton description="Amount" height={40} className="md:col-span-1 min-h-[120px]" />
   ) : (
-    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200">
+    <Card className="md:col-span-1 min-h-[120px] transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
       <CardHeader>
         <div className="flex items-center justify-between w-full">
           <CardTitle className="text-sm">Total Due</CardTitle>
@@ -139,13 +139,13 @@ const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoadin
       <CardContent>
         {feeSummary.monthlyFee > 0 ? (
           <div className="flex items-center justify-between w-full">
-            <p className="text-2xl font-bold text-blue-600">₹{totalDueAmount}</p>
+            <p className="text-2xl font-bold text-palette-deep-red">₹{totalDueAmount}</p>
             {paymentStatus === 'paid' && (
               <CheckCircle className="text-green-500" size={22} aria-label="Paid" />
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No fee</p>
+          <p className="text-sm text-palette-dark-teal">No fee</p>
         )}
       </CardContent>
     </Card>
@@ -237,10 +237,6 @@ export default function StudentDashboard() {
       if (userDoc.exists()) {
         const userData = userDoc.data()
         const monthlyFee = userData.monthlyFee || 0
-
-        // Get month key for database storage
-        const monthKey = getMonthKey(currentMonth);
-        const savedFeeData = userData.totalDueByMonth?.[monthKey];
 
         // Always fetch real-time attendance data for accurate display
         const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
@@ -591,7 +587,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-palette-light-cream flex flex-col">
       {showConfetti && <Confetti trigger={confettiTrigger} />}
       <Navigation onRefresh={handleRefresh} refreshing={refreshing} />
       <main className="flex-grow">
@@ -599,8 +595,8 @@ export default function StudentDashboard() {
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Updated X ago info */}
             <div className="flex items-center gap-2 mb-2" title={lastDataRefresh ? lastDataRefresh.toLocaleString() : (lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : '')}>
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              <span className="text-sm font-medium text-muted-foreground">
+              <svg className="w-4 h-4 text-palette-dark-teal" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span className="text-sm font-medium text-palette-dark-teal">
                 {lastDataRefresh ? `Updated ${formatDistanceToNow(lastDataRefresh)} ago` : 
                  lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
               </span>
@@ -632,12 +628,12 @@ export default function StudentDashboard() {
             )}
             {/* Dashboard Header (no refresh button here anymore) */}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+              <h2 className="text-2xl font-bold text-palette-dark-red">Dashboard</h2>
             </div>
             {/* Quick Actions - Bento Design */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             {/* Large Attendance Card */}
-            <Card className="md:col-span-2 transition-all duration-200">
+            <Card className="md:col-span-2 transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
               <CardHeader>
                 <CardTitle className="text-lg">Mark Attendance</CardTitle>
                 <CardDescription>Mark today's attendance</CardDescription>
@@ -673,7 +669,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* Calendar - hidden on mobile, visible on sm+ */}
-          <Card className="hidden sm:block">
+          <Card className="hidden sm:block bg-card-elevated shadow-lg border border-palette-golden/30">
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Attendance Calendar</CardTitle>
@@ -702,7 +698,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               {currentMonth < PLATFORM_START ? (
-                <div className="text-center text-red-600 font-semibold py-8">
+                <div className="text-center text-palette-deep-red font-semibold py-8">
                   Started using platform from August 2025
                 </div>
               ) : (
@@ -710,13 +706,13 @@ export default function StudentDashboard() {
                   {attendanceLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <span className="ml-2 text-sm text-gray-600">Loading attendance calendar...</span>
+                      <span className="ml-2 text-sm text-palette-dark-teal">Loading attendance calendar...</span>
                     </div>
                   ) : (
                     <div className="w-full">
                       <div className="grid grid-cols-7 gap-1 w-full">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="p-2 text-center font-medium text-muted-foreground text-sm">
+                        <div key={day} className="p-2 text-center font-medium text-palette-dark-teal text-sm">
                           {day}
                         </div>
                       ))}
@@ -725,8 +721,8 @@ export default function StudentDashboard() {
                         return (
                           <div
                             key={index}
-                            className={`relative p-1 sm:p-2 text-center border rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
-                              status ? getStatusColor(status) + ' text-white' : 'bg-gray-50'
+                            className={`relative p-1 sm:p-2 text-center border border-palette-golden/30 rounded-md min-h-[32px] sm:min-h-[40px] flex items-center justify-center transition-all duration-200 hover:z-10 ${
+                              status ? getStatusColor(status) + ' text-white' : 'bg-card-base'
                             }`}
                           >
                             {day && (
@@ -768,9 +764,9 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
           {/* Alternative content for mobile */}
-          <Card className="sm:hidden">
+          <Card className="sm:hidden bg-card-elevated shadow-lg border border-palette-golden/30">
             <CardContent>
-              <div className="text-center text-muted-foreground py-8">
+              <div className="text-center text-palette-dark-teal py-8">
                 Calendar view is available on larger screens.
               </div>
             </CardContent>
