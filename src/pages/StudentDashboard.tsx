@@ -177,6 +177,7 @@ export default function StudentDashboard() {
   const [shouldShowPlatformStartToast, setShouldShowPlatformStartToast] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
+  const [lastDataRefresh, setLastDataRefresh] = useState<Date | null>(null);
   const [monthlyDueDate] = useState<Date | null>(null);
 
   // Memoized providerData and month checks
@@ -241,55 +242,44 @@ export default function StudentDashboard() {
         const monthKey = getMonthKey(currentMonth);
         const savedFeeData = userData.totalDueByMonth?.[monthKey];
 
-        if (savedFeeData && typeof savedFeeData === 'object') {
-          // Use teacher-calculated data
-          setFeeSummary({
-            totalDays: savedFeeData.approvedDays || 0,
-            absentDays: 0, // Can add this to calculation if needed
-            monthlyFee,
-            totalAmount: savedFeeData.due || 0
-          });
-        } else {
-          // Fallback: calculate for display only (don't save)
-          const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-          const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
-          
-          const [approvedSnapshot, absentSnapshot] = await Promise.all([
-            getDocs(query(
-              collection(db, 'attendance'),
-              where('studentId', '==', user.uid),
-              where('status', '==', 'approved'),
-              where('date', '>=', formatLocalDate(monthStart)),
-              where('date', '<=', formatLocalDate(monthEnd))
-            )),
-            getDocs(query(
-              collection(db, 'attendance'),
-              where('studentId', '==', user.uid),
-              where('status', '==', 'absent'),
-              where('date', '>=', formatLocalDate(monthStart)),
-              where('date', '<=', formatLocalDate(monthEnd))
-            ))
-          ])
-          
-          const approvedDays = approvedSnapshot.size
-          const absentDays = absentSnapshot.size
-          
-          // Calculate daily rate: monthly fee / total days in month
-          const totalDaysInMonth = monthEnd.getDate()
-          const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0
-          const totalAmount = approvedDays * dailyRate
-          
-          setFeeSummary({
-            totalDays: approvedDays,
-            absentDays,
-            monthlyFee,
-            totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
-          });
-          
-          // Note: No longer calling saveTotalDue - teachers will handle calculations
-        }
+        // Always fetch real-time attendance data for accurate display
+        const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
+        const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
+        
+        const [approvedSnapshot, absentSnapshot] = await Promise.all([
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', user.uid),
+            where('status', '==', 'approved'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          )),
+          getDocs(query(
+            collection(db, 'attendance'),
+            where('studentId', '==', user.uid),
+            where('status', '==', 'absent'),
+            where('date', '>=', formatLocalDate(monthStart)),
+            where('date', '<=', formatLocalDate(monthEnd))
+          ))
+        ])
+        
+        const approvedDays = approvedSnapshot.size
+        const absentDays = absentSnapshot.size
+        
+        // Calculate daily rate: monthly fee / total days in month
+        const totalDaysInMonth = monthEnd.getDate()
+        const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0
+        const totalAmount = approvedDays * dailyRate
+        
+        setFeeSummary({
+          totalDays: approvedDays,
+          absentDays,
+          monthlyFee,
+          totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
+        });
       }
     } catch (error) {
+      console.error('Error loading fee summary:', error)
       debouncedToast('Failed to load fee summary. Please refresh the page and try again.', 'error')
     } finally {
       setFeeSummaryLoading(false)
@@ -334,9 +324,15 @@ export default function StudentDashboard() {
   // Load initial data when user or month changes
   useEffect(() => {
     if (user?.uid) {
-      loadAttendanceRecords()
-      loadFeeSummary()
-      loadTotalDue()
+      Promise.all([
+        loadAttendanceRecords(),
+        loadFeeSummary(),
+        loadTotalDue()
+      ]).then(() => {
+        setLastDataRefresh(new Date());
+      }).catch((error) => {
+        console.error('Error loading initial data:', error);
+      });
     }
   }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
@@ -395,6 +391,20 @@ export default function StudentDashboard() {
         });
       });
       setAttendanceRecords(records);
+      
+      // Update fee summary when attendance changes
+      const approvedDays = records.filter(r => r.status === 'approved').length;
+      const absentDays = records.filter(r => r.status === 'absent').length;
+      
+      setFeeSummary(prev => ({
+        ...prev,
+        totalDays: approvedDays,
+        absentDays: absentDays,
+        totalAmount: prev.monthlyFee > 0 ? 
+          Math.round((approvedDays * (prev.monthlyFee / monthEnd.getDate())) * 100) / 100 : 0
+      }));
+    }, (error) => {
+      console.error('Error in attendance listener:', error);
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
@@ -543,9 +553,17 @@ export default function StudentDashboard() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadAttendanceRecords();
-      await loadFeeSummary();
-      await loadTotalDue();
+      // Force refresh all data by calling all load functions in parallel
+      await Promise.all([
+        loadAttendanceRecords(),
+        loadFeeSummary(),
+        loadTotalDue()
+      ]);
+      setLastDataRefresh(new Date());
+      debouncedToast('Data refreshed successfully!', 'success');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      debouncedToast('Failed to refresh data. Please try again.', 'error');
     } finally {
       setRefreshing(false);
     }
@@ -580,10 +598,11 @@ export default function StudentDashboard() {
         <div className="p-6">
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Updated X ago info */}
-            <div className="flex items-center gap-2 mb-2" title={lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : ''}>
+            <div className="flex items-center gap-2 mb-2" title={lastDataRefresh ? lastDataRefresh.toLocaleString() : (lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : '')}>
               <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               <span className="text-sm font-medium text-muted-foreground">
-                {lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
+                {lastDataRefresh ? `Updated ${formatDistanceToNow(lastDataRefresh)} ago` : 
+                 lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
               </span>
             </div>
             {/* Due Date Reminder Banner */}
