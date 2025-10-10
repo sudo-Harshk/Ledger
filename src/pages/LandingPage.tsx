@@ -306,7 +306,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
                   <div className="font-bold text-2xl text-palette-dark-red mb-2">Harshk</div>
-                  <div className="text-palette-golden font-medium text-lg mb-2">Architect & Developer</div>
+                  <div className="text-palette-golden font-medium text-lg mb-2">Architect</div>
                   {/* Optional: Add a short description or quote here */}
                 </div>
               </Rotating3DCard>
@@ -317,14 +317,14 @@ const LandingPage: React.FC = () => {
               >
                 <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0 flex items-center justify-center">
                   <img
-                    src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=512&h=512&facepad=2&q=80"
-                    alt="Sahasara placeholder"
+                    src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1760117842/Developer_2_iv2thw.webp"
+                    alt="Sahasara"
                     className="w-full h-full object-cover object-center bg-white"
                     style={{ minHeight: '100%', minWidth: '100%' }}
                   />
                 </div>
                 <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
-                  <div className="font-bold text-2xl text-palette-dark-red mb-2">Sahasara</div>
+                  <div className="font-bold text-2xl text-palette-dark-red mb-2">Sahasra</div>
                   <div className="text-palette-golden font-medium text-lg mb-2">UI/UX Designer</div>
                 </div>
               </Rotating3DCard>
