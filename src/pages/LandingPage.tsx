@@ -124,28 +124,7 @@ const LiveQuote: React.FC = () => {
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [activeSection, setActiveSection] = useState('home');
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  // Handle scroll behavior for navbar visibility
-  React.useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Hide navbar when scrolling down, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsNavbarVisible(false);
-      } else {
-        setIsNavbarVisible(true);
-      }
-      
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   // Handle section highlighting with intersection observer
   React.useEffect(() => {
@@ -173,11 +152,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-palette-light-cream" style={{ fontFamily: "'Roboto Mono', monospace" }}>
       {/* Navigation */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 bg-palette-light-cream/95 shadow-sm backdrop-blur-md transition-transform duration-300 ${
-          isNavbarVisible ? 'translate-y-0' : '-translate-y-full'
-        }`}
-      >
+      <header className="flex items-center justify-between px-8 py-6 bg-palette-light-cream">
         <div className="flex items-center gap-2">
           <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
         </div>
@@ -218,7 +193,7 @@ const LandingPage: React.FC = () => {
         </div>
 
         {/* Home Section */}
-        <section id="home" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20 pt-32">
+        <section id="home" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20">
           <div className="max-w-5xl mx-auto w-full flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
             {/* Left Side: Headline and sub-headline */}
             <div className="flex-1 flex flex-col justify-center items-start gap-4 md:gap-6 w-full md:w-1/2 max-w-xl md:pr-8">
@@ -274,7 +249,7 @@ const LandingPage: React.FC = () => {
         </section>
 
         {/* Team Section */}
-        <section id="team" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20 pt-32">
+        <section id="team" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20">
           <div className="max-w-5xl mx-auto w-full flex flex-col items-center">
             <h2 className="text-2xl md:text-3xl font-bold text-palette-deep-red mb-8 text-center">
               About the Developers
