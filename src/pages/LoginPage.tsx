@@ -100,7 +100,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-palette-light-cream">
       {/* Redesigned Header to match landing page */}
-      <header className="flex items-center justify-between px-8 py-6 border-b border-palette-dark-teal bg-palette-light-cream">
+      <header className="flex items-center justify-between px-8 py-6 bg-palette-light-cream">
         <div className="flex items-center gap-2">
           <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }} onClick={() => navigate('/')}>Ledger</div>
         </div>
