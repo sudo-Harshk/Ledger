@@ -6,3 +6,4 @@ export { default as ToastProvider } from './ToastProvider';
 export { Confetti } from './Confetti';
 export { default as DueDateBanner } from './DueDateBanner';
 export { default as PaidBadge } from './PaidBadge';
+export { approvedDaysEmojis } from './approvedDaysEmojis';

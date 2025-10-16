@@ -1,21 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { useAuth } from '../hooks/useAuth';
-import Navigation from '../components/Navigation';
-import { db } from '../firebase';
-import { formatLocalDate } from '../lib/utils';
+import { useAuth } from '@/hooks';
+import { Navigation, Footer, Confetti, DueDateBanner, PaidBadge, approvedDaysEmojis } from '@/components';
+import { db } from '@/firebase';
+import { formatLocalDate, debouncedToast, linkGoogleAccount, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
-import { Confetti } from '../components/Confetti';
-import { approvedDaysEmojis } from '../components/approvedDaysEmojis';
-import { debouncedToast } from '../lib/debouncedToast';
-import Footer from '../components/Footer';
-import { Link as LinkIcon } from 'lucide-react';
-import { linkGoogleAccount } from '../lib/linkGoogleAccount';
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
-import PaidBadge from '../components/PaidBadge';
-import { CheckCircle } from 'lucide-react';
-import DueDateBanner from '../components/DueDateBanner';
-import { dispatchAttendanceUpdatedEvent } from '../lib/utils';
+import { Link as LinkIcon, CheckCircle } from 'lucide-react';
 
 // --- Types ---
 interface AttendanceRecord {
