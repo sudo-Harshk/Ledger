@@ -95,7 +95,7 @@
   body {
     background-color: #FDF6F0;
     color: #222;
-    font-family: 'Roboto Mono', monospace;
+    font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -105,4 +105,27 @@
   section {
     scroll-margin-top: 80px; /* Account for sticky header */
   }
+}
+
+@layer components {
+  /* Typography scale aligned with calm aesthetic */
+  .type-h1 { @apply font-display text-4xl md:text-5xl leading-tight tracking-tight text-foreground; }
+  .type-h2 { @apply font-display text-3xl md:text-4xl leading-tight tracking-tight text-foreground; }
+  .type-h3 { @apply font-display text-2xl md:text-3xl leading-snug tracking-tight text-foreground; }
+  .type-h4 { @apply font-display text-xl md:text-2xl leading-snug text-foreground; }
+  .type-h5 { @apply font-display text-lg md:text-xl leading-snug text-foreground; }
+  .type-h6 { @apply font-display text-base md:text-lg leading-snug text-foreground; }
+
+  .type-p { @apply font-mono text-[15px] leading-7 text-foreground; }
+  .type-lead { @apply font-mono text-base md:text-lg leading-8 text-muted-foreground; }
+  .type-muted { @apply font-mono text-sm text-muted-foreground; }
+  .type-small { @apply font-mono text-xs text-muted-foreground; }
+}
+
+@layer utilities {
+  /* Layout helpers */
+  .page-container { @apply container mx-auto; }
+  .section { @apply py-8 md:py-12 lg:py-16; }
+  .section-sm { @apply py-6 md:py-8; }
+  .section-lg { @apply py-12 md:py-20; }
 }
