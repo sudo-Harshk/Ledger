@@ -99,16 +99,34 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-palette-light-cream">
-      {/* Redesigned Header to match landing page */}
-      <header className="flex items-center justify-between px-8 py-6 bg-palette-light-cream">
-        <div className="flex items-center gap-2">
-          <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }} onClick={() => navigate('/')}>Ledger</div>
-        </div>
-        <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
-          {/* Removed Home button */}
-        </nav>
-      </header>
-      <main className="flex-1 flex items-center justify-center p-4 relative">
+      {/* Floating Navigation Header */}
+      <div style={{ padding: '16px 16px 0 16px' }}>
+        <header 
+          className="flex items-center justify-between px-8 py-6" 
+          style={{ 
+            border: 'none',
+            borderTop: 'none',
+            borderLeft: 'none', 
+            borderRight: 'none',
+            borderBottom: '1px solid hsl(var(--palette-golden) / 0.2)',
+            outline: 'none',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            borderRadius: '12px',
+            backgroundColor: 'hsl(var(--palette-light-cream))',
+            backdropFilter: 'blur(8px)',
+            position: 'relative',
+            zIndex: 10
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }} onClick={() => navigate('/')}>Ledger</div>
+          </div>
+          <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
+            {/* Removed Home button */}
+          </nav>
+        </header>
+      </div>
+      <main className="flex-1 flex items-center justify-center p-4 pt-8 relative">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <div className="w-96 h-96 rounded-full bg-gradient-to-br from-palette-golden/30 via-palette-deep-red/20 to-palette-light-cream/0 blur-3xl opacity-60"></div>
         </div>
