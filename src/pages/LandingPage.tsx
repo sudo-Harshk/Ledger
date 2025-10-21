@@ -152,24 +152,8 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-palette-light-cream" style={{ fontFamily: "'Roboto Mono', monospace" }}>
       {/* Navigation */}
-      <div style={{ padding: '16px 16px 0 16px' }}>
-        <header 
-          className="flex items-center justify-between px-8 py-6" 
-          style={{ 
-            border: 'none',
-            borderTop: 'none',
-            borderLeft: 'none', 
-            borderRight: 'none',
-            borderBottom: '1px solid hsl(var(--palette-golden) / 0.2)',
-            outline: 'none',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            borderRadius: '12px',
-            backgroundColor: 'hsl(var(--palette-light-cream))',
-            backdropFilter: 'blur(8px)',
-            position: 'relative',
-            zIndex: 10
-          }}
-        >
+      <div className="floating-nav-wrapper">
+        <header className="floating-nav-header">
         <div className="flex items-center gap-2">
           <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
         </div>

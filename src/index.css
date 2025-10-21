@@ -129,3 +129,29 @@
   .section-sm { @apply py-6 md:py-8; }
   .section-lg { @apply py-12 md:py-20; }
 }
+
+@layer components {
+  /* Floating Navigation Header */
+  .floating-nav-wrapper {
+    padding: 16px 16px 0 16px;
+  }
+  
+  .floating-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+    border: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid hsl(var(--palette-golden) / 0.2);
+    outline: none;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    background-color: hsl(var(--palette-light-cream));
+    backdrop-filter: blur(8px);
+    position: relative;
+    z-index: 10;
+  }
+}
