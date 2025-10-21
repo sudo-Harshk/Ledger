@@ -85,7 +85,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   
   html {
@@ -109,28 +109,95 @@
 
 @layer components {
   /* Typography scale aligned with calm aesthetic */
-  .type-h1 { @apply font-display text-4xl md:text-5xl leading-tight tracking-tight text-foreground; }
-  .type-h2 { @apply font-display text-3xl md:text-4xl leading-tight tracking-tight text-foreground; }
-  .type-h3 { @apply font-display text-2xl md:text-3xl leading-snug tracking-tight text-foreground; }
-  .type-h4 { @apply font-display text-xl md:text-2xl leading-snug text-foreground; }
-  .type-h5 { @apply font-display text-lg md:text-xl leading-snug text-foreground; }
-  .type-h6 { @apply font-display text-base md:text-lg leading-snug text-foreground; }
+  .type-h1 { 
+    font-family: var(--font-display);
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h1 { font-size: 3rem; }
+  }
+  
+  .type-h2 { 
+    font-family: var(--font-display);
+    font-size: 1.875rem;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h2 { font-size: 2.25rem; }
+  }
+  
+  .type-h3 { 
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h3 { font-size: 1.875rem; }
+  }
+  
+  .type-h4 { 
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    line-height: 1.2;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h4 { font-size: 1.5rem; }
+  }
+  
+  .type-h5 { 
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    line-height: 1.2;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h5 { font-size: 1.25rem; }
+  }
+  
+  .type-h6 { 
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.2;
+    color: hsl(var(--foreground));
+  }
+  @media (min-width: 768px) {
+    .type-h6 { font-size: 1.125rem; }
+  }
 
-  .type-p { @apply font-mono text-[15px] leading-7 text-foreground; }
-  .type-lead { @apply font-mono text-base md:text-lg leading-8 text-muted-foreground; }
-  .type-muted { @apply font-mono text-sm text-muted-foreground; }
-  .type-small { @apply font-mono text-xs text-muted-foreground; }
-}
+  .type-p { 
+    font-family: 'Roboto Mono', monospace;
+    font-size: 15px;
+    line-height: 1.75;
+    color: hsl(var(--foreground));
+  }
+  .type-lead { 
+    font-family: 'Roboto Mono', monospace;
+    font-size: 1rem;
+    line-height: 2;
+    color: hsl(var(--muted-foreground));
+  }
+  @media (min-width: 768px) {
+    .type-lead { font-size: 1.125rem; }
+  }
+  .type-muted { 
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+  }
+  .type-small { 
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+  }
 
-@layer utilities {
-  /* Layout helpers */
-  .page-container { @apply container mx-auto; }
-  .section { @apply py-8 md:py-12 lg:py-16; }
-  .section-sm { @apply py-6 md:py-8; }
-  .section-lg { @apply py-12 md:py-20; }
-}
-
-@layer components {
   /* Floating Navigation Header */
   .floating-nav-wrapper {
     padding: 16px 16px 0 16px;
@@ -153,5 +220,52 @@
     backdrop-filter: blur(8px);
     position: relative;
     z-index: 10;
+  }
+}
+
+@layer utilities {
+  /* Layout helpers */
+  .page-container { 
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .section { 
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  @media (min-width: 768px) {
+    .section { 
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .section { 
+      padding-top: 4rem;
+      padding-bottom: 4rem;
+    }
+  }
+  .section-sm { 
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .section-sm { 
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  }
+  .section-lg { 
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  @media (min-width: 768px) {
+    .section-lg { 
+      padding-top: 5rem;
+      padding-bottom: 5rem;
+    }
   }
 }

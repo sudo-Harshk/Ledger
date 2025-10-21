@@ -154,10 +154,10 @@ const LandingPage: React.FC = () => {
       {/* Navigation */}
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
-        <div className="flex items-center gap-2">
-          <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
-        </div>
-        <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
+          <div className="flex items-center gap-2">
+            <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
+          </div>
+          <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
           <a 
             href="#home" 
             className={`transition-all duration-300 pb-1 relative ${
