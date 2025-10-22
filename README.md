@@ -2,18 +2,30 @@
 
 A modern, Japanese-inspired React web app for managing student attendance and calculating monthly fees, with real-time updates, role-based dashboards, and beautiful UI for students and teachers.
 
+ **Live Demo:** [https://ledger-90834.web.app/](https://ledger-90834.web.app/)
+
 ---
 
 ## Features
-- **Student Dashboard:** Mark daily attendance, view calendar, track approved days, monitor monthly fees, see payment status
-- **Teacher Dashboard:** Approve/reject attendance, set monthly fees, view revenue, add bulk attendance, manage students, mark payments
-- **Authentication:** Secure login/signup with Firebase Auth (only teacher-created users can access; no self-registration)
-- **Real-time Sync:** Firestore for live data, real-time updates
-- **Notifications:** Uses `react-hot-toast` for all user messages
-- **Role-based Access:** Students and teachers see different dashboards and permissions
-- **Google Account Linking:** Optional Google login for easier access
-- **Admin Setup:** Initial teacher account setup (if enabled)
-- **Clean Architecture:** Modular components with custom hooks and barrel file imports
+
+### Student Dashboard
+- **Daily Attendance:** Mark attendance with beautiful calendar interface
+- **Payment Tracking:** Monitor monthly fees and payment status
+- **Progress Visualization:** Track approved days and attendance history
+- **Real-time Updates:** Live sync with teacher approvals
+
+### Teacher Dashboard
+- **Attendance Management:** Approve/reject student attendance requests
+- **Bulk Operations:** Add bulk attendance for multiple students
+- **Student Management:** Create and manage student accounts
+- **Revenue Tracking:** View financial summaries and payment status
+- **Fee Management:** Set and adjust monthly fees
+
+### Security & Authentication
+- **Firebase Auth:** Secure authentication with role-based access
+- **No Self-Registration:** Only teacher-created users can access
+- **Google Integration:** Optional Google login for easier access
+- **App Check:** reCAPTCHA v3 protection against abuse
 
 ---
 
@@ -86,17 +98,34 @@ Visit [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## Main Libraries
-- **React 19** - Modern React with hooks
-- **TypeScript** - Type safety and better DX
-- **Firebase (Auth, Firestore, AppCheck)** - Backend and authentication
-- **Firestore onSnapshot** — Real-time data fetching and live updates
-- **react-hot-toast** — User notifications
-- **framer-motion** — Animations
-- **canvas-confetti** — Confetti effect
-- **tailwindcss** & **shadcn/ui** — Styling & UI components
-- **lucide-react** — Icons
-- **date-fns** — Date utilities
+## Tech Stack
+
+### Core Framework
+- **React 19** - Modern React with hooks and concurrent features
+- **TypeScript** - Type safety and enhanced developer experience
+- **Vite** - Lightning-fast build tool and dev server
+
+### Backend & Database
+- **Firebase Auth** - Secure authentication and user management
+- **Firestore** - Real-time NoSQL database with live updates
+- **Firebase App Check** - Protection against abuse and unauthorized access
+
+### UI & Styling
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - Beautiful, accessible UI components
+- **Lucide React** - Modern icon library
+- **Custom Japanese-inspired Design** - Unique color palette and typography
+
+### Performance & Optimization
+- **React Hot Toast** - Elegant notifications
+- **Canvas Confetti** - Celebration effects
+- **Date-fns** - Lightweight date utilities
+- **Code Splitting** - Lazy loading for optimal performance
+
+### Development Tools
+- **ESLint** - Code quality and consistency
+- **TypeScript ESLint** - TypeScript-specific linting rules
+- **Vite Plugins** - React and TypeScript support
 
 ---
 
@@ -118,33 +147,85 @@ Visit [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## Development Notes
+## Project Structure
+
+```
+ledger-app/
+├── public/                 # Static assets
+│   ├── robots.txt         # Search engine directives
+│   ├── sitemap.xml        # Site structure for SEO
+│   └── index.html         # Public HTML template
+├── src/
+│   ├── components/        # Reusable UI components
+│   │   ├── ui/           # shadcn/ui components
+│   │   └── teacher-dashboard/  # Teacher-specific components
+│   ├── contexts/         # React contexts (Auth)
+│   ├── hooks/            # Custom React hooks
+│   ├── lib/              # Utility functions
+│   ├── pages/            # Route components
+│   └── assets/           # Images, fonts, etc.
+├── admin-scripts/         # Admin utilities
+├── firebase.json         # Firebase configuration
+├── firestore.rules       # Firestore security rules
+└── firestore.indexes.json # Database indexes
+```
+
+---
+
+## Development
+
+### Prerequisites
+- Node.js 18+ 
+- Firebase project with Auth & Firestore enabled
+- Git for version control
+
+### Environment Setup
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create `.env` file with Firebase configuration
+4. Set up Firestore indexes (see Firebase Setup section)
+5. Run development server: `npm run dev`
 
 ### Code Quality
-- **ESLint** configured for code quality
-- **TypeScript** for type safety
-- **Absolute imports** with `@/` alias
-- **Barrel files** for clean imports
-- **Custom hooks** for reusable logic
-- **Error boundaries** and global error handling
-
-### Performance
-- **Real-time updates** with Firestore listeners
-- **Optimized re-renders** with React hooks
-- **Code splitting** with Vite
-- **Lazy loading** for better performance
+- **ESLint:** Configured with React and TypeScript rules
+- **TypeScript:** Strict type checking enabled
+- **Prettier:** Code formatting (recommended)
+- **Git Hooks:** Pre-commit linting (recommended)
 
 ---
 
 ## Contributing
-- Fork & branch for your feature/fix
-- Run `npm run lint` before PR
+
+### Getting Started
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Run tests and linting: `npm run lint`
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### Code Standards
 - Follow the established architecture patterns
 - Use custom hooks for business logic
 - Keep components focused and small
-- Update docs if needed
+- Write meaningful commit messages
+- Update documentation for new features
+- Ensure all tests pass
+
+### Pull Request Process
+1. Ensure your code follows the project's style guidelines
+2. Run `npm run lint` and fix any issues
+3. Test your changes thoroughly
+4. Update documentation if needed
+5. Request review from maintainers
 
 ---
 
-## License
-MIT
+## Acknowledgments
+
+- **Firebase** - For providing excellent backend services
+- **React Team** - For the amazing framework
+- **Tailwind CSS** - For the utility-first CSS framework
+- **shadcn/ui** - For beautiful, accessible components
+- **Vite** - For the lightning-fast build tool

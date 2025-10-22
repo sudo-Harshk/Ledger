@@ -20,16 +20,22 @@ coverage/
 .vite/
 .vite-inspect/
 
-# Env files 
+# Environment files
 .env
 .env.*
 !.env.example
 !.env.*.example
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .idea/
 .DS_Store
 Thumbs.db
@@ -38,15 +44,60 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-*txt
+*~
 
-# Firebase (CLI state)
+# Firebase
 .firebase/
 .firebaserc.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
-# (Optional) Cloud Functions 
+# Cloud Functions (if using)
 functions/**/node_modules/
+functions/lib/
+functions/.runtimeconfig.json
 
-#Folder Structure
-.firebase/
+# Testing
+coverage/
+.nyc_output/
+junit.xml
+
+# Build artifacts
+build/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
 admin-scripts/
+*.txt
+!README.txt
+!CHANGELOG.txt
