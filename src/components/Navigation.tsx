@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui';
 import { useAuth } from '../hooks/useAuth'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
 
@@ -15,11 +15,6 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
   const [selectedMonth] = useState(new Date())
   const { isRecalculating, recalculateAllStudents } = useStudentFeeRecalculation()
   
-  useEffect(() => {
-    // Hide cursor after animation (words array has only one word, so after typing is done)
-    const timeout = setTimeout(() => {}, ((user?.displayName?.length || 4) * 80) + 1000);
-    return () => clearTimeout(timeout);
-  }, [user?.displayName]);
 
   const handleLogout = async () => {
     try {

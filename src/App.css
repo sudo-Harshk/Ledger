@@ -1,23 +1,5 @@
 /* Custom styles for Ledger App */
 
-
-.hover-lift {
-  transition: all 0.3s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-.smooth-scale {
-  transition: transform 0.2s ease;
-}
-
-.smooth-scale:hover {
-  transform: scale(1.05);
-}
-
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
