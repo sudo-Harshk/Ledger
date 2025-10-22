@@ -147,31 +147,6 @@ Visit [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## Project Structure
-
-```
-ledger-app/
-├── public/                 # Static assets
-│   ├── robots.txt         # Search engine directives
-│   ├── sitemap.xml        # Site structure for SEO
-│   └── index.html         # Public HTML template
-├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── ui/           # shadcn/ui components
-│   │   └── teacher-dashboard/  # Teacher-specific components
-│   ├── contexts/         # React contexts (Auth)
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utility functions
-│   ├── pages/            # Route components
-│   └── assets/           # Images, fonts, etc.
-├── admin-scripts/         # Admin utilities
-├── firebase.json         # Firebase configuration
-├── firestore.rules       # Firestore security rules
-└── firestore.indexes.json # Database indexes
-```
-
----
-
 ## Development
 
 ### Prerequisites
@@ -185,47 +160,3 @@ ledger-app/
 3. Create `.env` file with Firebase configuration
 4. Set up Firestore indexes (see Firebase Setup section)
 5. Run development server: `npm run dev`
-
-### Code Quality
-- **ESLint:** Configured with React and TypeScript rules
-- **TypeScript:** Strict type checking enabled
-- **Prettier:** Code formatting (recommended)
-- **Git Hooks:** Pre-commit linting (recommended)
-
----
-
-## Contributing
-
-### Getting Started
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests and linting: `npm run lint`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Code Standards
-- Follow the established architecture patterns
-- Use custom hooks for business logic
-- Keep components focused and small
-- Write meaningful commit messages
-- Update documentation for new features
-- Ensure all tests pass
-
-### Pull Request Process
-1. Ensure your code follows the project's style guidelines
-2. Run `npm run lint` and fix any issues
-3. Test your changes thoroughly
-4. Update documentation if needed
-5. Request review from maintainers
-
----
-
-## Acknowledgments
-
-- **Firebase** - For providing excellent backend services
-- **React Team** - For the amazing framework
-- **Tailwind CSS** - For the utility-first CSS framework
-- **shadcn/ui** - For beautiful, accessible components
-- **Vite** - For the lightning-fast build tool
