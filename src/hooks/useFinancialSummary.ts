@@ -14,6 +14,7 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
   useEffect(() => {
     if (!userUid) return;
     
+    let isMounted = true;
     setLoading(true);
     const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`;
     const summaryDocRef = doc(db, 'users', userUid, 'monthlySummaries', monthYear);
@@ -21,6 +22,8 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
     // If refreshTrigger is provided, force a fresh fetch and update timestamp
     if (refreshTrigger !== undefined) {
       getDoc(summaryDocRef).then(async (docSnapshot: DocumentSnapshot<DocumentData>) => {
+        if (!isMounted) return;
+        
         try {
           if (docSnapshot.exists()) {
             const data = docSnapshot.data();
@@ -32,26 +35,38 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
               lastUpdated: currentTime,
             }, { merge: true });
             
-            setFinancialSummary({
-              revenue: data.revenue || 0,
-              lastUpdated: currentTime,
-            });
+            if (isMounted) {
+              setFinancialSummary({
+                revenue: data.revenue || 0,
+                lastUpdated: currentTime,
+              });
+            }
           } else {
-            setFinancialSummary(null);
+            if (isMounted) {
+              setFinancialSummary(null);
+            }
           }
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         } catch (error) {
           console.error('Error processing financial summary:', error);
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       }).catch((error) => {
         console.error('Error fetching financial summary:', error);
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       });
     } else {
       // Use real-time listener for normal operation
       const unsubscribe = onSnapshot(summaryDocRef, 
         (docSnapshot: DocumentSnapshot<DocumentData>) => {
+          if (!isMounted) return;
+          
           try {
             if (docSnapshot.exists()) {
               setFinancialSummary({
@@ -69,11 +84,14 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
         },
         (error) => {
           console.error('Error in financial summary listener:', error);
-          setLoading(false);
+          if (isMounted) {
+            setLoading(false);
+          }
         }
       );
 
       return () => {
+        isMounted = false;
         try {
           unsubscribe();
         } catch (error) {
@@ -81,6 +99,11 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
         }
       };
     }
+    
+    // Cleanup function for refreshTrigger case
+    return () => {
+      isMounted = false;
+    };
   }, [userUid, currentMonth, refreshTrigger]);
 
   return {

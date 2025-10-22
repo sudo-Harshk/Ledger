@@ -18,6 +18,7 @@ import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { db, auth } from '@/firebase';
 import { debouncedToast } from '@/lib';
 import { toast } from 'react-hot-toast';
+import logger from '@/lib/logger';
 
 interface StudentAccount {
   id: string;
@@ -67,7 +68,7 @@ export const useStudents = () => {
   // Automatically fetch students when hook is initialized
   useEffect(() => {
     initialFetchStudents();
-  }, [initialFetchStudents]);
+  }, []); // Remove initialFetchStudents from dependencies to prevent infinite loops
 
   // Fetch paginated students
   const fetchStudentsPage = useCallback(async (direction: 'next' | 'prev') => {
@@ -213,8 +214,11 @@ export const useStudents = () => {
       if (auth.currentUser) {
         try {
           await deleteUser(auth.currentUser);
+          logger.info('Successfully cleaned up Firebase Auth user after failed account creation');
         } catch (deleteError) {
-          console.error('Error cleaning up Firebase Auth user:', deleteError);
+          logger.error('Error cleaning up Firebase Auth user:', deleteError);
+          // Log this as a critical issue that needs manual intervention
+          console.error('CRITICAL: Failed to clean up Firebase Auth user. Manual cleanup required in Firebase Console.');
         }
       }
     } finally {

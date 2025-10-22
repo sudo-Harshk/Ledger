@@ -26,9 +26,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
     let timeoutId: NodeJS.Timeout | null = null
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Prevent state updates on unmounted component
+      if (!isMounted) return
+      
       if (firebaseUser) {
         try {
           
@@ -47,7 +51,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               providerData: firebaseUser.providerData,
             }
             logger.debug('Setting user state')
-            setUser(userInfo);
+            if (isMounted) {
+              setUser(userInfo);
+            }
           } else {
             // User exists in Auth but not in Firestore - wait a bit for sync
             logger.warn('User authenticated but no Firestore document found - waiting for sync...')
@@ -59,8 +65,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             
             // Wait for Firestore to sync, then check again (reduced delay)
             timeoutId = setTimeout(async () => {
+              // Check if component is still mounted before proceeding
+              if (!isMounted) return
+              
               try {
                 const retryDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+                if (!isMounted) return // Double-check after async operation
+                
                 if (retryDoc.exists()) {
                   const userData = retryDoc.data()
                   const userInfo = {
@@ -75,28 +86,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   // Still no document after retry - this is an incomplete account
                   logger.error('User document still not found after retry - incomplete account')
                   await signOut(auth)
-                  setUser(null)
+                  if (isMounted) {
+                    setUser(null)
+                  }
                 }
               } catch (error) {
                 logger.error('Error during retry:', error)
                 await signOut(auth)
-                setUser(null)
+                if (isMounted) {
+                  setUser(null)
+                }
               }
             }, 1000) // Reduced delay to 1 second
           }
         } catch (error: unknown) {
           logger.error('Error fetching user data:', error)
           console.error('AuthContext error details:', error)
-          setUser(null)
+          if (isMounted) {
+            setUser(null)
+          }
         }
       } else {
-        setUser(null)
+        if (isMounted) {
+          setUser(null)
+        }
       }
-      setLoading(false)
+      if (isMounted) {
+        setLoading(false)
+      }
     })
 
     // Cleanup function
     return () => {
+      isMounted = false
       unsubscribe()
       if (timeoutId) {
         clearTimeout(timeoutId)
@@ -173,7 +195,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (additionalInfo?.isNewUser) {
         // Unauthorized: delete user and show error
         if (auth.currentUser) {
-          await deleteUser(auth.currentUser)
+          try {
+            await deleteUser(auth.currentUser)
+          } catch (deleteError) {
+            logger.error('Error deleting unauthorized user:', deleteError)
+          }
         }
         debouncedToast('Account not registered. Please contact your teacher.', 'error')
         throw new Error('Account not registered. Please contact your teacher.')
@@ -182,16 +208,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
       if (!userDoc.exists()) {
         // Create user document if it doesn't exist (should not happen for existing users)
-        await setDoc(doc(db, 'users', result.user.uid), {
-          username: result.user.email,
-          role: 'student', // Default role, adjust as needed
-          displayName: result.user.displayName || '',
-          email: result.user.email || '',
-        })
-        logger.info('Created Firestore user document for Google user')
+        try {
+          await setDoc(doc(db, 'users', result.user.uid), {
+            username: result.user.email,
+            role: 'student', // Default role, adjust as needed
+            displayName: result.user.displayName || '',
+            email: result.user.email || '',
+            createdAt: new Date(),
+          })
+          logger.info('Created Firestore user document for Google user')
+        } catch (setDocError) {
+          logger.error('Error creating user document:', setDocError)
+          // If document creation fails, sign out the user
+          await signOut(auth)
+          throw new Error('Failed to create user account. Please try again.')
+        }
       }
     } catch (error: unknown) {
-      logger.error('Google login error')
+      logger.error('Google login error:', error)
       if (error instanceof Error) {
         throw error
       } else {
