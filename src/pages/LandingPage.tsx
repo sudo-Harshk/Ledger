@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
+import { FlippableCard } from '../components';
 
 // Tooltip component
 const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => {
@@ -24,87 +25,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
 };
 
 
-// 3D Rotating Card Component with smooth cursor tilting effect
-const Rotating3DCard: React.FC<{ className?: string; style?: React.CSSProperties; children: React.ReactNode }> = ({ className = '', style = {}, children }) => {
-  const [isHovering, setIsHovering] = useState(false);
-  const [rotateX, setRotateX] = useState(0);
-  const [rotateY, setRotateY] = useState(0);
-  const [scale, setScale] = useState(1);
 
-  // Use requestAnimationFrame for smoother animations
-  React.useEffect(() => {
-    let animationId: number;
-    
-    const animate = () => {
-      setRotateX(prev => {
-        const diff = rotateX - prev;
-        return prev + diff * 0.15; // Smooth interpolation factor
-      });
-      setRotateY(prev => {
-        const diff = rotateY - prev;
-        return prev + diff * 0.15;
-      });
-      setScale(prev => {
-        const target = isHovering ? 1.03 : 1;
-        const diff = target - prev;
-        return prev + diff * 0.2;
-      });
-      
-      animationId = requestAnimationFrame(animate);
-    };
-    
-    animationId = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationId) {
-        cancelAnimationFrame(animationId);
-      }
-    };
-  }, [rotateX, rotateY, isHovering]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const mouseX = e.clientX - centerX;
-    const mouseY = e.clientY - centerY;
-    
-    // Calculate rotation with smoother curve
-    const rotateYValue = (mouseX / (rect.width / 2)) * 8; // Reduced from 12 to 8 for smoother feel
-    const rotateXValue = -(mouseY / (rect.height / 2)) * 8;
-    
-    setRotateX(rotateXValue);
-    setRotateY(rotateYValue);
-    setIsHovering(true);
-  };
-
-  const handleMouseLeave = () => {
-    setRotateX(0);
-    setRotateY(0);
-    setIsHovering(false);
-  };
-
-  return (
-    <div 
-      className={className}
-      style={{
-        ...style,
-        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`,
-        transformStyle: 'preserve-3d',
-        boxShadow: isHovering 
-          ? '0 8px 32px 0 rgba(158,42,43,0.2)' 
-          : '0 4px 16px 0 rgba(158,42,43,0.1)',
-        willChange: 'transform',
-        transition: 'box-shadow 0.3s ease-out',
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      {children}
-    </div>
-  );
-};
 
 
 // LiveQuote component
@@ -257,47 +178,105 @@ const LandingPage: React.FC = () => {
               About the Developers
             </h2>
             
-            <div className="flex flex-col md:flex-row gap-8 w-full justify-center items-stretch relative mb-12">
+            <div className="flex flex-col md:flex-row gap-16 w-full justify-center items-stretch relative mb-12">
               {/* Background gradient for team section */}
               <div className="absolute inset-0 bg-gradient-to-br from-palette-golden/5 via-palette-deep-red/3 to-palette-light-cream/0 rounded-3xl -z-10"></div>
               
               {/* Developer 1 */}
-              <Rotating3DCard
-                className="flex flex-col md:flex-row bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 flex-1 min-h-[320px] md:w-[480px] w-full overflow-hidden"
+              <FlippableCard
+                className="relative flex-1 min-h-[320px] md:w-[480px] w-full"
                 style={{ maxWidth: '100%' }}
-              >
-                <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0">
-                  <img
-                    src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1758480335/Developer1_rbppcq.webp"
-                    alt="Harshk portrait"
-                    className="w-full h-full object-cover object-center bg-white"
-                    style={{ minHeight: '100%', minWidth: '100%' }}
-                  />
-                </div>
-                <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
-                  <div className="font-bold text-2xl text-palette-dark-red mb-2">Harshk</div>
-                  <div className="text-palette-golden font-medium text-lg mb-2">Architect</div>
-                </div>
-              </Rotating3DCard>
+                frontContent={
+                  <div className="flex flex-col md:flex-row bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 h-full overflow-hidden">
+                    <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0">
+                      <img
+                        src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1758480335/Developer1_rbppcq.webp"
+                        alt="Harshk portrait"
+                        className="w-full h-full object-cover object-center bg-white"
+                        style={{ minHeight: '100%', minWidth: '100%' }}
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
+                      <div className="font-bold text-2xl text-palette-dark-red mb-2">Harshk</div>
+                      <div className="text-palette-golden font-medium text-lg mb-2">Architect</div>
+                    </div>
+                  </div>
+                }
+                backContent={
+                  <div className="flex items-center justify-center bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 h-full">
+                    <a 
+                      href="https://github.com/sudo-Harshk" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="group flex flex-col items-center justify-center p-8 transition-all duration-500 hover:scale-110"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="relative">
+                        <svg 
+                          className="w-24 h-24 text-palette-dark-red group-hover:text-palette-golden transition-all duration-500 group-hover:rotate-12" 
+                          fill="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <div className="absolute inset-0 bg-palette-golden/20 rounded-full scale-0 group-hover:scale-110 transition-transform duration-500"></div>
+                      </div>
+                      <span className="text-palette-dark-red font-semibold mt-6 group-hover:text-palette-golden transition-colors duration-500 text-lg">
+                        View on GitHub
+                      </span>
+                      <div className="mt-2 w-16 h-0.5 bg-palette-golden scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
+                    </a>
+                  </div>
+                }
+              />
               
               {/* Developer 2 */}
-              <Rotating3DCard
-                className="flex flex-col md:flex-row bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 flex-1 min-h-[320px] md:w-[480px] w-full overflow-hidden"
+              <FlippableCard
+                className="relative flex-1 min-h-[320px] md:w-[480px] w-full"
                 style={{ maxWidth: '100%' }}
-              >
-                <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0 flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1760117842/Developer_2_iv2thw.webp"
-                    alt="Sahasara"
-                    className="w-full h-full object-cover object-center bg-white"
-                    style={{ minHeight: '100%', minWidth: '100%' }}
-                  />
-                </div>
-                <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
-                  <div className="font-bold text-2xl text-palette-dark-red mb-2">Sahasra</div>
-                  <div className="text-palette-golden font-medium text-lg mb-2">UI/UX Designer</div>
-                </div>
-              </Rotating3DCard>
+                frontContent={
+                  <div className="flex flex-col md:flex-row bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 h-full overflow-hidden">
+                    <div className="md:w-1/2 w-full h-56 md:h-auto flex-shrink-0 flex items-center justify-center">
+                      <img
+                        src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1760117842/Developer_2_iv2thw.webp"
+                        alt="Sahasara"
+                        className="w-full h-full object-cover object-center bg-white"
+                        style={{ minHeight: '100%', minWidth: '100%' }}
+                      />
+                    </div>
+                    <div className="flex flex-col justify-center items-start p-8 md:w-1/2 w-full">
+                      <div className="font-bold text-2xl text-palette-dark-red mb-2">Sahasra</div>
+                      <div className="text-palette-golden font-medium text-lg mb-2">UI/UX Designer</div>
+                    </div>
+                  </div>
+                }
+                backContent={
+                  <div className="flex items-center justify-center bg-card-elevated rounded-2xl shadow-2xl border border-palette-golden/50 h-full">
+                    <a 
+                      href="https://github.com/sahasramandadi" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="group flex flex-col items-center justify-center p-8 transition-all duration-500 hover:scale-110"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="relative">
+                        <svg 
+                          className="w-24 h-24 text-palette-dark-red group-hover:text-palette-golden transition-all duration-500 group-hover:rotate-12" 
+                          fill="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        <div className="absolute inset-0 bg-palette-golden/20 rounded-full scale-0 group-hover:scale-110 transition-transform duration-500"></div>
+                      </div>
+                      <span className="text-palette-dark-red font-semibold mt-6 group-hover:text-palette-golden transition-colors duration-500 text-lg">
+                        View on GitHub
+                      </span>
+                      <div className="mt-2 w-16 h-0.5 bg-palette-golden scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"></div>
+                    </a>
+                  </div>
+                }
+              />
             </div>
             
             {/* Live Quote */}

@@ -7,3 +7,6 @@ export { Confetti } from './Confetti';
 export { default as DueDateBanner } from './DueDateBanner';
 export { default as PaidBadge } from './PaidBadge';
 export { approvedDaysEmojis } from './approvedDaysEmojis';
+
+// Interactive Components
+export { default as FlippableCard } from './FlippableCard';
