@@ -45,30 +45,6 @@ const LiveQuote: React.FC = () => {
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('home');
-
-  // Handle section highlighting with intersection observer
-  React.useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-50% 0px -50% 0px', // Trigger when section is 50% visible
-      threshold: 0
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    }, observerOptions);
-
-    // Observe all sections
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach((section) => observer.observe(section));
-
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <div className="min-h-screen bg-palette-light-cream" style={{ fontFamily: "'Roboto Mono', monospace" }}>
@@ -79,32 +55,12 @@ const LandingPage: React.FC = () => {
             <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
           </div>
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
-          <a 
-            href="#home" 
-            className={`transition-all duration-300 pb-1 relative ${
-              activeSection === 'home' 
-                ? 'text-palette-golden' 
-                : 'hover:text-palette-golden'
-            }`}
+          <button 
+            onClick={() => navigate('/login')}
+            className="transition-all duration-300 pb-1 relative hover:text-palette-golden"
           >
-            Home
-            {activeSection === 'home' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-palette-golden rounded-full"></span>
-            )}
-          </a>
-          <a 
-            href="#team" 
-            className={`transition-all duration-300 pb-1 relative ${
-              activeSection === 'team' 
-                ? 'text-palette-golden' 
-                : 'hover:text-palette-golden'
-            }`}
-          >
-            Team
-            {activeSection === 'team' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-palette-golden rounded-full"></span>
-            )}
-          </a>
+            Login
+          </button>
         </nav>
         </header>
       </div>
