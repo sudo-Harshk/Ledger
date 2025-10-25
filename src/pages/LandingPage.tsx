@@ -57,9 +57,20 @@ const LandingPage: React.FC = () => {
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
           <button 
             onClick={() => navigate('/login')}
-            className="transition-all duration-300 pb-1 relative hover:text-palette-golden"
+            className="group relative bg-gradient-to-r from-palette-golden to-palette-deep-red hover:from-palette-golden/90 hover:to-palette-deep-red/90 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-palette-golden focus:ring-offset-2 active:scale-95 border border-palette-golden/30"
           >
-            Login
+            <span className="relative z-10 flex items-center gap-2">
+              <svg 
+                className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              Login
+            </span>
+            <div className="absolute inset-0 bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </nav>
         </header>
