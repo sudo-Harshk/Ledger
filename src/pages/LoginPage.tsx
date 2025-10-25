@@ -110,7 +110,9 @@ export default function LoginPage() {
           </nav>
         </header>
       </div>
-      <main className="flex-1 flex items-center justify-center p-4 pt-8 relative">
+      
+      {/* Main Content with proper spacing */}
+      <main className="flex-1 flex items-center justify-center px-4 py-12 relative">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <div className="w-96 h-96 rounded-full bg-gradient-to-br from-palette-golden/30 via-palette-deep-red/20 to-palette-light-cream/0 blur-3xl opacity-60"></div>
         </div>
@@ -231,7 +233,11 @@ export default function LoginPage() {
       </main>
       {/* reCAPTCHA container for phone auth (invisible, required for Firebase) */}
       <div id="recaptcha-container" style={{ display: 'none' }} />
-      <Footer />
+      
+      {/* Footer with proper spacing */}
+      <div className="mt-auto">
+        <Footer />
+      </div>
     </div>
   )
 }
