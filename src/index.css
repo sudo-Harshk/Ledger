@@ -11,30 +11,6 @@
   font-display: swap;
 }
 
-/* ========================================
-   THEME SYSTEM
-   ========================================
-   
-   Available Themes:
-   1. Default (current) - Japanese-inspired warm palette
-   2. Sage Green - Calm sage green palette  
-   3. Ocean Breeze - Calm teal and mint palette
-   4. Vintage Warm - Muted earth tones palette
-   5. Desert Sunset - Warm terracotta palette
-   
-   To switch themes:
-   - Add class "theme-sage" to <html> element for sage green
-   - Add class "theme-ocean" to <html> element for ocean breeze
-   - Add class "theme-vintage" to <html> element for vintage warm
-   - Add class "theme-desert" to <html> element for desert sunset
-   - Remove class for default theme
-   
-   Example:
-   <html className="theme-desert">
-   
-   All colors use CSS variables for seamless theme switching.
-   No component changes needed!
-   ======================================== */
 
 @layer base {
   :root {

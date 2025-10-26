@@ -8,6 +8,12 @@ A modern, Japanese-inspired React web app for managing student attendance and ca
 
 ## Features
 
+### Theme Customization
+- **5 Beautiful Themes:** Choose from Warm Cream, Sage Green, Ocean Breeze, Vintage Warm, or Desert Sunset
+- **One-Click Switching:** Theme button in footer for instant changes
+- **Persistent Preferences:** Your theme choice is saved across sessions
+- **Seamless Design:** All components adapt automatically to the selected theme
+
 ### Student Dashboard
 - **Daily Attendance:** Mark attendance with beautiful calendar interface
 - **Payment Tracking:** Monitor monthly fees and payment status
@@ -98,6 +104,78 @@ Visit [http://localhost:5173](http://localhost:5173)
 
 ---
 
+## Theme System
+
+Ledger App features a flexible theme system that allows you to switch between 5 beautiful color palettes. The theme switcher is available in the footer for all authenticated users.
+
+### Available Themes
+
+1. **Warm Cream (Default)**
+   - Japanese-inspired warm palette
+   - Perfect for a calm, welcoming atmosphere
+   - Colors: Golden accents, cream backgrounds
+
+2. **Sage Green**
+   - Calm sage green palette
+   - Colors: `#96A78D`, `#B6CEB4`, `#D9E9CF`, `#F0F0F0`
+   - Ideal for a peaceful, nature-inspired feel
+
+3. **Ocean Breeze**
+   - Calm teal and mint palette
+   - Colors: `#19183B`, `#708993`, `#A1C2BD`, `#E7F2EF`
+   - Fresh, modern ocean-inspired design
+
+4. **Vintage Warm**
+   - Muted earth tones palette
+   - Colors: `#B6AE9F`, `#C5C7BC`, `#DEDED1`, `#FBF3D1`
+   - Elegant, timeless aesthetic
+
+5. **Desert Sunset**
+   - Warm terracotta palette
+   - Colors: `#B77466`, `#FFE1AF`, `#E2B59A`, `#957C62`
+   - Warm, inviting desert-inspired theme
+
+### How to Use the Theme System
+
+#### For Users
+Simply click the theme button in the footer and select your preferred theme. Your choice will be saved and persist across sessions.
+
+#### For Developers
+
+**To Switch Themes Programmatically:**
+```typescript
+// Add theme class to document element
+document.documentElement.classList.add('theme-sage'); // for sage theme
+document.documentElement.classList.remove('theme-sage'); // to remove
+
+// Available theme classes:
+// - theme-sage (Sage Green)
+// - theme-ocean (Ocean Breeze)
+// - theme-vintage (Vintage Warm)
+// - theme-desert (Desert Sunset)
+// - (none) for default Warm Cream theme
+```
+
+**Adding a New Theme:**
+1. Add CSS variables in `src/index.css` under a new theme class (e.g., `.theme-custom`)
+2. Update the `Theme` type in `src/components/ThemeSwitcher.tsx`
+3. Add the theme to the `themes` array with label, description, and color preview
+4. Update theme detection and application logic
+
+**Color Variable Structure:**
+Each theme should define these CSS variables:
+- `--palette-dark-teal` - Headers and borders
+- `--palette-light-cream` - Main background
+- `--palette-golden` - Accents and buttons
+- `--palette-deep-red` - Primary actions
+- `--palette-dark-red` - Text and emphasis
+- Plus background, card, and input layering variables
+
+### Theme Persistence
+User theme preferences are automatically saved to `localStorage` and restored on page reload.
+
+---
+
 ## Tech Stack
 
 ### Core Framework
@@ -114,7 +192,8 @@ Visit [http://localhost:5173](http://localhost:5173)
 - **Tailwind CSS** - Utility-first CSS framework
 - **shadcn/ui** - Beautiful, accessible UI components
 - **Lucide React** - Modern icon library
-- **Custom Japanese-inspired Design** - Unique color palette and typography
+- **Dynamic Theme System** - Switch between 5 beautiful color themes
+- **CSS Variables** - Seamless theme switching with no component changes required
 
 ### Performance & Optimization
 - **React Hot Toast** - Elegant notifications

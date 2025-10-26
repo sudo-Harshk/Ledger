@@ -3,7 +3,6 @@ import { useAuth } from '../hooks/useAuth'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
-import ThemeSwitcher from './ThemeSwitcher'
 
 interface NavigationProps {
   onRefresh?: () => void
@@ -51,7 +50,6 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
           <div className="flex items-center gap-8">
             {/* Removed welcome message for cleaner navbar */}
             <div className="flex items-center gap-4">
-              <ThemeSwitcher />
               <Button 
                 onClick={handleLogout}
                 variant="outline"

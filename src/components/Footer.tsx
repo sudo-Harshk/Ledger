@@ -1,4 +1,5 @@
 import React from 'react';
+import ThemeSwitcher from './ThemeSwitcher';
 
 interface FooterProps {
   hideTimeAndControl?: boolean;
@@ -23,6 +24,7 @@ const Footer: React.FC<FooterProps> = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-4">
+            <ThemeSwitcher />
             <a 
               href="https://github.com/sudo-Harshk/Ledger"
               target="_blank"
