@@ -8,39 +8,33 @@ const ThemeSwitcher: React.FC = () => {
 
   const themes: { 
     value: Theme; 
-    label: string; 
-    emoji: string;
-    gradient: string;
+    label: string;
+    colors: string[];
   }[] = [
     {
       value: 'default',
       label: 'Warm Cream',
-      emoji: '☀️',
-      gradient: 'from-yellow-200 to-orange-200'
+      colors: ['#FDF6F0', '#FFE1AF', '#F87171', '#F87171']
     },
     {
       value: 'sage',
       label: 'Sage Green',
-      emoji: '🌿',
-      gradient: 'from-green-200 to-emerald-200'
+      colors: ['#D9E9CF', '#B6CEB4', '#F0F0F0', '#96A78D']
     },
     {
       value: 'ocean',
       label: 'Ocean Breeze',
-      emoji: '🌊',
-      gradient: 'from-cyan-200 to-blue-200'
+      colors: ['#E7F2EF', '#A1C2BD', '#708993', '#19183B']
     },
     {
       value: 'vintage',
       label: 'Vintage Warm',
-      emoji: '📜',
-      gradient: 'from-amber-200 to-stone-200'
+      colors: ['#FBF3D1', '#DEDED1', '#C5C7BC', '#B6AE9F']
     },
     {
       value: 'desert',
       label: 'Desert Sunset',
-      emoji: '🏜️',
-      gradient: 'from-orange-200 to-rose-200'
+      colors: ['#FFE1AF', '#E2B59A', '#957C62', '#B77466']
     }
   ];
 
@@ -113,9 +107,9 @@ const ThemeSwitcher: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 bg-white/50 backdrop-blur-sm rounded-full px-2 py-1.5 border border-palette-golden/20 shadow-sm">
-      {/* Tooltip/Icon */}
-      <div className="flex items-center gap-1.5 px-2">
+    <div className="flex items-center gap-3 bg-white/80 backdrop-blur-md rounded-xl px-3 py-2 border border-palette-golden/30 shadow-lg">
+      {/* Label */}
+      <div className="flex items-center gap-2">
         <svg 
           xmlns="http://www.w3.org/2000/svg" 
           className="h-4 w-4 text-palette-dark-teal" 
@@ -130,45 +124,82 @@ const ThemeSwitcher: React.FC = () => {
             d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" 
           />
         </svg>
-        <span className="text-xs font-medium text-palette-dark-teal hidden sm:inline">
+        <span className="text-xs font-semibold text-palette-dark-teal uppercase tracking-wide hidden sm:inline">
           Theme
         </span>
       </div>
 
       {/* Divider */}
-      <div className="h-6 w-px bg-palette-golden/30"></div>
+      <div className="h-8 w-px bg-palette-golden/40"></div>
 
-      {/* Theme Buttons */}
-      <div className="flex items-center gap-1">
+      {/* Theme Swatches */}
+      <div className="flex items-center gap-2">
         {themes.map((theme) => (
           <button
             key={theme.value}
             onClick={() => applyTheme(theme.value)}
             className={`
-              relative w-9 h-9 rounded-full flex items-center justify-center
+              relative group
               transition-all duration-300 ease-out
-              group
               ${currentTheme === theme.value 
-                ? 'scale-110 ring-2 ring-palette-golden shadow-lg' 
-                : 'hover:scale-105 hover:ring-2 hover:ring-palette-golden/50'
+                ? 'scale-110' 
+                : 'hover:scale-105'
               }
             `}
-            style={{
-              background: currentTheme === theme.value
-                ? `linear-gradient(135deg, hsl(var(--palette-golden) / 0.8), hsl(var(--palette-deep-red) / 0.8))`
-                : 'white'
-            }}
             aria-label={`Switch to ${theme.label} theme`}
             title={theme.label}
           >
-            {/* Emoji */}
-            <span className="text-lg leading-none transition-transform duration-300 group-hover:scale-110">
-              {theme.emoji}
-            </span>
+            {/* Color Swatch */}
+            <div className={`
+              relative w-10 h-10 rounded-lg overflow-hidden
+              ring-2 ring-offset-2 ring-offset-white
+              transition-all duration-300
+              ${currentTheme === theme.value 
+                ? 'ring-palette-golden shadow-xl' 
+                : 'ring-transparent hover:ring-palette-golden/50'
+              }
+            `}>
+              {/* Gradient Background */}
+              <div 
+                className="absolute inset-0 flex"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})`
+                }}
+              >
+                <div 
+                  className="w-1/2 h-full"
+                  style={{ backgroundColor: theme.colors[2] }}
+                />
+                <div 
+                  className="w-1/2 h-full border-l-2 border-white/30"
+                  style={{ backgroundColor: theme.colors[3] }}
+                />
+              </div>
 
-            {/* Active indicator pulse */}
+              {/* Active Checkmark */}
+              {currentTheme === theme.value && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <svg 
+                    className="w-5 h-5 text-white drop-shadow-lg" 
+                    fill="currentColor" 
+                    viewBox="0 0 20 20"
+                  >
+                    <path 
+                      fillRule="evenodd" 
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+                      clipRule="evenodd" 
+                    />
+                  </svg>
+                </div>
+              )}
+
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
+            </div>
+
+            {/* Active Pulse Animation */}
             {currentTheme === theme.value && (
-              <span className="absolute inset-0 rounded-full bg-palette-golden opacity-20 animate-ping"></span>
+              <span className="absolute -inset-1 rounded-lg bg-palette-golden/30 animate-ping opacity-75 -z-10" />
             )}
           </button>
         ))}
