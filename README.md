@@ -10,7 +10,7 @@ A modern, Japanese-inspired React web app for managing student attendance and ca
 
 ### Theme Customization
 - **5 Beautiful Themes:** Choose from Warm Cream, Sage Green, Ocean Breeze, Vintage Warm, or Desert Sunset
-- **One-Click Switching:** Theme button in footer for instant changes
+- **One-Click Switching:** Theme button in navigation for instant changes
 - **Persistent Preferences:** Your theme choice is saved across sessions
 - **Seamless Design:** All components adapt automatically to the selected theme
 
@@ -106,7 +106,7 @@ Visit [http://localhost:5173](http://localhost:5173)
 
 ## Theme System
 
-Ledger App features a flexible theme system that allows you to switch between 5 beautiful color palettes. The theme switcher is available in the footer for all authenticated users.
+Ledger App features a flexible theme system that allows you to switch between 5 beautiful color palettes. The theme switcher is available in the navigation bar for all authenticated users.
 
 ### Available Themes
 
@@ -138,7 +138,7 @@ Ledger App features a flexible theme system that allows you to switch between 5 
 ### How to Use the Theme System
 
 #### For Users
-Simply click the theme button in the footer and select your preferred theme. Your choice will be saved and persist across sessions.
+Simply click the theme button in the navigation bar and select your preferred theme. Your choice will be saved and persist across sessions.
 
 #### For Developers
 
