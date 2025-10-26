@@ -16,7 +16,7 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
     >
       {children}
       {show && (
-        <div className="absolute left-1/2 -translate-x-1/2 mt-2 px-3 py-1 rounded bg-[#222] text-white text-xs shadow-lg z-50 whitespace-nowrap pointer-events-none">
+        <div className="absolute left-1/2 -translate-x-1/2 mt-2 px-3 py-1 rounded bg-tooltip-bg text-tooltip-text text-xs shadow-lg z-50 whitespace-nowrap pointer-events-none">
           {text}
         </div>
       )}
@@ -52,7 +52,7 @@ const LandingPage: React.FC = () => {
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
           <div className="flex items-center gap-2">
-            <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</div>
+            <div className="font-bold text-2xl tracking-widest text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }}>Ledger</div>
           </div>
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
           <button 

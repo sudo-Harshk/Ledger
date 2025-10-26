@@ -107,8 +107,8 @@ const FlippableCard: React.FC<FlippableCardProps> = ({
           : 'perspective(1000px)',
         transformStyle: 'preserve-3d',
         boxShadow: isHovering 
-          ? '0 12px 40px 0 rgba(158,42,43,0.25)' 
-          : '0 4px 16px 0 rgba(158,42,43,0.1)',
+          ? '0 12px 40px 0 hsl(var(--palette-deep-red) / 0.25)' 
+          : '0 4px 16px 0 hsl(var(--palette-deep-red) / 0.1)',
         willChange: 'transform',
         transition: 'box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
         WebkitTransformStyle: 'preserve-3d',
@@ -117,7 +117,7 @@ const FlippableCard: React.FC<FlippableCardProps> = ({
         // Add rounded corners to match the content
         borderRadius: '1rem', // matches rounded-2xl (16px)
         // Add a subtle background to prevent seeing through
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        backgroundColor: 'hsl(var(--card-elevated) / 0.02)',
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}

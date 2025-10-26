@@ -12,7 +12,7 @@ const Footer: React.FC<FooterProps> = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Brand Section */}
           <div className="flex items-center gap-6">
-            <div className="font-bold text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>
+            <div className="font-bold text-2xl tracking-widest text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }}>
               Ledger
             </div>
             <div className="hidden md:block w-px h-8 bg-palette-golden/40"></div>

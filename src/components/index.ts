@@ -10,3 +10,4 @@ export { approvedDaysEmojis } from './approvedDaysEmojis';
 
 // Interactive Components
 export { default as FlippableCard } from './FlippableCard';
+export { default as ThemeSwitcher } from './ThemeSwitcher';

@@ -103,7 +103,7 @@ export default function LoginPage() {
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
           <div className="flex items-center gap-2">
-            <div className="font-bold text-2xl tracking-widest cursor-pointer" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }} onClick={() => navigate('/')}>Ledger</div>
+            <div className="font-bold text-2xl tracking-widest cursor-pointer text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }} onClick={() => navigate('/')}>Ledger</div>
           </div>
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
             {/* Removed Home button */}
@@ -118,7 +118,7 @@ export default function LoginPage() {
         </div>
         <Card className="w-full max-w-md bg-card-elevated shadow-xl relative z-10 border-0">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e", textShadow: '0 1px 4px rgba(84,11,14,0.1)' }}>Ledger</CardTitle>
+            <CardTitle className="text-3xl font-bold tracking-widest text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif", textShadow: '0 1px 4px hsl(var(--palette-dark-red) / 0.1)' }}>Ledger</CardTitle>
             <CardDescription>
               Sign in to your account
             </CardDescription>
@@ -184,7 +184,7 @@ export default function LoginPage() {
                       ) : (
                          <FiEye className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
                       )}
-                      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-[#222] text-white text-xs shadow-lg z-50 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-150">
+                      <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-tooltip-bg text-tooltip-text text-xs shadow-lg z-50 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-150">
                         {showPassword ? 'Hide' : 'Show'}
                       </span>
                     </button>

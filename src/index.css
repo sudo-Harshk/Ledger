@@ -11,9 +11,34 @@
   font-display: swap;
 }
 
+/* ========================================
+   THEME SYSTEM
+   ========================================
+   
+   Available Themes:
+   1. Default (current) - Japanese-inspired warm palette
+   2. Sage Green - Calm sage green palette  
+   3. Ocean Breeze - Calm teal and mint palette
+   4. Vintage Warm - Muted earth tones palette
+   5. Desert Sunset - Warm terracotta palette
+   
+   To switch themes:
+   - Add class "theme-sage" to <html> element for sage green
+   - Add class "theme-ocean" to <html> element for ocean breeze
+   - Add class "theme-vintage" to <html> element for vintage warm
+   - Add class "theme-desert" to <html> element for desert sunset
+   - Remove class for default theme
+   
+   Example:
+   <html className="theme-desert">
+   
+   All colors use CSS variables for seamless theme switching.
+   No component changes needed!
+   ======================================== */
+
 @layer base {
   :root {
-    /* Custom Japanese-inspired palette for Ledger */
+    /* Custom Japanese-inspired palette for Ledger (DEFAULT THEME) */
     --background: 39 78% 97%;          /* #FDF6F0 */
     --foreground: 222 47% 13%;         /* #222 */
     --card: 0 0% 100%;
@@ -57,6 +82,22 @@
     --input-elevated: 0 0% 100%;        /* Pure white for focus states */
     --input-base: 50 100% 95%;          /* Very light cream */
     --input-deep: 50 100% 90%;          /* Light cream */
+    
+    /* Confetti colors using palette */
+    --confetti-1: 258 68% 69%;          /* Purple-ish */
+    --confetti-2: 347 86% 71%;          /* Pink */
+    --confetti-3: 21 71% 65%;           /* Orange */
+    --confetti-4: 43 69% 84%;           /* Light yellow */
+    
+    /* Toast colors */
+    --toast-bg: 0 0% 19%;               /* Dark gray for toast background */
+    --toast-text: 0 0% 100%;            /* White text */
+    --toast-success: 142 71% 59%;       /* Green for success */
+    --toast-error: 0 84% 60%;           /* Red for error */
+    
+    /* Tooltip */
+    --tooltip-bg: 0 0% 13%;             /* Near black for tooltips */
+    --tooltip-text: 0 0% 100%;          /* White text */
   }
 
   .dark {
@@ -81,6 +122,134 @@
     --input: 217 33% 17%;
     --ring: 4 90% 65%;
   }
+
+  /* Sage Green Theme - Alternative palette */
+  /* To use: Add class "theme-sage" to <html> element */
+  .theme-sage {
+    /* Override main palette colors */
+    --palette-dark-teal: 142 18% 56%;     /* #96A78D - headers, borders */
+    --palette-light-cream: 92 30% 83%;    /* #D9E9CF - main background */
+    --palette-golden: 142 21% 69%;        /* #B6CEB4 - accents, buttons */
+    --palette-deep-red: 142 21% 69%;      /* #B6CEB4 - primary actions */
+    --palette-dark-red: 142 18% 56%;      /* #96A78D - text, emphasis */
+    
+    /* Update background layering for sage theme */
+    --background: 92 30% 88%;              /* Lighter sage background */
+    --background-base: 92 30% 90%;         /* Lightest sage - highest elevation */
+    --background-1: 92 30% 83%;            /* #D9E9CF - main background */
+    --background-2: 92 30% 78%;            /* Medium sage */
+    --background-3: 92 30% 73%;            /* Darker sage - deepest */
+    
+    /* Update card layering */
+    --card-elevated: 0 0% 100%;            /* Pure white - highest priority */
+    --card-base: 0 0% 94%;                 /* #F0F0F0 - standard cards */
+    --card-deep: 92 30% 83%;               /* Sage background - supporting elements */
+    
+    /* Update input layering */
+    --input-elevated: 0 0% 100%;           /* Pure white for focus states */
+    --input-base: 0 0% 94%;                /* #F0F0F0 - Very light neutral */
+    --input-deep: 92 30% 83%;              /* Light sage */
+    
+    /* Update foreground colors for better contrast with sage backgrounds */
+    --foreground: 142 15% 20%;             /* Dark sage-green for text */
+    --muted-foreground: 142 10% 40%;       /* Medium sage for muted text */
+  }
+
+  /* Ocean Breeze Theme - Calm teal and mint palette */
+  /* To use: Add class "theme-ocean" to <html> element */
+  .theme-ocean {
+    /* Override main palette colors */
+    --palette-dark-teal: 254 44% 20%;     /* #19183B - dark navy */
+    --palette-light-cream: 180 30% 89%;   /* #E7F2EF - light mint */
+    --palette-golden: 195 18% 56%;        /* #708993 - steel blue */
+    --palette-deep-red: 180 19% 61%;      /* #A1C2BD - muted teal */
+    --palette-dark-red: 254 44% 20%;      /* #19183B - dark navy */
+    
+    /* Update background layering for ocean theme */
+    --background: 180 30% 92%;             /* Very light mint background */
+    --background-base: 180 30% 94%;        /* Lightest mint - highest elevation */
+    --background-1: 180 30% 89%;           /* #E7F2EF - main background */
+    --background-2: 180 20% 84%;           /* Medium mint */
+    --background-3: 180 15% 79%;           /* Darker mint - deepest */
+    
+    /* Update card layering */
+    --card-elevated: 0 0% 100%;            /* Pure white - highest priority */
+    --card-base: 180 25% 94%;              /* Light teal tint - standard cards */
+    --card-deep: 180 30% 89%;              /* #E7F2EF - supporting elements */
+    
+    /* Update input layering */
+    --input-elevated: 0 0% 100%;           /* Pure white for focus states */
+    --input-base: 180 25% 94%;             /* Light teal tint - Very light */
+    --input-deep: 180 30% 89%;             /* Light mint */
+    
+    /* Update foreground colors for better contrast */
+    --foreground: 254 40% 15%;             /* Very dark navy for text */
+    --muted-foreground: 195 15% 45%;       /* Medium steel blue for muted text */
+  }
+
+  /* Vintage Warm Theme - Muted earth tones palette */
+  /* To use: Add class "theme-vintage" to <html> element */
+  .theme-vintage {
+    /* Override main palette colors */
+    --palette-dark-teal: 38 11% 61%;      /* #B6AE9F - warm taupe */
+    --palette-light-cream: 52 24% 88%;    /* #FBF3D1 - warm cream */
+    --palette-golden: 50 10% 73%;         /* #C5C7BC - cool gray */
+    --palette-deep-red: 48 13% 78%;       /* #DEDED1 - light beige */
+    --palette-dark-red: 38 11% 61%;       /* #B6AE9F - warm taupe */
+    
+    /* Update background layering for vintage theme */
+    --background: 52 24% 91%;              /* Very light cream background */
+    --background-base: 52 24% 94%;         /* Lightest cream - highest elevation */
+    --background-1: 52 24% 88%;            /* #FBF3D1 - main background */
+    --background-2: 48 13% 83%;            /* Medium beige */
+    --background-3: 42 9% 78%;             /* Darker taupe - deepest */
+    
+    /* Update card layering */
+    --card-elevated: 0 0% 100%;            /* Pure white - highest priority */
+    --card-base: 48 13% 93%;               /* Light beige - standard cards */
+    --card-deep: 48 13% 78%;               /* #DEDED1 - supporting elements */
+    
+    /* Update input layering */
+    --input-elevated: 0 0% 100%;           /* Pure white for focus states */
+    --input-base: 48 13% 93%;              /* Light beige - Very light */
+    --input-deep: 48 13% 78%;              /* Light beige */
+    
+    /* Update foreground colors for better contrast */
+    --foreground: 38 15% 25%;              /* Dark taupe for text */
+    --muted-foreground: 38 8% 50%;         /* Medium taupe for muted text */
+  }
+
+  /* Desert Sunset Theme - Warm terracotta palette */
+  /* To use: Add class "theme-desert" to <html> element */
+  .theme-desert {
+    /* Override main palette colors */
+    --palette-dark-teal: 13 26% 51%;      /* #B77466 - warm terracotta */
+    --palette-light-cream: 45 100% 84%;   /* #FFE1AF - soft cream */
+    --palette-golden: 22 37% 74%;         /* #E2B59A - warm peach */
+    --palette-deep-red: 32 15% 50%;       /* #957C62 - warm taupe */
+    --palette-dark-red: 13 26% 51%;       /* #B77466 - warm terracotta */
+    
+    /* Update background layering for desert theme */
+    --background: 45 100% 92%;              /* Very light cream background */
+    --background-base: 45 100% 94%;         /* Lightest cream - highest elevation */
+    --background-1: 45 100% 84%;            /* #FFE1AF - main background */
+    --background-2: 30 20% 82%;             /* Medium warm tone */
+    --background-3: 25 15% 78%;             /* Darker terracotta - deepest */
+    
+    /* Update card layering */
+    --card-elevated: 0 0% 100%;            /* Pure white - highest priority */
+    --card-base: 35 18% 88%;               /* Light warm tone - standard cards */
+    --card-deep: 22 37% 74%;               /* #E2B59A - supporting elements */
+    
+    /* Update input layering */
+    --input-elevated: 0 0% 100%;           /* Pure white for focus states */
+    --input-base: 35 18% 88%;              /* Light warm tone - Very light */
+    --input-deep: 22 37% 74%;              /* Warm peach */
+    
+    /* Update foreground colors for better contrast */
+    --foreground: 13 35% 25%;              /* Dark terracotta for text */
+    --muted-foreground: 32 12% 45%;        /* Medium taupe for muted text */
+  }
 }
 
 @layer base {
@@ -93,8 +262,8 @@
   }
   
   body {
-    background-color: #FDF6F0;
-    color: #222;
+    background-color: hsl(var(--palette-light-cream));
+    color: hsl(var(--foreground));
     font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -214,7 +383,7 @@
     border-right: none;
     border-bottom: 1px solid hsl(var(--palette-golden) / 0.2);
     outline: none;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
     border-radius: 12px;
     background-color: hsl(var(--palette-light-cream));
     backdrop-filter: blur(8px);

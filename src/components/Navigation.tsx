@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
+import ThemeSwitcher from './ThemeSwitcher'
 
 interface NavigationProps {
   onRefresh?: () => void
@@ -44,12 +45,13 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
       <div className="flex items-center justify-between w-full">
         {/* Logo on the far left */}
         <div className="flex-shrink-0">
-          <span className="font-bold text-lg sm:text-xl md:text-2xl tracking-widest" style={{ fontFamily: "'Blackflag', sans-serif", color: "#540b0e" }}>Ledger</span>
+          <span className="font-bold text-lg sm:text-xl md:text-2xl tracking-widest text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }}>Ledger</span>
         </div>
           {/* Main navbar content: welcome, role, actions */}
           <div className="flex items-center gap-8">
             {/* Removed welcome message for cleaner navbar */}
             <div className="flex items-center gap-4">
+              <ThemeSwitcher />
               <Button 
                 onClick={handleLogout}
                 variant="outline"

@@ -86,7 +86,23 @@ export default {
   			'card-deep': 'hsl(var(--card-deep))',
   			'input-elevated': 'hsl(var(--input-elevated))',
   			'input-base': 'hsl(var(--input-base))',
-  			'input-deep': 'hsl(var(--input-deep))'
+  			'input-deep': 'hsl(var(--input-deep))',
+  			
+  			// Confetti colors
+  			'confetti-1': 'hsl(var(--confetti-1))',
+  			'confetti-2': 'hsl(var(--confetti-2))',
+  			'confetti-3': 'hsl(var(--confetti-3))',
+  			'confetti-4': 'hsl(var(--confetti-4))',
+  			
+  			// Toast colors
+  			'toast-bg': 'hsl(var(--toast-bg))',
+  			'toast-text': 'hsl(var(--toast-text))',
+  			'toast-success': 'hsl(var(--toast-success))',
+  			'toast-error': 'hsl(var(--toast-error))',
+  			
+  			// Tooltip colors
+  			'tooltip-bg': 'hsl(var(--tooltip-bg))',
+  			'tooltip-text': 'hsl(var(--tooltip-text))'
   		}
   	}
   },
