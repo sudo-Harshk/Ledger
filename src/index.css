@@ -11,30 +11,6 @@
   font-display: swap;
 }
 
-/* ========================================
-   THEME SYSTEM
-   ========================================
-   
-   Available Themes:
-   1. Default (current) - Japanese-inspired warm palette
-   2. Sage Green - Calm sage green palette  
-   3. Ocean Breeze - Calm teal and mint palette
-   4. Vintage Warm - Muted earth tones palette
-   5. Desert Sunset - Warm terracotta palette
-   
-   To switch themes:
-   - Add class "theme-sage" to <html> element for sage green
-   - Add class "theme-ocean" to <html> element for ocean breeze
-   - Add class "theme-vintage" to <html> element for vintage warm
-   - Add class "theme-desert" to <html> element for desert sunset
-   - Remove class for default theme
-   
-   Example:
-   <html className="theme-desert">
-   
-   All colors use CSS variables for seamless theme switching.
-   No component changes needed!
-   ======================================== */
 
 @layer base {
   :root {
@@ -130,8 +106,8 @@
     --palette-dark-teal: 142 18% 56%;     /* #96A78D - headers, borders */
     --palette-light-cream: 92 30% 83%;    /* #D9E9CF - main background */
     --palette-golden: 142 21% 69%;        /* #B6CEB4 - accents, buttons */
-    --palette-deep-red: 142 21% 69%;      /* #B6CEB4 - primary actions */
-    --palette-dark-red: 142 18% 56%;      /* #96A78D - text, emphasis */
+    --palette-deep-red: 142 12% 40%;      /* #728F69 - darker sage */
+    --palette-dark-red: 142 45% 50%;      /* #96A78D - text, emphasis */
     
     /* Update background layering for sage theme */
     --background: 92 30% 88%;              /* Lighter sage background */
@@ -151,14 +127,14 @@
     --input-deep: 92 30% 83%;              /* Light sage */
     
     /* Update foreground colors for better contrast with sage backgrounds */
-    --foreground: 142 15% 20%;             /* Dark sage-green for text */
-    --muted-foreground: 142 10% 40%;       /* Medium sage for muted text */
+    --foreground: 142 25% 15%;             /* Darker sage-green for better text visibility */
+    --muted-foreground: 142 15% 35%;       /* Medium-dark sage for muted text */
     --primary: 142 21% 50%;              /* Sage green for primary buttons */
     --primary-foreground: 0 0% 100%;     /* White text on primary */
     --secondary: 0 0% 94%;               /* Light gray for secondary */
-    --secondary-foreground: 142 15% 20%; /* Dark sage text */
+    --secondary-foreground: 142 25% 15%; /* Darker sage text for better visibility */
     --accent: 142 21% 69%;               /* Light sage for accents */
-    --accent-foreground: 142 15% 20%;    /* Dark sage text */
+    --accent-foreground: 142 25% 15%;    /* Darker sage text for better visibility */
     --muted: 142 15% 92%;                /* Very light sage */
     --border: 142 18% 70%;               /* Medium sage for borders */
     --input: 142 15% 92%;                /* Light sage for inputs */
@@ -213,9 +189,9 @@
     /* Override main palette colors */
     --palette-dark-teal: 38 11% 61%;      /* #B6AE9F - warm taupe */
     --palette-light-cream: 52 24% 88%;    /* #FBF3D1 - warm cream */
-    --palette-golden: 50 10% 73%;         /* #C5C7BC - cool gray */
-    --palette-deep-red: 48 13% 78%;       /* #DEDED1 - light beige */
-    --palette-dark-red: 38 11% 61%;       /* #B6AE9F - warm taupe */
+    --palette-golden: 42 20% 60%;         /* #C4AF94 - warm beige accent */
+    --palette-deep-red: 38 15% 50%;       /* #978B7A - warm brown for primary actions */
+    --palette-dark-red: 38 30% 40%;       /* #756A5E - darker warm brown f*/
     
     /* Update background layering for vintage theme */
     --background: 52 24% 91%;              /* Very light cream background */
