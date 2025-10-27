@@ -153,6 +153,16 @@
     /* Update foreground colors for better contrast with sage backgrounds */
     --foreground: 142 15% 20%;             /* Dark sage-green for text */
     --muted-foreground: 142 10% 40%;       /* Medium sage for muted text */
+    --primary: 142 21% 50%;              /* Sage green for primary buttons */
+    --primary-foreground: 0 0% 100%;     /* White text on primary */
+    --secondary: 0 0% 94%;               /* Light gray for secondary */
+    --secondary-foreground: 142 15% 20%; /* Dark sage text */
+    --accent: 142 21% 69%;               /* Light sage for accents */
+    --accent-foreground: 142 15% 20%;    /* Dark sage text */
+    --muted: 142 15% 92%;                /* Very light sage */
+    --border: 142 18% 70%;               /* Medium sage for borders */
+    --input: 142 15% 92%;                /* Light sage for inputs */
+    --ring: 142 21% 50%;                 /* Sage for focus rings */
   }
 
   /* Ocean Breeze Theme - Calm teal and mint palette */
@@ -185,6 +195,16 @@
     /* Update foreground colors for better contrast */
     --foreground: 254 40% 15%;             /* Very dark navy for text */
     --muted-foreground: 195 15% 45%;       /* Medium steel blue for muted text */
+    --primary: 180 19% 40%;              /* Muted teal for primary buttons */
+    --primary-foreground: 0 0% 100%;     /* White text on primary */
+    --secondary: 180 25% 94%;            /* Light teal for secondary */
+    --secondary-foreground: 254 40% 15%; /* Dark navy text */
+    --accent: 180 19% 61%;               /* Muted teal for accents */
+    --accent-foreground: 254 40% 15%;    /* Dark navy text */
+    --muted: 180 30% 95%;                /* Very light mint */
+    --border: 195 18% 70%;               /* Steel blue for borders */
+    --input: 180 30% 95%;                /* Light mint for inputs */
+    --ring: 180 19% 50%;                 /* Teal for focus rings */
   }
 
   /* Vintage Warm Theme - Muted earth tones palette */
@@ -217,6 +237,16 @@
     /* Update foreground colors for better contrast */
     --foreground: 38 15% 25%;              /* Dark taupe for text */
     --muted-foreground: 38 8% 50%;         /* Medium taupe for muted text */
+    --primary: 38 11% 40%;               /* Warm taupe for primary buttons */
+    --primary-foreground: 0 0% 100%;     /* White text on primary */
+    --secondary: 48 13% 93%;             /* Light beige for secondary */
+    --secondary-foreground: 38 15% 25%;  /* Dark taupe text */
+    --accent: 48 13% 78%;                /* Light beige for accents */
+    --accent-foreground: 38 15% 25%;     /* Dark taupe text */
+    --muted: 52 24% 95%;                 /* Very light cream */
+    --border: 38 11% 70%;                /* Warm taupe for borders */
+    --input: 52 24% 95%;                 /* Light cream for inputs */
+    --ring: 38 11% 50%;                  /* Taupe for focus rings */
   }
 
   /* Desert Sunset Theme - Warm terracotta palette */
@@ -249,6 +279,16 @@
     /* Update foreground colors for better contrast */
     --foreground: 13 35% 25%;              /* Dark terracotta for text */
     --muted-foreground: 32 12% 45%;        /* Medium taupe for muted text */
+    --primary: 13 26% 40%;               /* Warm terracotta for primary buttons */
+    --primary-foreground: 0 0% 100%;     /* White text on primary */
+    --secondary: 45 100% 94%;            /* Light cream for secondary */
+    --secondary-foreground: 13 35% 25%;  /* Dark terracotta text */
+    --accent: 22 37% 74%;                /* Warm peach for accents */
+    --accent-foreground: 13 35% 25%;     /* Dark terracotta text */
+    --muted: 45 100% 96%;                /* Very light cream */
+    --border: 13 26% 70%;                /* Warm terracotta for borders */
+    --input: 45 100% 96%;                /* Light cream for inputs */
+    --ring: 13 26% 50%;                  /* Terracotta for focus rings */
   }
 }
 

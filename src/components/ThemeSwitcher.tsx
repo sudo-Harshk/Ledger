@@ -38,29 +38,13 @@ const ThemeSwitcher: React.FC = () => {
     }
   ];
 
-  // Get current theme from HTML class
-  useEffect(() => {
-    const htmlEl = document.documentElement;
-    if (htmlEl.classList.contains('theme-desert')) {
-      setCurrentTheme('desert');
-    } else if (htmlEl.classList.contains('theme-vintage')) {
-      setCurrentTheme('vintage');
-    } else if (htmlEl.classList.contains('theme-ocean')) {
-      setCurrentTheme('ocean');
-    } else if (htmlEl.classList.contains('theme-sage')) {
-      setCurrentTheme('sage');
-    } else {
-      setCurrentTheme('default');
-    }
-  }, []);
-
   // Apply theme
-  const applyTheme = (theme: Theme) => {
+  const applyTheme = (theme: Theme, showToast = true) => {
     const htmlEl = document.documentElement;
-    
+
     // Remove all theme classes
     htmlEl.classList.remove('theme-sage', 'theme-ocean', 'theme-vintage', 'theme-desert');
-    
+
     // Add the selected theme class
     if (theme === 'sage') {
       htmlEl.classList.add('theme-sage');
@@ -71,38 +55,27 @@ const ThemeSwitcher: React.FC = () => {
     } else if (theme === 'desert') {
       htmlEl.classList.add('theme-desert');
     }
-    
+
     setCurrentTheme(theme);
-    
+
     // Save to localStorage
     localStorage.setItem('theme', theme);
-    
-    // Show subtle toast notification
-    const themeLabel = themes.find(t => t.value === theme)?.label || 'Default';
-    toast.success(`Switched to ${themeLabel}`, {
-      duration: 1500,
-      style: { fontSize: '14px' }
-    });
+
+    // Show subtle toast notification only if explicitly requested
+    if (showToast) {
+      const themeLabel = themes.find(t => t.value === theme)?.label || 'Default';
+      toast.success(`Switched to ${themeLabel}`, {
+        duration: 1500,
+        style: { fontSize: '14px' },
+      });
+    }
   };
 
-  // Load saved theme on mount
+  // On mount, load theme from localStorage (one-time, no double-set)
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     if (savedTheme) {
-      const htmlEl = document.documentElement;
-      htmlEl.classList.remove('theme-sage', 'theme-ocean', 'theme-vintage', 'theme-desert');
-      
-      if (savedTheme === 'sage') {
-        htmlEl.classList.add('theme-sage');
-      } else if (savedTheme === 'ocean') {
-        htmlEl.classList.add('theme-ocean');
-      } else if (savedTheme === 'vintage') {
-        htmlEl.classList.add('theme-vintage');
-      } else if (savedTheme === 'desert') {
-        htmlEl.classList.add('theme-desert');
-      }
-      
-      setCurrentTheme(savedTheme);
+      applyTheme(savedTheme, false); // Don't show toast initially
     }
   }, []);
 
