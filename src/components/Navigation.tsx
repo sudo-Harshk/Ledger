@@ -40,7 +40,7 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
   }
 
   return (
-    <nav className="bg-palette-light-cream py-4 px-6 mx-4 mt-4 rounded-xl shadow-lg border border-palette-golden/20 backdrop-blur-sm">
+    <nav className="bg-palette-light-cream py-6 px-8 mx-4 mt-4 rounded-xl shadow-lg border border-palette-golden/20 backdrop-blur-sm">
       <div className="flex items-center justify-between w-full">
         {/* Logo on the far left */}
         <div className="flex-shrink-0">
