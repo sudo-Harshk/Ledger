@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, collectionGroup, getDocs, query, orderBy, where, limit, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '@/hooks';
 import { db } from '../firebase';
 import { debouncedToast } from '../lib/debouncedToast';
 
@@ -18,12 +19,21 @@ export function useAdminAnalytics(refreshKey?: number) {
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenueData[]>([]);
   const [monthlyAttendance, setMonthlyAttendance] = useState<MonthlyAttendanceData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) {
+      // If not signed in yet, don't attach listeners
+      setMonthlyRevenue([]);
+      setMonthlyAttendance([]);
+      setLoading(true);
+      return;
+    }
     // Keep unsubscribe functions to clean up real-time listeners on refresh
     let unsubscribePlatformMonthly: (() => void) | null = null;
     let unsubscribeAttendanceFallback: (() => void) | null = null;
     let unsubscribeCurrentMonthLive: (() => void) | null = null;
+    let unsubscribeRevenue: (() => void) | null = null;
 
     const fetchAnalytics = async () => {
       try {
@@ -34,26 +44,60 @@ export function useAdminAnalytics(refreshKey?: number) {
         const startFromAugust = new Date(now.getFullYear(), 7, 1);
         const startFromLastAugust = new Date(now.getFullYear() - 1, 7, 1);
 
-        // Aggregate revenue across teachers from users/*/monthlySummaries/* using a collection group query
-        const summariesSnap = await getDocs(collectionGroup(db, 'monthlySummaries'));
-        const revenueByMonth: Record<string, number> = {};
-        summariesSnap.forEach((docSnap) => {
-          const data = docSnap.data() as { revenue?: number };
-          // doc id is expected to be YYYY-MM
-          const monthId = docSnap.id;
-          const parsed = new Date(`${monthId}-01`);
-          if (!isNaN(parsed.getTime())) {
-            if (parsed >= startFromAugust) {
-              revenueByMonth[monthId] = (revenueByMonth[monthId] || 0) + (data.revenue || 0);
-            }
-          }
+        // Live revenue from platformMonthlyRevenue (pre-aggregated)
+        const revenueQuery = query(collection(db, 'platformMonthlyRevenue'), orderBy('month', 'asc'));
+        unsubscribeRevenue = onSnapshot(revenueQuery, (snap) => {
+          const revenueData: MonthlyRevenueData[] = snap.docs
+            .map((d) => {
+              const data = d.data() as { month?: string; revenue?: number };
+              const monthKey = (data.month || d.id || '').toString(); // expected YYYY-MM
+              const iso = /\d{4}-\d{1,2}/.test(monthKey) ? `${monthKey}-01` : monthKey;
+              return { monthIso: iso, revenue: data.revenue || 0 } as { monthIso: string; revenue: number };
+            })
+            .filter((r) => {
+              const parsed = new Date(r.monthIso);
+              return !isNaN(parsed.getTime()) && parsed >= startFromAugust;
+            })
+            .map((r) => ({ month: r.monthIso, revenue: r.revenue }))
+            .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+          setMonthlyRevenue(revenueData);
         });
 
-        const revenueData: MonthlyRevenueData[] = Object.entries(revenueByMonth)
-          .map(([month, revenue]) => ({ month: `${month}-01`, revenue }))
-          .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-
-        setMonthlyRevenue(revenueData);
+        // Always seed from collectionGroup as immediate fallback (runs in parallel with listener)
+        (async () => {
+          try {
+            const cgSnap = await getDocs(collectionGroup(db, 'monthlySummaries'));
+            const totals: Record<string, number> = {};
+            cgSnap.forEach((d) => {
+              const data = d.data() as { revenue?: number };
+              const monthId = d.id; // expected YYYY-MM
+              if (/^\d{4}-\d{1,2}$/.test(monthId)) {
+                const iso = `${monthId}-01`;
+                const parsed = new Date(iso);
+                if (!isNaN(parsed.getTime()) && parsed >= startFromAugust) {
+                  totals[monthId] = (totals[monthId] || 0) + (data.revenue || 0);
+                }
+              }
+            });
+            const seeded = Object.entries(totals)
+              .map(([m, rev]) => ({ month: `${m}-01`, revenue: rev }))
+              .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+            if (seeded.length > 0) {
+              // Always update - this ensures we show data from monthlySummaries even if platformMonthlyRevenue is empty
+              setMonthlyRevenue((prev) => {
+                // If prev is empty or has no data, use seeded; otherwise merge
+                if (!prev || prev.length === 0) return seeded;
+                const prevMonths = new Set(prev.map((p) => p.month));
+                const merged = [...prev, ...seeded.filter((s) => !prevMonths.has(s.month))];
+                merged.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                return merged;
+              });
+            }
+          } catch (e) {
+            console.error('Fallback revenue aggregation error:', e);
+            // ignore fallback errors; primary is the real-time aggregate
+          }
+        })();
 
         // Fetch attendance data from August onward (server-side filter when possible)
         const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -209,8 +253,9 @@ export function useAdminAnalytics(refreshKey?: number) {
       if (unsubscribePlatformMonthly) unsubscribePlatformMonthly();
       if (unsubscribeAttendanceFallback) unsubscribeAttendanceFallback();
       if (unsubscribeCurrentMonthLive) unsubscribeCurrentMonthLive();
+      if (unsubscribeRevenue) unsubscribeRevenue();
     };
-  }, [refreshKey]);
+  }, [refreshKey, user?.uid]);
 
   return {
     monthlyRevenue,

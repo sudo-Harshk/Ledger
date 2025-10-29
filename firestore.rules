@@ -105,6 +105,13 @@ service cloud.firestore {
       allow write: if isTeacherOrAdmin();
     }
 
+    // Rules for aggregated monthly revenue
+    match /platformMonthlyRevenue/{monthId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow write: if isTeacherOrAdmin();
+    }
+
     // Collection-group rules for monthlySummaries to support collectionGroup queries
     match /{path=**}/monthlySummaries/{monthId} {
       allow read: if isSignedIn() && isTeacherOrAdmin();
