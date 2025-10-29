@@ -12,6 +12,7 @@ const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
+const StudentSettings = lazy(() => import('./pages/StudentSettings.jsx'))
 
 function App() {
   // Global error handler for unhandled promise rejections
@@ -82,8 +83,18 @@ function App() {
               path="/student" 
               element={
                 <ProtectedRoute allowedRoles={['student']}>
-                  <Suspense fallback={<LoadingSpinner message="Loading Student Dashboard..." />}>
+                  <Suspense fallback={<LoadingSpinner message="Loading Student Dashboard..." />}> 
                     <StudentDashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/student/settings" 
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <Suspense fallback={<LoadingSpinner message="Loading Settings..." />}> 
+                    <StudentSettings />
                   </Suspense>
                 </ProtectedRoute>
               } 

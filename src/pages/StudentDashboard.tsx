@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { auth } from '@/firebase';
+import StudentLinkedAccountsModal from '@/components/StudentLinkedAccountsModal';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { useAuth } from '@/hooks';
 import { Navigation, Footer, Confetti, DueDateBanner, PaidBadge, approvedDaysEmojis } from '@/components';
@@ -147,6 +149,7 @@ const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoadin
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [feeSummary, setFeeSummary] = useState<FeeSummary>({
@@ -174,6 +177,7 @@ export default function StudentDashboard() {
   // Memoized providerData and month checks
   const providerData = useMemo(() => user?.providerData || [], [user]);
   const isGoogleLinked = useMemo(() => providerData.some((provider: any) => provider.providerId === 'google.com'), [providerData]);
+  const isGitHubLinked = useMemo(() => providerData.some((provider: any) => provider.providerId === 'github.com'), [providerData]);
   const now = useMemo(() => new Date(), []);
   const isCurrentMonth = useMemo(() => currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear(), [currentMonth, now]);
   const isPastMonth = useMemo(() => currentMonth.getFullYear() < now.getFullYear() || (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() < now.getMonth()), [currentMonth, now]);
@@ -617,9 +621,14 @@ export default function StudentDashboard() {
                 </CardContent>
               </Card>
             )}
-            {/* Dashboard Header (no refresh button here anymore) */}
+            {/* Dashboard Header with Settings */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-palette-dark-red">Dashboard</h2>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+                  Settings
+                </Button>
+              </div>
             </div>
             {/* Quick Actions - Bento Design */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -766,6 +775,17 @@ export default function StudentDashboard() {
         </div>
       </main>
       <Footer />
+      <StudentLinkedAccountsModal 
+        open={settingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
+        isGitHubLinked={isGitHubLinked}
+        onAfterLink={async () => {
+          // Ensure latest providerData so modal updates and button disappears
+          if (auth.currentUser?.reload) {
+            await auth.currentUser.reload();
+          }
+        }}
+      />
     </div>
   )
 }
