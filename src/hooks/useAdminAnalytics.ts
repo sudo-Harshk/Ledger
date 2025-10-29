@@ -99,17 +99,14 @@ export function useAdminAnalytics(refreshKey?: number) {
           });
 
           // Additionally, ensure the current month is always live and exact from attendance
-          const now = new Date();
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
           const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-          const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          const currentMonthKey = `${startOfMonth.getFullYear()}-${String(startOfMonth.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
-          const currentMonthId = `${currentMonthKey}-01`;
+          const currentMonthId = toIsoDate(startOfMonth);
           const currentMonthQuery = query(
             collection(db, 'attendance'),
             where('status', '==', 'approved'),
-            where('date', '>=', toIso(startOfMonth)),
-            where('date', '<=', toIso(endOfMonth))
+            where('date', '>=', toIsoDate(startOfMonth)),
+            where('date', '<=', toIsoDate(endOfMonth))
           );
           unsubscribeCurrentMonthLive = onSnapshot(currentMonthQuery, (snap) => {
             const approvedCount = snap.size;
