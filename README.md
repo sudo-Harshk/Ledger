@@ -21,11 +21,14 @@ A modern, Japanese-inspired React web app for managing student attendance and ca
 - **Real-time Updates:** Live sync with teacher approvals
 
 ### Teacher Dashboard
-- **Attendance Management:** Approve/reject student attendance requests
-- **Bulk Operations:** Add bulk attendance for multiple students
-- **Student Management:** Create and manage student accounts
-- **Revenue Tracking:** View financial summaries and payment status
-- **Fee Management:** Set and adjust monthly fees
+- **Attendance Management:** Approve/reject student attendance requests with real-time updates
+- **Bulk Operations:** Add bulk attendance for multiple students across date ranges
+- **Student Management:** Create and manage student accounts with role-based access
+- **Revenue Tracking:** View comprehensive financial summaries and payment status
+- **Fee Management:** Set and adjust monthly fees with automatic recalculation
+- **Account Settings:** Link Google accounts for easier login and recovery
+- **Fee Recalculation:** Recalculate student fees for any month with progress tracking
+- **Initial Setup:** Guided setup for first-time admin teacher account creation
 
 ### Security & Authentication
 - **Firebase Auth:** Secure authentication with role-based access
@@ -189,11 +192,13 @@ User theme preferences are automatically saved to `localStorage` and restored on
 - **Firebase App Check** - Protection against abuse and unauthorized access
 
 ### UI & Styling
-- **Tailwind CSS** - Utility-first CSS framework
-- **shadcn/ui** - Beautiful, accessible UI components
-- **Lucide React** - Modern icon library
+- **Tailwind CSS** - Utility-first CSS framework with custom theme system
+- **shadcn/ui** - Beautiful, accessible UI components built on Radix UI
+- **Lucide React** - Modern icon library with consistent design
+- **React Icons** - Additional icon support
 - **Dynamic Theme System** - Switch between 5 beautiful color themes
 - **CSS Variables** - Seamless theme switching with no component changes required
+- **Tailwind Animate** - Smooth animations and transitions
 
 ### Performance & Optimization
 - **React Hot Toast** - Elegant notifications
@@ -212,6 +217,7 @@ User theme preferences are automatically saved to `localStorage` and restored on
 - `npm run dev` — Start dev server
 - `npm run build` — Build for production
 - `npm run preview` — Preview production build
+- `npm run deploy` — Build and deploy to Firebase hosting
 - `npm run lint` — Run ESLint
 
 ---
@@ -239,3 +245,12 @@ User theme preferences are automatically saved to `localStorage` and restored on
 3. Create `.env` file with Firebase configuration
 4. Set up Firestore indexes (see Firebase Setup section)
 5. Run development server: `npm run dev`
+
+### Deployment
+The app is configured for Firebase Hosting deployment:
+- **Production:** `npm run deploy` (builds and deploys to Firebase hosting)
+- **Manual Deploy:** `firebase deploy --only hosting` (after `npm run build`)
+- **Firestore Rules:** `firebase deploy --only firestore:rules`
+- **Firestore Indexes:** `firebase deploy --only firestore:indexes`
+
+The app automatically builds to the `dist` directory and Firebase hosting serves the static files with SPA routing configured.

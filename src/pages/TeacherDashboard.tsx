@@ -48,6 +48,7 @@ export default function TeacherDashboard() {
 
   const providerData = user?.providerData || [];
   const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
+  const isGitHubLinked = providerData.some((provider: any) => provider.providerId === 'github.com');
 
   // Refresh function to trigger re-renders of all dashboard cards
   const handleRefresh = useCallback(async () => {
@@ -103,7 +104,11 @@ export default function TeacherDashboard() {
     <div className="min-h-screen bg-palette-light-cream flex flex-col">
       <Navigation showRecalculate={true} onRefresh={handleRefresh} refreshing={isRefreshing} />
       <main className="flex-grow container mx-auto px-6 py-8">
-        <AccountSettingsCard show={true} userRole={user.role} isGoogleLinked={isGoogleLinked} />
+        <AccountSettingsCard 
+          show={true} 
+          isGoogleLinked={isGoogleLinked}
+          isGitHubLinked={isGitHubLinked}
+        />
         <InitialSetupCard />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

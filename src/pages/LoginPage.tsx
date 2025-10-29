@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   
-  const { login, user, loginWithGoogle } = useAuth();
+  const { login, user, loginWithGoogle, loginWithGitHub } = useAuth();
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -73,11 +73,12 @@ export default function LoginPage() {
     }
   }
 
+  // --- THIS IS THE NEWLY ADDED FUNCTION ---
   const handleGoogleSignIn = async () => {
     setError("");
     setLoading(true);
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(); // This calls the function from your useAuth hook
       justLoggedIn.current = true;
       // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
@@ -88,6 +89,31 @@ export default function LoginPage() {
         } else {
           setError('Failed to login with Google. Please try again.');
           debouncedToast('Failed to login with Google. Please try again.', 'error');
+        }
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  }
+  // ----------------------------------------
+
+  const handleGitHubSignIn = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await loginWithGitHub();
+      justLoggedIn.current = true;
+      // Navigation and toast will be handled in useEffect
+    } catch (error: unknown) {
+      if (isMounted.current) {
+        if (error instanceof Error) {
+          setError(error.message);
+          debouncedToast(error.message, 'error');
+        } else {
+          setError('Failed to login with GitHub. Please try again.');
+          debouncedToast('Failed to login with GitHub. Please try again.', 'error');
         }
       }
     } finally {
@@ -146,15 +172,15 @@ export default function LoginPage() {
                )}
               <div className="space-y-2">
                 <Label htmlFor="username">Username or Email</Label>
-                 <Input
-                   id="username"
-                   type="text"
-                   placeholder="Enter your username or email"
-                   value={username}
-                   onChange={(e) => setUsername(e.target.value)}
-                   required
-                   className="transition-all duration-200 focus:scale-105 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
-                 />
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username or email"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="transition-all duration-200 focus:scale-105 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
+                />
                 <p className="text-xs text-gray-400 mt-1">
                   Students: Use your username &bull; Teachers: Use your email
                 </p>
@@ -162,27 +188,27 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                   <Input
-                     id="password"
-                     type={showPassword ? 'text' : 'password'}
-                     placeholder="Enter your password"
-                     value={password}
-                     onChange={(e) => setPassword(e.target.value)}
-                     required
-                     className="transition-all duration-200 focus:scale-105 pr-12 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
-                   />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="transition-all duration-200 focus:scale-105 pr-12 bg-input-base focus:bg-input-elevated border border-palette-golden/30 focus:border-palette-golden"
+                  />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
                     <button
                       type="button"
                       tabIndex={0}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       onClick={() => setShowPassword((v) => !v)}
-                       className="p-1 rounded-full bg-input-elevated hover:bg-input-elevated shadow focus:outline-none border border-palette-golden/30 transition-colors focus:ring-2 focus:ring-palette-golden relative group"
+                        className="p-1 rounded-full bg-input-elevated hover:bg-input-elevated shadow focus:outline-none border border-palette-golden/30 transition-colors focus:ring-2 focus:ring-palette-golden relative group"
                     >
                       {showPassword ? (
-                         <FiEyeOff className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
+                        <FiEyeOff className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
                       ) : (
-                         <FiEye className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
+                        <FiEye className="h-5 w-5 text-palette-dark-teal hover:text-palette-dark-red transition-all duration-200" />
                       )}
                       <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 rounded bg-tooltip-bg text-tooltip-text text-xs shadow-lg z-50 whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-150">
                         {showPassword ? 'Hide' : 'Show'}
@@ -204,18 +230,19 @@ export default function LoginPage() {
                 )}
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-               {/* Divider */}
-                 <div className="flex items-center my-4">
-                 <div className="flex-grow border-t border-palette-golden/30" />
-                 <span className="mx-4 text-xs text-palette-dark-teal">Or sign in with</span>
-                 <div className="flex-grow border-t border-palette-golden/30" />
-               </div>
+                {/* Divider */}
+                <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-palette-golden/30" />
+                <span className="mx-4 text-xs text-palette-dark-teal">Or sign in with</span>
+                <div className="flex-grow border-t border-palette-golden/30" />
+              </div>
               {/* Google Sign-In Button */}
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
                 onClick={handleGoogleSignIn}
+                disabled={loading}
               >
                 <img
                   src="https://img.icons8.com/color/48/google-logo.png"
@@ -226,6 +253,29 @@ export default function LoginPage() {
                   style={{ display: 'inline-block', verticalAlign: 'middle' }}
                 />
                 Sign in with Google
+              </Button>
+              
+              {/* GitHub Sign-In Button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={handleGitHubSignIn}
+                disabled={loading}
+              >
+                <svg
+                  className="mr-2 h-5 w-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Sign in with GitHub
               </Button>
             </form>
           </CardContent>

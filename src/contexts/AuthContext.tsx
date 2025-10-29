@@ -6,8 +6,10 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   GoogleAuthProvider,
+  GithubAuthProvider,
   getAdditionalUserInfo,
   deleteUser,
+  linkWithPopup,
 } from 'firebase/auth'
 
 import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore'
@@ -234,6 +236,73 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const loginWithGitHub = async () => {
+    try {
+      const provider = new GithubAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      const additionalInfo = getAdditionalUserInfo(result)
+      if (additionalInfo?.isNewUser) {
+        // Unauthorized: delete user and show error
+        if (auth.currentUser) {
+          try {
+            await deleteUser(auth.currentUser)
+          } catch (deleteError) {
+            logger.error('Error deleting unauthorized user:', deleteError)
+          }
+        }
+        debouncedToast('Account not registered. Please contact your teacher.', 'error')
+        throw new Error('Account not registered. Please contact your teacher.')
+      }
+      // Check if user document exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', result.user.uid))
+      if (!userDoc.exists()) {
+        // Create user document if it doesn't exist (should not happen for existing users)
+        try {
+          await setDoc(doc(db, 'users', result.user.uid), {
+            username: result.user.email,
+            role: 'student', // Default role, adjust as needed
+            displayName: result.user.displayName || '',
+            email: result.user.email || '',
+            createdAt: new Date(),
+          })
+          logger.info('Created Firestore user document for GitHub user')
+        } catch (setDocError) {
+          logger.error('Error creating user document:', setDocError)
+          // If document creation fails, sign out the user
+          await signOut(auth)
+          throw new Error('Failed to create user account. Please try again.')
+        }
+      }
+    } catch (error: unknown) {
+      logger.error('GitHub login error:', error)
+      if (error instanceof Error) {
+        throw error
+      } else {
+        throw new Error('An unexpected error occurred during GitHub login')
+      }
+    }
+  }
+
+  const linkGitHubAccount = async () => {
+    if (!auth.currentUser) {
+      debouncedToast('No user is currently signed in.', 'error')
+      return
+    }
+    try {
+      const provider = new GithubAuthProvider()
+      await linkWithPopup(auth.currentUser, provider)
+      debouncedToast('GitHub account linked successfully!', 'success')
+    } catch (error: any) {
+      if (error.code === 'auth/credential-already-in-use') {
+        debouncedToast('This GitHub account is already linked to another user.', 'error')
+      } else if (error.message) {
+        debouncedToast(error.message, 'error')
+      } else {
+        debouncedToast('Failed to link GitHub account.', 'error')
+      }
+    }
+  }
+
   const logout = async () => {
     try {
       await signOut(auth)
@@ -254,6 +323,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     loginWithGoogle,
+    loginWithGitHub,
+    linkGitHubAccount,
   }
 
   return (

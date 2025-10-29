@@ -10,6 +10,7 @@ import LoadingSpinner from './components/LoadingSpinner';
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
 
 function App() {
@@ -93,6 +94,16 @@ function App() {
                 <ProtectedRoute allowedRoles={['teacher']}>
                   <Suspense fallback={<LoadingSpinner message="Loading Teacher Dashboard..." />}>
                     <TeacherDashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Suspense fallback={<LoadingSpinner message="Loading Admin Dashboard..." />}>
+                    <AdminDashboard />
                   </Suspense>
                 </ProtectedRoute>
               } 

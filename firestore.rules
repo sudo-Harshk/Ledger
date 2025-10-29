@@ -3,43 +3,27 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // --- Helper Functions ---
-    // Checks if a user is signed in.
     function isSignedIn() {
       return request.auth != null;
     }
-
-    // Gets the role of the user making the request.
-    // Checks for existence before accessing data to prevent errors.
     function getRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-
-    // Checks if the user document exists and has a role
     function hasUserDocument() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
-
-    // Checks if the user is a Teacher.
     function isTeacher() {
       return isSignedIn() && hasUserDocument() && getRole() == 'teacher';
     }
-    
-    // Checks if the user is an Admin.
     function isAdmin() {
       return isSignedIn() && hasUserDocument() && getRole() == 'admin';
     }
-
-    // Checks if the user is a Student.
     function isStudent() {
       return isSignedIn() && hasUserDocument() && getRole() == 'student';
     }
-
-    // Checks if the user is a Teacher or Admin (for operations that require elevated privileges)
     function isTeacherOrAdmin() {
       return isSignedIn() && hasUserDocument() && (getRole() == 'teacher' || getRole() == 'admin');
     }
-
-    // Validates user updates to prevent students from modifying protected fields
     function isValidUserUpdate() {
       let protectedFields = ['role','monthlyFee','totalDueByMonth','lastTotalDueUpdate'].toSet();
       let changed = request.resource.data.diff(resource.data).affectedKeys();
@@ -50,24 +34,31 @@ service cloud.firestore {
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // READ: A user can read their own profile. Teachers and Admins can read all profiles.
-      // Also allow reading if user is signed in (for role checking and initial setup)
-      allow read: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
       
-      // LIST (Queries): Allow teachers/admins to query all users, and allow username queries for login
-      allow list: if isTeacherOrAdmin() || true;
+      // A user can read their OWN document
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      
+      // A Teacher/Admin can read OTHER user documents
+      allow read: if isSignedIn() 
+                    && request.auth.uid != userId 
+                    && isTeacherOrAdmin();
+      
+      // --- FIX FOR STUDENT LOGIN ---
+      // WARNING: "|| true" opens a security risk. It allows ANYONE
+      // (even unauthenticated users) to query the 'users' collection.
+      // This is required for the "username-to-email" lookup on the
+      // login page to work without a backend Cloud Function.
+      // This rule is a trade-off: it enables your feature but
+      // allows a malicious user to guess usernames.
+      allow list: if isTeacherOrAdmin() || true; 
 
-      // CREATE: Only Teachers and Admins can create new user documents.
-      // Also allow creation if user is signed in (for initial user document creation)
+      // CREATE: Teachers/Admins or a new user creating their own doc.
       allow create: if isSignedIn() && (isTeacherOrAdmin() || request.auth.uid == userId);
 
-      // UPDATE: Students can only modify non-protected fields;
-      // Teachers and admins can modify everything.
+      // UPDATE: Students can only modify non-protected fields.
       allow update: if isSignedIn() && (
-        // Student self‐edit, restricted:
-        request.auth.uid == userId && isValidUserUpdate()
+        (request.auth.uid == userId && isValidUserUpdate())
         ||
-        // Teachers and admins unrestricted:
         isTeacherOrAdmin()
       );
 
@@ -76,44 +67,48 @@ service cloud.firestore {
 
       // Rules for the 'monthlySummaries' subcollection
       match /monthlySummaries/{monthId} {
-        // READ: Only the user (owner) or a teacher can read
+        // Needed for get()
         allow read: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
-        // WRITE: Only teachers can write
+        // Needed for queries/collectionGroup
+        allow list: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
         allow write: if isTeacherOrAdmin();
       }
     }
 
     // Rules for the 'attendance' collection
     match /attendance/{attendanceId} {
-      // READ: A student can read their own records. Teachers and Admins can read all.
-      // Also allow reading if user is signed in (for general queries)
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || isTeacherOrAdmin() || isStudent());
+      
+      // A student can read their OWN records, Teachers/Admins can read all
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || isTeacherOrAdmin());
 
-      // LIST (Queries): Allow authenticated users to query attendance
       allow list: if isSignedIn();
 
-      // CREATE: A student can create their own attendance, but status must be 'pending'.
-      // Teachers and Admins can create any attendance record.
+      // CREATE: Student can create 'pending' record, Teachers/Admins can create any
       allow create: if (isSignedIn() && ((request.auth.uid == request.resource.data.studentId && request.resource.data.status == 'pending')
-                     || isTeacherOrAdmin()));
+                      || isTeacherOrAdmin()));
 
-      // UPDATE: Only Teachers and Admins can update attendance (e.g., approve/reject).
       allow update: if isSignedIn() && isTeacherOrAdmin();
-      
-      // DELETE: Only Teachers and Admins can delete attendance.
       allow delete: if isSignedIn() && isTeacherOrAdmin();
     }
     
     // Rules for the 'revenueSummaries' collection
     match /revenueSummaries/{summaryId} {
-        // READ: Any signed-in user can read the summary data.
         allow read: if isSignedIn();
-        
-        // LIST (Queries): Allow authenticated users to query revenue summaries
         allow list: if isSignedIn();
-        
-        // WRITE: Only Teachers and Admins can update the summary document.
         allow write: if isSignedIn() && isTeacherOrAdmin();
+    }
+
+    // Rules for aggregated monthly attendance counts
+    match /platformMonthlyAttendance/{monthId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow write: if isTeacherOrAdmin();
+    }
+
+    // Collection-group rules for monthlySummaries to support collectionGroup queries
+    match /{path=**}/monthlySummaries/{monthId} {
+      allow read: if isSignedIn() && isTeacherOrAdmin();
+      allow list: if isSignedIn() && isTeacherOrAdmin();
     }
   }
 }

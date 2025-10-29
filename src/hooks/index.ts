@@ -9,3 +9,5 @@ export * from './useAttendanceData';
 export * from './useTeacherSetup';
 export * from './useCalendar';
 export * from './useStudentFeeRecalculation';
+export * from './useAdminAnalytics';
+export * from './useAdminAnalyticsDebug';
