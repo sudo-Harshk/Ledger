@@ -5,3 +5,4 @@ export * from './linkGoogleAccount';
 export * from './linkGitHubAccount';
 export * from './errorHandler';
 export * from './backfillPlatformMonthlyAttendance';
+export * from './backfillPlatformMonthlyRevenue';

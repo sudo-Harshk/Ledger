@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
-import { formatLocalDate } from '@/lib';
+import { formatLocalDate, updatePlatformMonthlyRevenue } from '@/lib';
 import toast from 'react-hot-toast';
 
 interface StudentFee {
@@ -142,6 +142,14 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
         [`totalDueByMonth.${monthKey}.amountPaid`]: dueAmount,
         [`totalDueByMonth.${monthKey}.paymentDate`]: (await import('firebase/firestore')).serverTimestamp(),
       });
+      
+      // Update platform monthly revenue instantly for admin dashboard
+      try {
+        await updatePlatformMonthlyRevenue(monthKey);
+      } catch (revenueError) {
+        console.error('Error updating platform revenue:', revenueError);
+        // Don't fail the payment if revenue update fails
+      }
       
       toast.dismiss(loadingToast);
       toast.success(`Payment of ₹${dueAmount} recorded successfully!`);
