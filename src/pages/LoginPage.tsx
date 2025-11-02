@@ -129,7 +129,7 @@ export default function LoginPage() {
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
           <div className="flex items-center gap-2">
-            <div className="font-bold text-2xl tracking-widest cursor-pointer text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }} onClick={() => navigate('/')}>Ledger</div>
+            <div className="font-bold text-2xl tracking-widest cursor-pointer text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }} onClick={() => user ? window.location.href = `/${user.role}` : window.location.href = '/'}>Ledger</div>
           </div>
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
             {/* Removed Home button */}
