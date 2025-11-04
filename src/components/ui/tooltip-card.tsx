@@ -7,10 +7,12 @@ export const Tooltip = ({
   content,
   children,
   containerClassName,
+  contentClassName,
 }: {
   content: string | React.ReactNode;
   children: React.ReactNode;
   containerClassName?: string;
+  contentClassName?: string;
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [mouse, setMouse] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -110,12 +112,12 @@ export const Tooltip = ({
   };
 
   const handleTouchEnd = () => {
-    // Delay hiding to allow for tap interaction
+    // Short delay to allow for tap interaction without feeling laggy
     setTimeout(() => {
       setIsVisible(false);
       setMouse({ x: 0, y: 0 });
       setPosition({ x: 0, y: 0 });
-    }, 2000);
+    }, 800);
   };
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -176,7 +178,7 @@ export const Tooltip = ({
           >
             <div
               ref={contentRef}
-              className="p-2 md:p-3"
+              className={cn("p-2 md:p-3", contentClassName)}
             >
               {content}
             </div>

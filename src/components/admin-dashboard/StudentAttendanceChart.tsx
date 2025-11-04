@@ -152,6 +152,7 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
                       <Tooltip
                         key={student.id}
                         containerClassName="cursor-pointer"
+                        contentClassName="p-0"
                         content={
                           <img
                             src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1760117842/Developer_2_iv2thw.webp"
