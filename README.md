@@ -1,59 +1,43 @@
 # Ledger App
 
-A modern, Japanese-inspired React web app for managing student attendance and calculating monthly fees, with real-time updates, role-based dashboards, and beautiful UI for students and teachers.
+Japanese‑inspired attendance and fee management for students and teachers. Real‑time Firestore sync, role‑based dashboards, and a clean Tailwind UI.
 
- **Live Demo:** [https://ledger-90834.web.app/](https://ledger-90834.web.app/)
-
----
-
-## Features
-
-### Theme Customization
-- **5 Beautiful Themes:** Choose from Warm Cream, Sage Green, Ocean Breeze, Vintage Warm, or Desert Sunset
-- **One-Click Switching:** Theme button in navigation for instant changes
-- **Persistent Preferences:** Your theme choice is saved across sessions
-- **Seamless Design:** All components adapt automatically to the selected theme
-
-### Student Dashboard
-- **Daily Attendance:** Mark attendance with beautiful calendar interface
-- **Payment Tracking:** Monitor monthly fees and payment status
-- **Progress Visualization:** Track approved days and attendance history
-- **Real-time Updates:** Live sync with teacher approvals
-
-### Teacher Dashboard
-- **Attendance Management:** Approve/reject student attendance requests with real-time updates
-- **Bulk Operations:** Add bulk attendance for multiple students across date ranges
-- **Student Management:** Create and manage student accounts with role-based access
-- **Revenue Tracking:** View comprehensive financial summaries and payment status
-- **Fee Management:** Set and adjust monthly fees with automatic recalculation
-- **Account Settings:** Link Google accounts for easier login and recovery
-- **Fee Recalculation:** Recalculate student fees for any month with progress tracking
-- **Initial Setup:** Guided setup for first-time admin teacher account creation
-
-### Security & Authentication
-- **Firebase Auth:** Secure authentication with role-based access
-- **No Self-Registration:** Only teacher-created users can access
-- **Google Integration:** Optional Google login for easier access
-- **App Check:** reCAPTCHA v3 protection against abuse
+**Live demo**: `https://ledger-90834.web.app/`
 
 ---
 
-## Quick Start
+## What you can do
 
-### 1. Prerequisites
-- Node.js v18+
-- npm or yarn
-- Firebase project (with Auth & Firestore enabled)
+- **Students**: mark daily attendance, track approved days, view monthly fees/payment status.
+- **Teachers**: approve/reject attendance (real‑time), add bulk attendance, manage students, configure monthly fees and recalculate when needed, view revenue summaries, complete initial setup.
+- **Theming**: one‑click theme switcher with 5 curated palettes; preference persists.
+- **Security**: Firebase Auth + Firestore rules; App Check via reCAPTCHA v3; no self‑registration.
 
-### 2. Setup
+---
+
+## Tech stack
+
+- **Frontend**: React 19, TypeScript, Vite
+- **UI**: Tailwind CSS, shadcn/ui, Radix primitives, Lucide icons, tailwind-animate
+- **Data & Auth**: Firebase Auth, Firestore, App Check
+- **UX**: react-hot-toast for notifications, date-fns, canvas-confetti
+
+---
+
+## Quick start
+
+1) Prerequisites
+- Node.js 18+
+- Firebase project with Auth + Firestore enabled
+
+2) Install
 ```bash
 git clone <repository-url>
 cd ledger-app
 npm install
 ```
 
-### 3. Firebase Configuration
-- Create a `.env` file in the root:
+3) Environment variables (.env at repo root)
 ```
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -62,195 +46,82 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_RECAPTCHA_V3_SITE_KEY=your_recaptcha_v3_site_key
-VITE_FIREBASE_APPCHECK_DEBUG_TOKEN=your_debug_token # (dev only)
-VITE_ENABLE_ADMIN_SETUP=true # (optional)
-VITE_PLATFORM_START=2025-08-01 # (optional, restricts attendance before this date)
+VITE_FIREBASE_APPCHECK_DEBUG_TOKEN=your_debug_token   # dev only
+
+# Optional
+VITE_ENABLE_ADMIN_SETUP=true            # enable first‑time admin setup flow
+VITE_PLATFORM_START=2025-08-01         # disallow attendance before this date
 ```
-- Get these values from your Firebase Console (Project Settings > General).
 
-### 4. Firebase Setup
+4) Firebase setup
 - Enable Email/Password Auth
-- Enable Firestore Database
-- Set Firestore security rules (see `firestore.rules`)
-- [Optional] Set up App Check with reCAPTCHA v3
+- Create Firestore database
+- Deploy rules and indexes (see below)
+- Optional: App Check (reCAPTCHA v3)
 
-### 5. Firestore Indexes
-Create these composite indexes in Firestore:
-- **attendance-status-studentId-date:** `status`, `studentId`, `date`, `__name__` (all ascending)
-- **attendance-studentId-date:** `studentId`, `date`, `__name__` (all ascending)
-
-See Firestore > Indexes in Firebase Console.
-
-### 6. Run the App
+5) Run
 ```bash
 npm run dev
 ```
-Visit [http://localhost:5173](http://localhost:5173)
+Open `http://localhost:5173`
 
 ---
 
-## Usage
+## Firestore indexes
 
-### Students
-1. Sign in with your teacher-provided account
-2. Mark daily attendance
-3. View attendance calendar and payment status
-4. Track monthly fees and due dates
+Create the following composite indexes in Firestore:
+- attendance-status-studentId-date: `status`, `studentId`, `date`, `__name__` (asc)
+- attendance-studentId-date: `studentId`, `date`, `__name__` (asc)
 
-### Teachers
-1. Set monthly fee
-2. Approve/reject attendance
-3. Add bulk attendance for students
-4. View revenue and student payment status
-5. Create/manage student accounts
-6. Mark student payments as paid
+See Firestore Console → Indexes. You can also deploy indexes via:
 
----
-
-## Theme System
-
-Ledger App features a flexible theme system that allows you to switch between 5 beautiful color palettes. The theme switcher is available in the navigation bar for all authenticated users.
-
-### Available Themes
-
-1. **Warm Cream (Default)**
-   - Japanese-inspired warm palette
-   - Perfect for a calm, welcoming atmosphere
-   - Colors: Golden accents, cream backgrounds
-
-2. **Sage Green**
-   - Calm sage green palette
-   - Colors: `#96A78D`, `#B6CEB4`, `#D9E9CF`, `#F0F0F0`
-   - Ideal for a peaceful, nature-inspired feel
-
-3. **Ocean Breeze**
-   - Calm teal and mint palette
-   - Colors: `#19183B`, `#708993`, `#A1C2BD`, `#E7F2EF`
-   - Fresh, modern ocean-inspired design
-
-4. **Vintage Warm**
-   - Muted earth tones palette
-   - Colors: `#B6AE9F`, `#C5C7BC`, `#DEDED1`, `#FBF3D1`
-   - Elegant, timeless aesthetic
-
-5. **Desert Sunset**
-   - Warm terracotta palette
-   - Colors: `#B77466`, `#FFE1AF`, `#E2B59A`, `#957C62`
-   - Warm, inviting desert-inspired theme
-
-### How to Use the Theme System
-
-#### For Users
-Simply click the theme button in the navigation bar and select your preferred theme. Your choice will be saved and persist across sessions.
-
-#### For Developers
-
-**To Switch Themes Programmatically:**
-```typescript
-// Add theme class to document element
-document.documentElement.classList.add('theme-sage'); // for sage theme
-document.documentElement.classList.remove('theme-sage'); // to remove
-
-// Available theme classes:
-// - theme-sage (Sage Green)
-// - theme-ocean (Ocean Breeze)
-// - theme-vintage (Vintage Warm)
-// - theme-desert (Desert Sunset)
-// - (none) for default Warm Cream theme
+```bash
+firebase deploy --only firestore:indexes
 ```
 
-**Adding a New Theme:**
-1. Add CSS variables in `src/index.css` under a new theme class (e.g., `.theme-custom`)
-2. Update the `Theme` type in `src/components/ThemeSwitcher.tsx`
-3. Add the theme to the `themes` array with label, description, and color preview
-4. Update theme detection and application logic
-
-**Color Variable Structure:**
-Each theme should define these CSS variables:
-- `--palette-dark-teal` - Headers and borders
-- `--palette-light-cream` - Main background
-- `--palette-golden` - Accents and buttons
-- `--palette-deep-red` - Primary actions
-- `--palette-dark-red` - Text and emphasis
-- Plus background, card, and input layering variables
-
-### Theme Persistence
-User theme preferences are automatically saved to `localStorage` and restored on page reload.
-
 ---
 
-## Tech Stack
+## Admin setup (first account)
 
-### Core Framework
-- **React 19** - Modern React with hooks and concurrent features
-- **TypeScript** - Type safety and enhanced developer experience
-- **Vite** - Lightning-fast build tool and dev server
+Create an admin user in Firebase Auth, then set their Firestore user document role to `admin`:
+1. In Firestore, open collection `users` and the document matching the admin UID.
+2. Add/update field `role` = `admin`.
+3. Sign in as this user and access the admin dashboard.
 
-### Backend & Database
-- **Firebase Auth** - Secure authentication and user management
-- **Firestore** - Real-time NoSQL database with live updates
-- **Firebase App Check** - Protection against abuse and unauthorized access
-
-### UI & Styling
-- **Tailwind CSS** - Utility-first CSS framework with custom theme system
-- **shadcn/ui** - Beautiful, accessible UI components built on Radix UI
-- **Lucide React** - Modern icon library with consistent design
-- **React Icons** - Additional icon support
-- **Dynamic Theme System** - Switch between 5 beautiful color themes
-- **CSS Variables** - Seamless theme switching with no component changes required
-- **Tailwind Animate** - Smooth animations and transitions
-
-### Performance & Optimization
-- **React Hot Toast** - Elegant notifications
-- **Canvas Confetti** - Celebration effects
-- **Date-fns** - Lightweight date utilities
-- **Code Splitting** - Lazy loading for optimal performance
-
-### Development Tools
-- **ESLint** - Code quality and consistency
-- **TypeScript ESLint** - TypeScript-specific linting rules
-- **Vite Plugins** - React and TypeScript support
+Never commit credentials or sensitive IDs. For CLI‑driven updates, prefer environment‑scoped tooling and least‑privilege accounts.
 
 ---
 
 ## Scripts
-- `npm run dev` — Start dev server
-- `npm run build` — Build for production
-- `npm run preview` — Preview production build
-- `npm run deploy` — Build and deploy to Firebase hosting
-- `npm run lint` — Run ESLint
+
+- `npm run dev` — start dev server
+- `npm run build` — type‑check and build for production
+- `npm run preview` — preview the production build
+- `npm run deploy` — build and deploy to Firebase Hosting
+- `npm run lint` — run ESLint
 
 ---
 
-## Security & Roles
-- **App Check:** Uses reCAPTCHA v3 (see `.env`)
-- **Students:** Log in with username, access only their data
-- **Teachers:** Log in with email, manage all students
-- **Role-based dashboards**
-- **Firestore rules:** Strict access control (see `firestore.rules`)
-- **No self-registration:** Only teacher-created users can access
+## Deployment
+
+Configured for Firebase Hosting.
+
+```bash
+npm run deploy                    # build + hosting deploy
+# or, granular:
+firebase deploy --only hosting
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
+```
+
+SPA routing is handled by Firebase Hosting. Build output goes to `dist`.
 
 ---
 
-## Development
+## Security & roles
 
-### Prerequisites
-- Node.js 18+ 
-- Firebase project with Auth & Firestore enabled
-- Git for version control
+- App Check via reCAPTCHA v3 (configure keys in `.env`).
+- Students access only their own data; teachers/admins manage platform data.
+- Strict Firestore rules (`firestore.rules`).
+- No public sign‑up — accounts are created by teachers/admins.
 
-### Environment Setup
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Create `.env` file with Firebase configuration
-4. Set up Firestore indexes (see Firebase Setup section)
-5. Run development server: `npm run dev`
-
-### Deployment
-The app is configured for Firebase Hosting deployment:
-- **Production:** `npm run deploy` (builds and deploys to Firebase hosting)
-- **Manual Deploy:** `firebase deploy --only hosting` (after `npm run build`)
-- **Firestore Rules:** `firebase deploy --only firestore:rules`
-- **Firestore Indexes:** `firebase deploy --only firestore:indexes`
-
-The app automatically builds to the `dist` directory and Firebase hosting serves the static files with SPA routing configured.
