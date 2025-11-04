@@ -7,12 +7,18 @@ interface MonthlyAttendanceData {
   totalStudents: number;
 }
 
+interface TrackedStudent {
+  id: string;
+  name: string;
+}
+
 interface StudentAttendanceChartProps {
   data: MonthlyAttendanceData[];
   loading: boolean;
+  trackedStudents?: TrackedStudent[];
 }
 
-export default function StudentAttendanceChart({ data, loading }: StudentAttendanceChartProps) {
+export default function StudentAttendanceChart({ data, loading, trackedStudents = [] }: StudentAttendanceChartProps) {
   if (loading) {
     return (
       <Card className="bg-card-elevated shadow-xl border-0">
@@ -41,7 +47,7 @@ export default function StudentAttendanceChart({ data, loading }: StudentAttenda
     return (
       <Card className="bg-card-elevated shadow-xl border-0">
         <CardHeader>
-          <CardTitle className="text-palette-dark-red flex items-center gap-2">
+          <CardTitle className="text-palette-dark-red flex items-center gap-2"> 
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -72,7 +78,7 @@ export default function StudentAttendanceChart({ data, loading }: StudentAttenda
   return (
     <Card className="bg-card-elevated shadow-xl border-0">
       <CardHeader>
-        <CardTitle className="text-palette-dark-red flex items-center gap-2">
+        <CardTitle className="text-palette-dark-red flex items-center gap-2">   
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
@@ -85,21 +91,21 @@ export default function StudentAttendanceChart({ data, loading }: StudentAttenda
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 stroke="#6b7280"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
               />
-              <YAxis 
+              <YAxis
                 stroke="#6b7280"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value) => `${value}`}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   backgroundColor: '#f9fafb',
                   border: '1px solid #e5e7eb',
@@ -107,13 +113,13 @@ export default function StudentAttendanceChart({ data, loading }: StudentAttenda
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
                 formatter={(value: number) => [
-                  `${value} record(s)`, 
+                  `${value} record(s)`,
                   'Attendance'
                 ]}
                 labelStyle={{ color: '#374151', fontWeight: 'bold' }}
               />
-              <Bar 
-                dataKey="attendance" 
+              <Bar
+                dataKey="attendance"
                 fill="#059669"
                 radius={[4, 4, 0, 0]}
                 stroke="#047857"
@@ -122,7 +128,30 @@ export default function StudentAttendanceChart({ data, loading }: StudentAttenda
             </BarChart>
           </ResponsiveContainer>
         </div>
-        
+
+        {/* Student Legend */}
+        {trackedStudents && trackedStudents.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-palette-golden/30">
+            <div className="flex items-center gap-2 flex-wrap">
+              <svg className="h-4 w-4 text-palette-dark-teal flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p className="text-xs font-semibold text-palette-dark-teal whitespace-nowrap">Tracking Attendance For:</p>
+              <div className="flex flex-wrap gap-2">
+                {trackedStudents.map((student) => (
+                  <span
+                    key={student.id}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-palette-golden/20 text-palette-dark-red border border-palette-golden/40"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-palette-golden"></span>
+                    {student.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Summary Stats */}
         <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-palette-golden/30">
           <div className="text-center">

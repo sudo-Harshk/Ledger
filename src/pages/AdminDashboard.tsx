@@ -8,7 +8,7 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
-  const { monthlyRevenue, monthlyAttendance, loading } = useAdminAnalytics(refreshKey);
+  const { monthlyRevenue, monthlyAttendance, trackedStudents, loading } = useAdminAnalytics(refreshKey);
 
   // Don't render if user is not available
   if (!user) {
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
               {/* Charts Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MonthlyRevenueChart data={monthlyRevenue} loading={loading} />
-                <StudentAttendanceChart data={monthlyAttendance} loading={loading} />
+                <StudentAttendanceChart data={monthlyAttendance} loading={loading} trackedStudents={trackedStudents} />
               </div>
 
             </div>
