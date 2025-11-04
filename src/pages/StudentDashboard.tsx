@@ -625,9 +625,11 @@ export default function StudentDashboard() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-palette-dark-red">Dashboard</h2>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
-                  Settings
-                </Button>
+                {!isGitHubLinked && (
+                  <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+                    Settings
+                  </Button>
+                )}
               </div>
             </div>
             {/* Quick Actions - Bento Design */}
