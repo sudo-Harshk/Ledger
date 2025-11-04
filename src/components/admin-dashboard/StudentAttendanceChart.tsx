@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { Tooltip } from '@/components/ui/tooltip-card';
 
 interface MonthlyAttendanceData {
   month: string;
@@ -138,15 +139,38 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
               </svg>
               <p className="text-xs font-semibold text-palette-dark-teal whitespace-nowrap">Tracking Attendance For:</p>
               <div className="flex flex-wrap gap-2">
-                {trackedStudents.map((student) => (
-                  <span
-                    key={student.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-palette-golden/20 text-palette-dark-red border border-palette-golden/40"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-palette-golden"></span>
-                    <span>{student.name}</span>
-                  </span>
-                ))}
+                {trackedStudents.map((student) => {
+                  const nameNode = (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-palette-golden/20 text-palette-dark-red border border-palette-golden/40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-palette-golden"></span>
+                      <span>{student.name}</span>
+                    </span>
+                  );
+
+                  if (student.name === 'Sahasra') {
+                    return (
+                      <Tooltip
+                        key={student.id}
+                        containerClassName="cursor-pointer"
+                        content={
+                          <img
+                            src="https://res.cloudinary.com/dzjfiqicm/image/upload/v1760117842/Developer_2_iv2thw.webp"
+                            alt="Sahasra profile"
+                            className="block w-full h-auto"
+                          />
+                        }
+                      >
+                        {nameNode}
+                      </Tooltip>
+                    );
+                  }
+
+                  return (
+                    <span key={student.id}>
+                      {nameNode}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           </div>
