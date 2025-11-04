@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 interface MonthlyAttendanceData {
   month: string;
@@ -105,7 +105,7 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
                 axisLine={false}
                 tickFormatter={(value) => `${value}`}
               />
-              <Tooltip
+              <RechartsTooltip
                 contentStyle={{
                   backgroundColor: '#f9fafb',
                   border: '1px solid #e5e7eb',
@@ -144,7 +144,7 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full bg-palette-golden/20 text-palette-dark-red border border-palette-golden/40"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-palette-golden"></span>
-                    {student.name}
+                    <span>{student.name}</span>
                   </span>
                 ))}
               </div>
