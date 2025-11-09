@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase/firestore';
-import { UserInfo } from 'firebase/auth';
+import type { UserInfo } from 'firebase/auth';
 
 // Firebase Auth Types
 export type ProviderId = 'google.com' | 'github.com' | 'password' | string;

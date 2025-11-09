@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useFinancialSummary, useAuth, useStudentFees } from '@/hooks';
+import { Timestamp } from 'firebase/firestore';
 
 interface RevenueSummaryCardProps {
   refreshKey?: number;
@@ -12,6 +13,15 @@ export default function RevenueSummaryCard({ refreshKey, currentMonth }: Revenue
   const { user } = useAuth();
   const { studentFees } = useStudentFees(currentMonth, refreshKey);
   const { financialSummary, loading } = useFinancialSummary(user?.uid, currentMonth, refreshKey);
+  
+  const getLastUpdatedDate = (lastUpdated: Timestamp | null | undefined): Date | null => {
+    if (!lastUpdated) return null;
+    if (lastUpdated instanceof Timestamp) return lastUpdated.toDate();
+    return null;
+  };
+
+  const lastUpdatedDate = getLastUpdatedDate(financialSummary?.lastUpdated);
+  
   return loading ? (
     <Card className="min-h-[160px] animate-pulse bg-card-elevated shadow-lg border border-palette-golden/30" />
   ) : (
@@ -30,11 +40,11 @@ export default function RevenueSummaryCard({ refreshKey, currentMonth }: Revenue
               {studentFees.filter(fee => fee.monthlyFee > 0).length} students
             </p>
           </div>
-          <div className="flex items-center gap-2 group" title={financialSummary?.lastUpdated ? (financialSummary.lastUpdated.toDate ? financialSummary.lastUpdated.toDate().toLocaleString() : financialSummary.lastUpdated.toLocaleString()) : ''}>
+          <div className="flex items-center gap-2 group" title={lastUpdatedDate ? lastUpdatedDate.toLocaleString() : ''}>
             <Clock className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground group-hover:underline cursor-help">
-              {financialSummary?.lastUpdated
-                ? `Updated ${formatDistanceToNow(financialSummary.lastUpdated.toDate ? financialSummary.lastUpdated.toDate() : financialSummary.lastUpdated)} ago`
+              {lastUpdatedDate
+                ? `Updated ${formatDistanceToNow(lastUpdatedDate)} ago`
                 : 'Loading...'}
             </span>
           </div>
