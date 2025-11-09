@@ -80,7 +80,7 @@ export default function MonthlyRevenueChart({ data, loading }: MonthlyRevenueCha
         <CardDescription>Revenue trends over the last 12 months</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80 w-full">
+        <div className="h-80 w-full min-h-[320px] min-w-[300px]" style={{ minHeight: '320px', minWidth: '300px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

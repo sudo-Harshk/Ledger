@@ -356,11 +356,15 @@ export default function StudentDashboard() {
         const lastUpdate = data.lastTotalDueUpdate;
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        return;
+      }
+      console.error('Error in user document listener:', error);
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
 
-  // Real-time listener for attendance records
   useEffect(() => {
     if (!user?.uid) return;
     const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
@@ -395,6 +399,10 @@ export default function StudentDashboard() {
           Math.round((approvedDays * (prev.monthlyFee / monthEnd.getDate())) * 100) / 100 : 0
       }));
     }, (error) => {
+      // Silently handle permission errors (e.g., when user logs out)
+      if (error.code === 'permission-denied') {
+        return;
+      }
       console.error('Error in attendance listener:', error);
     });
     return () => unsubscribe();

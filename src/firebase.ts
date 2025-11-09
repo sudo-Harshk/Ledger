@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import logger from './lib/logger'
 import { getFirestore } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 // Check if environment variables are available
@@ -52,6 +53,7 @@ if (import.meta.env.MODE !== 'staging') {
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const functions = getFunctions(app, 'us-central1');
 
 // Add error handling for Firebase initialization
 auth.onAuthStateChanged((user) => {

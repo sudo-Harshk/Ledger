@@ -43,14 +43,9 @@ service cloud.firestore {
                     && request.auth.uid != userId 
                     && isTeacherOrAdmin();
       
-      // --- FIX FOR STUDENT LOGIN ---
-      // WARNING: "|| true" opens a security risk. It allows ANYONE
-      // (even unauthenticated users) to query the 'users' collection.
-      // This is required for the "username-to-email" lookup on the
-      // login page to work without a backend Cloud Function.
-      // This rule is a trade-off: it enables your feature but
-      // allows a malicious user to guess usernames.
-      allow list: if isTeacherOrAdmin() || true; 
+      // List queries: Only Teachers and Admins can list users.
+      // Username lookup for student login is now handled by Cloud Function (lookupUsername).
+      allow list: if isTeacherOrAdmin(); 
 
       // CREATE: Teachers/Admins or a new user creating their own doc.
       allow create: if isSignedIn() && (isTeacherOrAdmin() || request.auth.uid == userId);

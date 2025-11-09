@@ -36,6 +36,9 @@ export const usePendingRequests = (userUid: string | undefined) => {
         }
       },
       (error) => {
+        if (error.code === 'permission-denied') {
+          return;
+        }
         console.error('Error in pending requests listener:', error);
       }
     );

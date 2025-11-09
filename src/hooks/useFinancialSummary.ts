@@ -83,6 +83,13 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
           }
         },
         (error) => {
+          // Silently handle permission errors (e.g., when user logs out)
+          if (error.code === 'permission-denied') {
+            if (isMounted) {
+              setLoading(false);
+            }
+            return;
+          }
           console.error('Error in financial summary listener:', error);
           if (isMounted) {
             setLoading(false);

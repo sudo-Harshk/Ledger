@@ -58,7 +58,7 @@ export function useAdminAnalytics(refreshKey?: number) {
             .map((d) => {
               const data = d.data() as { month?: string; revenue?: number };    
               const monthKey = (data.month || d.id || '').toString(); // expected YYYY-MM                                                                       
-              const iso = /\d{4}-\d{1,2}/.test(monthKey) ? `${monthKey}-01` : monthKey;                                                                         
+              const iso = /\d{4}-\d{1,2}/.test(monthKey) ? `${monthKey}-01` : monthKey;                                                                          
               return { monthIso: iso, revenue: data.revenue || 0 } as { monthIso: string; revenue: number };                                                    
             })
             .filter((r) => {
@@ -68,6 +68,12 @@ export function useAdminAnalytics(refreshKey?: number) {
             .map((r) => ({ month: r.monthIso, revenue: r.revenue }))
             .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                         
           setMonthlyRevenue(revenueData);
+        }, (error) => {
+          // Silently handle permission errors (e.g., when user logs out)
+          if (error.code === 'permission-denied') {
+            return;
+          }
+          console.error('Error in revenue listener:', error);
         });
 
         // Always seed from collectionGroup as immediate fallback (runs in parallel with listener)                                                              
@@ -185,7 +191,7 @@ export function useAdminAnalytics(refreshKey?: number) {
               const monthKey = data.month || docSnap.id;
               if (monthKey) {
                 live.push({
-                  month: /\d{4}-\d{2}/.test(monthKey) ? `${monthKey}-01` : monthKey,                                                                            
+                  month: /\d{4}-\d{2}/.test(monthKey) ? `${monthKey}-01` : monthKey,                                                                             
                   attendance: data.presentDays || 0,
                   totalStudents: 0,
                 });
@@ -193,6 +199,12 @@ export function useAdminAnalytics(refreshKey?: number) {
             });
             live.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                     
             setMonthlyAttendance(live);
+          }, (error) => {
+            // Silently handle permission errors (e.g., when user logs out)
+            if (error.code === 'permission-denied') {
+              return;
+            }
+            console.error('Error in platform monthly attendance listener:', error);
           });
 
           // Additionally, ensure the current month is always live and exact from attendance                                                                    
@@ -228,6 +240,12 @@ export function useAdminAnalytics(refreshKey?: number) {
               }
               return updated;
             });
+          }, (error) => {
+            // Silently handle permission errors (e.g., when user logs out)
+            if (error.code === 'permission-denied') {
+              return;
+            }
+            console.error('Error in current month attendance listener:', error);
           });
         } else {
           // Compute on the fly from attendance records
@@ -289,6 +307,12 @@ export function useAdminAnalytics(refreshKey?: number) {
           // Start live listener for approved attendance
           unsubscribeAttendanceFallback = onSnapshot(attendanceQuery, (snap) => {                                                                               
             setMonthlyAttendance(buildFromSnapshot(snap));
+          }, (error) => {
+            // Silently handle permission errors (e.g., when user logs out)
+            if (error.code === 'permission-denied') {
+              return;
+            }
+            console.error('Error in attendance fallback listener:', error);
           });
         }
 
