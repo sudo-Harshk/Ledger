@@ -4,27 +4,27 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 import { debouncedToast } from '../lib/debouncedToast';
 import { linkGitHubAccount } from '../lib/linkGitHubAccount';
 import { FaGithub } from 'react-icons/fa';
+import { auth } from '../firebase';
 
 export default function StudentSettings() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   if (!user) {
-    return <div>Loading...</div>; // Or a spinner component
+    return <div>Loading...</div>; 
   }
 
-  // This is the logic that makes the button "disappear"
   const isGitHubLinked = user.providerData.some(
     (provider) => provider.providerId === 'github.com'
   );
 
-  const handleLinkGitHub = async () => {
+  const handleLinkGitHub = async (): Promise<void> => {
     setLoading(true);
     try {
       await linkGitHubAccount();
-      // Ensure providerData refreshes so the button disappears on this screen
-      if (user?.reload) {
-        await user.reload();
+      // Reload Firebase user to get updated providerData
+      if (auth.currentUser?.reload) {
+        await auth.currentUser.reload();
       }
     } catch (error) {
       console.error('Error linking GitHub account:', error);
@@ -81,5 +81,4 @@ export default function StudentSettings() {
     </div>
   );
 }
-
 

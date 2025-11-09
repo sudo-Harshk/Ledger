@@ -12,10 +12,9 @@ const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const LandingPage = lazy(() => import('./pages/LandingPage'))
-const StudentSettings = lazy(() => import('./pages/StudentSettings.jsx'))
+const StudentSettings = lazy(() => import('./pages/StudentSettings'))
 
 function App() {
-  // Global error handler for unhandled promise rejections
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       console.error('Unhandled promise rejection:', event.reason);
