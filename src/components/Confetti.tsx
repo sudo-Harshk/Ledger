@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import type { ConfettiTrigger } from '@/types';
 
 interface ConfettiProps {
-  trigger?: any; // Change this prop to trigger the confetti
+  trigger?: ConfettiTrigger;
 }
 
 export const Confetti = ({ trigger }: ConfettiProps) => {

@@ -3,15 +3,7 @@ import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, type Quer
 import { db } from '@/firebase';
 import { debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
-
-interface PendingRequest {
-  id: string;
-  studentName: string;
-  date: string;
-  timestamp: any;
-  status: string;
-  [key: string]: any; 
-}
+import type { PendingRequest } from '@/types';
 
 export const usePendingRequests = (userUid: string | undefined) => {
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);

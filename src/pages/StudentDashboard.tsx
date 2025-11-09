@@ -176,8 +176,8 @@ export default function StudentDashboard() {
 
   // Memoized providerData and month checks
   const providerData = useMemo(() => user?.providerData || [], [user]);
-  const isGoogleLinked = useMemo(() => providerData.some((provider: any) => provider.providerId === 'google.com'), [providerData]);
-  const isGitHubLinked = useMemo(() => providerData.some((provider: any) => provider.providerId === 'github.com'), [providerData]);
+  const isGoogleLinked = useMemo(() => providerData.some((provider) => provider.providerId === 'google.com'), [providerData]);
+  const isGitHubLinked = useMemo(() => providerData.some((provider) => provider.providerId === 'github.com'), [providerData]);
   const now = useMemo(() => new Date(), []);
   const isCurrentMonth = useMemo(() => currentMonth.getMonth() === now.getMonth() && currentMonth.getFullYear() === now.getFullYear(), [currentMonth, now]);
   const isPastMonth = useMemo(() => currentMonth.getFullYear() < now.getFullYear() || (currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() < now.getMonth()), [currentMonth, now]);

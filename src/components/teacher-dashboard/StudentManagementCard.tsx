@@ -143,7 +143,7 @@ export default function StudentManagementCard() {
             {students.length === 0 ? (
               <p className="text-center text-gray-500 py-4">No students found</p>
             ) : (
-              students.map((student: any) => (
+              students.map((student) => (
                 <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">{student.displayName}</p>
@@ -154,8 +154,8 @@ export default function StudentManagementCard() {
                       Created: {(() => {
                         const d = student.createdAt;
                         if (!d) return '';
-                        if (typeof d === 'object' && !(d instanceof Date) && typeof (d as any).toDate === 'function') {
-                          return (d as any).toDate().toLocaleDateString();
+                        if (typeof d === 'object' && !(d instanceof Date) && d !== null && 'toDate' in d && typeof d.toDate === 'function') {
+                          return (d as { toDate: () => Date }).toDate().toLocaleDateString();
                         } else if (typeof d === 'string' || typeof d === 'number') {
                           return new Date(d).toLocaleDateString();
                         } else if (d instanceof Date) {

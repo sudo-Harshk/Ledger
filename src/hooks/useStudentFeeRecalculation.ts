@@ -141,13 +141,14 @@ export const useStudentFeeRecalculation = () => {
         monthKey
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error recalculating student fees:', error);
       toast.dismiss(loadingToast);
-      toast.error(`Failed to recalculate fees: ${error?.message || 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to recalculate fees: ${errorMessage}`);
       return {
         success: false,
-        error: error?.message || 'Unknown error'
+        error: errorMessage
       };
     } finally {
       setIsRecalculating(false);

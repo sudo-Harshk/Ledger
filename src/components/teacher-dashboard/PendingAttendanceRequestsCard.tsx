@@ -15,7 +15,7 @@ export default function PendingAttendanceRequestsCard() {
           <p className="text-center text-gray-500 py-8">No pending requests</p>
         ) : (
           <div className="space-y-3">
-            {pendingRequests.map((request: any) => (
+            {pendingRequests.map((request) => (
               <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium">{request.studentName || ''}</p>

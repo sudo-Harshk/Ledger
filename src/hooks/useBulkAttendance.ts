@@ -4,8 +4,9 @@ import { db } from '@/firebase';
 import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { differenceInCalendarDays } from 'date-fns';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
+import type { StudentAccount } from '@/types';
 
-export const useBulkAttendance = (userUid: string | undefined, students: any[], currentMonth: Date, refreshTrigger?: number, isInitialLoad?: boolean) => {
+export const useBulkAttendance = (userUid: string | undefined, students: StudentAccount[], currentMonth: Date, refreshTrigger?: number, isInitialLoad?: boolean) => {
   const [showBulkAttendance, setShowBulkAttendance] = useState(false);
   const [bulkStartDate, setBulkStartDate] = useState('');
   const [bulkEndDate, setBulkEndDate] = useState('');

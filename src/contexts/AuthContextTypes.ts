@@ -1,11 +1,12 @@
 import { createContext } from 'react'
+import type { ProviderData } from '../types'
 
 export interface User {
   uid: string
   username: string | null
   role: 'student' | 'teacher' | 'admin'
   displayName?: string
-  providerData: any[]
+  providerData: ProviderData[]
 }
 
 export interface AuthContextType {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, type QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { formatLocalDate, updatePlatformMonthlyRevenue } from '@/lib';
 import toast from 'react-hot-toast';
@@ -34,8 +34,8 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       }));
       const studentIds = studentsList.map(s => s.id);
       const batchSize = 30;
-      let approvedAttendanceDocs: any[] = [];
-      let absentAttendanceDocs: any[] = [];
+      let approvedAttendanceDocs: QueryDocumentSnapshot[] = [];
+      let absentAttendanceDocs: QueryDocumentSnapshot[] = [];
       
       for (let i = 0; i < studentIds.length; i += batchSize) {
         const batchIds = studentIds.slice(i, i + batchSize);
@@ -154,19 +154,23 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       toast.dismiss(loadingToast);
       toast.success(`Payment of ₹${dueAmount} recorded successfully!`);
       await fetchStudentFees();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.dismiss(loadingToast);
       console.error('Mark as paid error:', error);
       
       // Provide more specific error messages
-      if (error.code === 'permission-denied') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
         toast.error('Permission denied. Please ensure you have teacher/admin access.');
-      } else if (error.message?.includes('No due amount found')) {
-        toast.error(error.message);
-      } else if (error.message?.includes('No amount due')) {
-        toast.error(error.message);
+      } else if (error instanceof Error) {
+        if (error.message?.includes('No due amount found')) {
+          toast.error(error.message);
+        } else if (error.message?.includes('No amount due')) {
+          toast.error(error.message);
+        } else {
+          toast.error('Failed to record payment: ' + error.message);
+        }
       } else {
-        toast.error('Failed to record payment: ' + (error?.message || 'Unknown error'));
+        toast.error('Failed to record payment: Unknown error');
       }
     }
   };

@@ -47,8 +47,8 @@ export default function TeacherDashboard() {
   } = useBulkAttendance(user?.uid, students, currentMonth, refreshKey, isInitialLoad);
 
   const providerData = user?.providerData || [];
-  const isGoogleLinked = providerData.some((provider: any) => provider.providerId === 'google.com');
-  const isGitHubLinked = providerData.some((provider: any) => provider.providerId === 'github.com');
+  const isGoogleLinked = providerData.some((provider) => provider.providerId === 'google.com');
+  const isGitHubLinked = providerData.some((provider) => provider.providerId === 'github.com');
 
   // Refresh function to trigger re-renders of all dashboard cards
   const handleRefresh = useCallback(async () => {

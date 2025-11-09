@@ -12,29 +12,20 @@ import {
   setDoc,
   deleteDoc,
   writeBatch,
-  limitToLast
+  limitToLast,
+  type DocumentSnapshot
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { db, auth } from '@/firebase';
 import { debouncedToast } from '@/lib';
 import { toast } from 'react-hot-toast';
 import logger from '@/lib/logger';
-
-interface StudentAccount {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  displayName: string;
-  monthlyFee: number;
-  createdAt: Date;
-  totalDueByMonth?: { [key: string]: any };
-}
+import type { StudentAccount } from '@/types';
 
 export const useStudents = () => {
   const [students, setStudents] = useState<StudentAccount[]>([]);
-  const [lastVisibleStudent, setLastVisibleStudent] = useState<any>(null);
-  const [firstVisibleStudent, setFirstVisibleStudent] = useState<any>(null);
+  const [lastVisibleStudent, setLastVisibleStudent] = useState<DocumentSnapshot | null>(null);
+  const [firstVisibleStudent, setFirstVisibleStudent] = useState<DocumentSnapshot | null>(null);
   const [pageSize] = useState(10);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [createUserLoading, setCreateUserLoading] = useState(false);

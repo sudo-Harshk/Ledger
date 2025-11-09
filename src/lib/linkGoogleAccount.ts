@@ -11,11 +11,10 @@ export async function linkGoogleAccount() {
     const provider = new GoogleAuthProvider();
     await linkWithPopup(auth.currentUser, provider);
     debouncedToast('Google account linked successfully!', 'success');
-    // Optionally, you may want to reload the page or user data here
-  } catch (error: any) {
-    if (error.code === 'auth/credential-already-in-use') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/credential-already-in-use') {
       debouncedToast('This Google account is already linked to another user.', 'error');
-    } else if (error.message) {
+    } else if (error instanceof Error) {
       debouncedToast(error.message, 'error');
     } else {
       debouncedToast('Failed to link Google account.', 'error');

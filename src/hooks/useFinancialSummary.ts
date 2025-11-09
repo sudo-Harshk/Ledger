@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc, setDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
-
-interface FinancialSummary {
-  revenue: number;
-  lastUpdated: any;
-}
+import type { FinancialSummary } from '@/types';
 
 export const useFinancialSummary = (userUid: string | undefined, currentMonth: Date, refreshTrigger?: number) => {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);

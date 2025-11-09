@@ -299,10 +299,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const provider = new GithubAuthProvider()
       await linkWithPopup(auth.currentUser, provider)
       debouncedToast('GitHub account linked successfully!', 'success')
-    } catch (error: any) {
-      if (error.code === 'auth/credential-already-in-use') {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/credential-already-in-use') {
         debouncedToast('This GitHub account is already linked to another user.', 'error')
-      } else if (error.message) {
+      } else if (error instanceof Error) {
         debouncedToast(error.message, 'error')
       } else {
         debouncedToast('Failed to link GitHub account.', 'error')

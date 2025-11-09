@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
+import type { StudentAccount } from '@/types';
 
 interface BulkAttendanceCardProps {
   showBulkAttendance: boolean;
@@ -17,7 +18,7 @@ interface BulkAttendanceCardProps {
   addBulkAttendance: () => Promise<void>;
   getCellClasses: (day: number | null, currentMonth: Date) => string;
   handleCalendarDayClick: (day: number | null, currentMonth: Date) => void;
-  students: any[];
+  students: StudentAccount[];
   currentMonth: Date;
   daysInMonth: (number | null)[];
   changeMonth: (direction: 'prev' | 'next') => void;
