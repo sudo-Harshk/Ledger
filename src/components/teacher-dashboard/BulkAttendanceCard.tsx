@@ -1,4 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
+import { ConfirmationDialog } from '@/components';
+import { useState } from 'react';
 import type { StudentAccount } from '@/types';
 
 interface BulkAttendanceCardProps {
@@ -48,6 +50,36 @@ export default function BulkAttendanceCard({
 }: BulkAttendanceCardProps) {
   
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
+  
+  // Confirmation dialog state for bulk operations
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkConfirmDetails, setBulkConfirmDetails] = useState<{
+    totalRecords: number;
+    estimatedBatches: number;
+  } | null>(null);
+  
+  // Handle bulk attendance with confirmation
+  const handleAddBulkAttendance = async () => {
+    if (!bulkStartDate || !bulkEndDate) {
+      return;
+    }
+    
+    const startDate = new Date(bulkStartDate);
+    const endDate = new Date(bulkEndDate);
+    const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalRecords = daysCount * selectedStudents.length;
+    const maxBatchSize = 500;
+    
+    // Show confirmation for large operations
+    if (totalRecords > maxBatchSize) {
+      const estimatedBatches = Math.ceil(totalRecords / maxBatchSize);
+      setBulkConfirmDetails({ totalRecords, estimatedBatches });
+      setShowBulkConfirm(true);
+    } else {
+      // Small operation, proceed directly
+      await addBulkAttendance();
+    }
+  };
   
   if (!showBulkAttendance) return null;
   
@@ -292,7 +324,7 @@ export default function BulkAttendanceCard({
         )}
         <div className="flex gap-2">
           <Button
-            onClick={addBulkAttendance}
+            onClick={handleAddBulkAttendance}
             disabled={bulkAttendanceLoading || !bulkStartDate || !bulkEndDate || selectedStudents.length === 0}
           >
             {bulkAttendanceLoading ? 'Applying...' : 'Apply Attendance'}
@@ -310,6 +342,32 @@ export default function BulkAttendanceCard({
           </Button>
         </div>
       </CardContent>
+      
+      {/* Confirmation Dialog for Large Bulk Operations */}
+      <ConfirmationDialog
+        open={showBulkConfirm}
+        onClose={() => {
+          if (!bulkAttendanceLoading) {
+            setShowBulkConfirm(false);
+            setBulkConfirmDetails(null);
+          }
+        }}
+        onConfirm={async () => {
+          setShowBulkConfirm(false);
+          await addBulkAttendance();
+          setBulkConfirmDetails(null);
+        }}
+        title="Confirm Bulk Attendance Operation"
+        description={
+          bulkConfirmDetails
+            ? `This operation will create ${bulkConfirmDetails.totalRecords} attendance records and requires ${bulkConfirmDetails.estimatedBatches} batch operations.\n\nLarge operations may take several minutes to complete.\n\nDo you want to continue?`
+            : ''
+        }
+        confirmText="Continue"
+        cancelText="Cancel"
+        confirmVariant="default"
+        loading={bulkAttendanceLoading}
+      />
     </Card>
   );
 }

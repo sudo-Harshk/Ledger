@@ -51,11 +51,11 @@ export default function PendingAttendanceRequestsCard() {
                     <p className="text-sm text-gray-600">
                       {dateObj ? dateObj.toLocaleDateString() : ''} at {timestampObj ? timestampObj.toLocaleTimeString() : ''}
                     </p>
-                    {isInactive && (
-                      <p className="text-xs text-orange-600 mt-1">
-                        Student account is discontinued. Cannot approve attendance.
-                      </p>
-                    )}
+               {isInactive && (
+                 <p className="text-xs text-orange-600 mt-1 font-medium">
+                   ⚠️ Student account is discontinued. Please reactivate the student before approving attendance.
+                 </p>
+               )}
                   </div>
                   <div className="flex gap-2">
                     <Button

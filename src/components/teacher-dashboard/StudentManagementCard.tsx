@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Input, Label } from '@/components/ui';
 import { useState } from 'react';
 import { useStudents, useAuth } from '@/hooks';
+import { ConfirmationDialog } from '@/components';
 
 export default function StudentManagementCard() {
   const { user } = useAuth();
@@ -14,6 +15,24 @@ export default function StudentManagementCard() {
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0);
   const [showInactiveStudents, setShowInactiveStudents] = useState(false);
+  
+  // Confirmation dialog state
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    open: boolean;
+    type: 'discontinue' | 'reactivate' | 'delete' | null;
+    studentId: string | null;
+    studentName: string | null;
+    studentUsername?: string | null;
+    currentStatus?: boolean | undefined;
+  }>({
+    open: false,
+    type: null,
+    studentId: null,
+    studentName: null,
+    studentUsername: null,
+    currentStatus: undefined
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleCreateStudent = async () => {
     if (!user?.uid) return;
@@ -208,7 +227,25 @@ export default function StudentManagementCard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => toggleStudentActiveStatus(student.id, student.displayName, student.isActive)}
+                          onClick={() => {
+                            if (isActive) {
+                              setConfirmationDialog({
+                                open: true,
+                                type: 'discontinue',
+                                studentId: student.id,
+                                studentName: student.displayName,
+                                currentStatus: student.isActive
+                              });
+                            } else {
+                              setConfirmationDialog({
+                                open: true,
+                                type: 'reactivate',
+                                studentId: student.id,
+                                studentName: student.displayName,
+                                currentStatus: student.isActive
+                              });
+                            }
+                          }}
                           className={
                             isActive
                               ? "text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors duration-200"
@@ -220,7 +257,15 @@ export default function StudentManagementCard() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteStudentAccount(student.id, student.username)}
+                          onClick={() => {
+                            setConfirmationDialog({
+                              open: true,
+                              type: 'delete',
+                              studentId: student.id,
+                              studentName: student.displayName,
+                              studentUsername: student.username
+                            });
+                          }}
                           className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
                           title="Permanently delete student account and all records"
                         >
@@ -234,6 +279,94 @@ export default function StudentManagementCard() {
           </div>
         )}
       </CardContent>
+      
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        open={confirmationDialog.open && confirmationDialog.type === 'discontinue'}
+        onClose={() => {
+          if (!isProcessing) {
+            setConfirmationDialog({ ...confirmationDialog, open: false });
+          }
+        }}
+        onConfirm={async () => {
+          if (confirmationDialog.studentId && confirmationDialog.studentName && confirmationDialog.currentStatus !== undefined) {
+            setIsProcessing(true);
+            try {
+              await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
+              setConfirmationDialog({ ...confirmationDialog, open: false });
+            } catch (error) {
+              // Error is already handled in the hook
+              console.error('Error toggling student status:', error);
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }}
+        title="Mark Student as Discontinued"
+        description={`Are you sure you want to mark ${confirmationDialog.studentName || 'this student'} as discontinued?\n\nThis will:\n• Stop analytics and fee calculations for this student\n• Preserve all attendance records and history\n• The student account and data will remain intact\n• You can reactivate them later if needed`}
+        confirmText="Mark Discontinued"
+        cancelText="Cancel"
+        confirmVariant="default"
+        loading={isProcessing}
+      />
+      
+      <ConfirmationDialog
+        open={confirmationDialog.open && confirmationDialog.type === 'reactivate'}
+        onClose={() => {
+          if (!isProcessing) {
+            setConfirmationDialog({ ...confirmationDialog, open: false });
+          }
+        }}
+        onConfirm={async () => {
+          if (confirmationDialog.studentId && confirmationDialog.studentName && confirmationDialog.currentStatus !== undefined) {
+            setIsProcessing(true);
+            try {
+              await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
+              setConfirmationDialog({ ...confirmationDialog, open: false });
+            } catch (error) {
+              // Error is already handled in the hook
+              console.error('Error toggling student status:', error);
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }}
+        title="Reactivate Student"
+        description={`Reactivate ${confirmationDialog.studentName || 'this student'}?\n\nThis will:\n• Resume analytics and fee calculations\n• Include them in bulk attendance operations\n• All historical data will be preserved and accessible\n• Analytics will continue from where they left off`}
+        confirmText="Reactivate"
+        cancelText="Cancel"
+        confirmVariant="default"
+        loading={isProcessing}
+      />
+      
+      <ConfirmationDialog
+        open={confirmationDialog.open && confirmationDialog.type === 'delete'}
+        onClose={() => {
+          if (!isProcessing) {
+            setConfirmationDialog({ ...confirmationDialog, open: false });
+          }
+        }}
+        onConfirm={async () => {
+          if (confirmationDialog.studentId && confirmationDialog.studentUsername) {
+            setIsProcessing(true);
+            try {
+              await deleteStudentAccount(confirmationDialog.studentId, confirmationDialog.studentUsername);
+              setConfirmationDialog({ ...confirmationDialog, open: false });
+            } catch (error) {
+              // Error is already handled in the hook
+              console.error('Error deleting student:', error);
+            } finally {
+              setIsProcessing(false);
+            }
+          }
+        }}
+        title="Delete Student Account"
+        description={confirmationDialog.studentUsername ? `Are you sure you want to delete student account for ${confirmationDialog.studentUsername}?\n\nThis will:\n• Delete their login credentials\n• Remove all attendance records\n• Delete their fee information\n• This action cannot be undone!` : 'Are you sure you want to delete this student account? This action cannot be undone!'}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="destructive"
+        loading={isProcessing}
+      />
     </Card>
   );
 }

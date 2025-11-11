@@ -20,7 +20,25 @@ export const useStudentFeeRecalculation = () => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  // Recalculate fees for specific students or all students
+  /**
+   * Recalculate fees for specific students or all students
+   * 
+   * IMPORTANT: This function automatically filters out inactive students (isActive === false)
+   * to prevent calculating fees for discontinued students.
+   * 
+   * Behavior:
+   * - If studentIds are provided: Only recalculates fees for those students (if active)
+   * - If studentIds are empty: Recalculates fees for all active students
+   * - Inactive students are always excluded, even if explicitly requested
+   * - Preserves payment status when recalculating (paid/unpaid)
+   * 
+   * @param options - Recalculation options
+   * @param options.studentIds - Optional array of student IDs to recalculate (if empty, all active students)
+   * @param options.month - Month to recalculate fees for
+   * @param options.batchSize - Batch size for processing (default: 10)
+   * @param options.showToast - Whether to show success toast (default: true)
+   * @returns Result object with success status and students processed
+   */
   const recalculateStudentFees = useCallback(async ({ 
     studentIds, 
     month, 
@@ -56,7 +74,18 @@ export const useStudentFeeRecalculation = () => {
           const snapshot = await getDocs(batchQuery);
           allStudents.push(...snapshot.docs);
         }
-        var studentDocs = allStudents;
+        // Filter out inactive students even when specific studentIds are provided
+        // This prevents recalculating fees for discontinued students
+        var studentDocs = allStudents.filter(doc => {
+          const studentData = doc.data();
+          return studentData.isActive !== false; // Include active students (true or undefined)
+        });
+        
+        // Warn if any requested students were filtered out
+        if (studentDocs.length < allStudents.length) {
+          const filteredCount = allStudents.length - studentDocs.length;
+          console.warn(`Filtered out ${filteredCount} inactive student(s) from fee recalculation`);
+        }
       } else {
         // All students - filter to only active students for automatic recalculations
         studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));

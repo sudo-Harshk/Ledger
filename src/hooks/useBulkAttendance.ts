@@ -258,24 +258,12 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       return;
     }
     
-    const totalRecords = daysCount * filteredStudents.length;
-    const maxBatchSize = 500;
-    
-    if (totalRecords > maxBatchSize) {
-      const estimatedBatches = Math.ceil(totalRecords / maxBatchSize);
-      const proceed = window.confirm(
-        `This operation will create ${totalRecords} attendance records and requires ${estimatedBatches} batch operations.\n\n` +
-        `Large operations may take several minutes to complete.\n\n` +
-        `Do you want to continue?`
-      );
-      if (!proceed) {
-        return;
-      }
-    }
-
+    // Note: Confirmation for large operations is now handled in the UI component (BulkAttendanceCard)
+    // This function proceeds directly with the operation
     setBulkAttendanceLoading(true);
     try {
       // Verify all selected students are still active before proceeding
+      // This prevents creating attendance for students who were marked inactive during selection
       const studentStatusChecks = await Promise.all(
         filteredStudents.map(async (studentDoc) => {
           try {
@@ -304,7 +292,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       if (inactiveStudents.length > 0) {
         const inactiveNames = inactiveStudents.map(s => s.studentData?.displayName || s.id).join(', ');
         debouncedToast(
-          `Warning: ${inactiveStudents.length} student(s) (${inactiveNames}) are discontinued and will be skipped.`,
+          `⚠️ Warning: ${inactiveStudents.length} student(s) (${inactiveNames}) are discontinued and will be skipped.`,
           'error'
         );
       }
@@ -320,6 +308,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       let absentRecords = 0;
       let currentBatch = writeBatch(db);
       let batchSize = 0;
+      const maxBatchSize = 500; // Firestore batch write limit
       
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
@@ -327,35 +316,41 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
         const finalStatus = defaultAttendanceStatus;
         
         // Only process active students
+        // Note: Firestore security rules provide additional server-side enforcement
         for (const activeStudent of activeStudentsForAttendance) {
-          const studentData = activeStudent.studentData;
-          const attendanceId = `${activeStudent.id}_${dateStr}`;
-          currentBatch.set(doc(db, 'attendance', attendanceId), {
-            studentId: activeStudent.id,
-            studentName: studentData?.displayName || 'Unknown Student',
-            date: dateStr,
-            status: finalStatus === 'present' ? 'approved' : 'absent',
-            timestamp: new Date(),
-            month: currentDate.getMonth() + 1,
-            year: currentDate.getFullYear(),
-            approvedBy: userUid,
-            approvedAt: new Date()
-          });
-          
-          totalRecordsCreated++;
-          batchSize++;
-          
-          if (finalStatus === 'present') {
-            presentRecords++;
-          } else {
-            absentRecords++;
-          }
-          
-          // Commit batch when it reaches the limit
-          if (batchSize >= maxBatchSize) {
-            await currentBatch.commit();
-            currentBatch = writeBatch(db);
-            batchSize = 0;
+          try {
+            const studentData = activeStudent.studentData;
+            const attendanceId = `${activeStudent.id}_${dateStr}`;
+            currentBatch.set(doc(db, 'attendance', attendanceId), {
+              studentId: activeStudent.id,
+              studentName: studentData?.displayName || 'Unknown Student',
+              date: dateStr,
+              status: finalStatus === 'present' ? 'approved' : 'absent',
+              timestamp: new Date(),
+              month: currentDate.getMonth() + 1,
+              year: currentDate.getFullYear(),
+              approvedBy: userUid,
+              approvedAt: new Date()
+            });
+            
+            totalRecordsCreated++;
+            batchSize++;
+            
+            if (finalStatus === 'present') {
+              presentRecords++;
+            } else {
+              absentRecords++;
+            }
+            
+            // Commit batch when it reaches the limit
+            if (batchSize >= maxBatchSize) {
+              await currentBatch.commit();
+              currentBatch = writeBatch(db);
+              batchSize = 0;
+            }
+          } catch (studentError) {
+            // Log error for individual student but continue with others
+            console.error(`Error preparing attendance for student ${activeStudent.id} on ${dateStr}:`, studentError);
           }
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -363,7 +358,14 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       
       // Commit any remaining operations in the final batch
       if (batchSize > 0) {
-        await currentBatch.commit();
+        try {
+          await currentBatch.commit();
+        } catch (batchError) {
+          console.error('Error committing final batch:', batchError);
+          // Continue to show success message for records that were created
+          // The error will be caught by outer try-catch
+          throw batchError;
+        }
       }
       
       const studentsCount = activeStudentsForAttendance.length;
@@ -396,7 +398,23 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       setShowBulkAttendance(false);
     } catch (error) {
       console.error('Error adding bulk attendance:', error);
-      debouncedToast('Failed to add bulk attendance', 'error');
+      
+      // Provide more specific error messages
+      if (error && typeof error === 'object' && 'code' in error) {
+        if (error.code === 'permission-denied') {
+          debouncedToast('Permission denied: Unable to add bulk attendance. Some students may have been marked as inactive during the operation. Please refresh and try again.', 'error');
+        } else if (error.code === 'unavailable') {
+          debouncedToast('Network error: Please check your connection and try again.', 'error');
+        } else if (error.code === 'resource-exhausted') {
+          debouncedToast('Operation too large: Please reduce the date range or number of students and try again.', 'error');
+        } else if (error.code === 'failed-precondition') {
+          debouncedToast('Operation failed: Some students may have been modified during the operation. Please refresh and try again.', 'error');
+        } else {
+          debouncedToast(`Failed to add bulk attendance: ${error.code}. Please try again.`, 'error');
+        }
+      } else {
+        debouncedToast('Failed to add bulk attendance. Please try again.', 'error');
+      }
     } finally {
       setBulkAttendanceLoading(false);
     }

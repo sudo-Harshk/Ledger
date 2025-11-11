@@ -511,7 +511,7 @@ export default function StudentDashboard() {
             if (userDoc.exists()) {
               const userData = userDoc.data();
               if (userData.isActive === false) {
-                debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error');
+                debouncedToast('⚠️ Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error');
                 setIsStudentActive(false); // Update state immediately
                 return;
               }

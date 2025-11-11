@@ -14,6 +14,7 @@ interface AnalyticsData {
   totalStudents: number;
   totalRevenue: number;
   activeUsers: number;
+  inactiveStudents?: number; // Optional: inactive students count
   monthlyGrowth: number;
   avgRevenuePerStudent: number;
 }
@@ -25,6 +26,7 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
     totalStudents: 0,
     totalRevenue: 0,
     activeUsers: 0,
+    inactiveStudents: 0,
     monthlyGrowth: 0,
     avgRevenuePerStudent: 0
   });
@@ -94,6 +96,7 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           totalStudents, // Total includes both active and inactive
           totalRevenue,
           activeUsers: activeStudents, // Active students count
+          inactiveStudents, // Inactive students count
           monthlyGrowth,
           avgRevenuePerStudent
         });

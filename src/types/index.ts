@@ -19,7 +19,19 @@ export interface StudentAccount {
   createdAt: Date | Timestamp;
   totalDueByMonth?: TotalDueByMonth;
   createdBy?: string;
-  isActive?: boolean; // true = active, false = discontinued (defaults to true for backward compatibility)
+  /**
+   * Student active status
+   * - true: Active student (can mark attendance, included in analytics)
+   * - false: Discontinued student (cannot mark attendance, excluded from analytics, but data preserved)
+   * - undefined: Treated as active for backward compatibility with existing students
+   * 
+   * When a student is marked as discontinued:
+   * - All historical data (attendance, payments, fees) is preserved
+   * - Student cannot mark new attendance
+   * - Student is excluded from fee calculations and analytics
+   * - Student can be reactivated at any time to resume operations
+   */
+  isActive?: boolean;
 }
 
 export interface TotalDueByMonth {

@@ -1,5 +1,5 @@
 import { useAuth, useBulkAttendance, useStudents, useCalendar } from '@/hooks';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Navigation, Footer } from '@/components';
 import { 
   AccountSettingsCard,
@@ -27,7 +27,11 @@ export default function TeacherDashboard() {
   
   const { students } = useStudents();
   // Filter to only active students for bulk attendance (discontinued students should not receive attendance)
-  const activeStudents = students.filter(student => student.isActive !== false);
+  // Memoize to prevent creating new array on every render (performance optimization)
+  const activeStudents = useMemo(() => 
+    students.filter(student => student.isActive !== false),
+    [students]
+  );
   const { currentMonth, daysInMonth, changeMonth } = useCalendar();
   const { 
     showBulkAttendance, 

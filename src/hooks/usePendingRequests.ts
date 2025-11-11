@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
@@ -14,6 +14,10 @@ export const usePendingRequests = (userUid: string | undefined) => {
   const [studentStatuses, setStudentStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const { recalculateSingleStudent } = useStudentFeeRecalculation();
+  
+  // Cache for student statuses to avoid redundant fetches
+  const studentStatusCacheRef = useRef<Record<string, { status: boolean; timestamp: number }>>({});
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
   // Real-time listener for pending requests
   useEffect(() => {
@@ -29,7 +33,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
           })) as PendingRequest[];
           setPendingRequests(requests);
           
-          // Fetch student statuses for all pending requests
+          // Fetch student statuses for all pending requests (with caching)
           if (requests.length > 0) {
             const studentIds = requests
               .map(r => r.studentId)
@@ -38,30 +42,63 @@ export const usePendingRequests = (userUid: string | undefined) => {
             
             if (studentIds.length > 0) {
               try {
-                // Fetch student documents in batches
                 const statusMap: Record<string, boolean> = {};
-                const batchSize = 10;
+                const now = Date.now();
+                const studentIdsToFetch: string[] = [];
                 
-                for (let i = 0; i < studentIds.length; i += batchSize) {
-                  const batch = studentIds.slice(i, i + batchSize);
-                  const studentDocs = await Promise.all(
-                    batch.map(id => getDoc(doc(db, 'users', id)).catch(() => null))
-                  );
+                // Check cache first
+                studentIds.forEach(id => {
+                  const cached = studentStatusCacheRef.current[id];
+                  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+                    statusMap[id] = cached.status;
+                  } else {
+                    studentIdsToFetch.push(id);
+                  }
+                });
+                
+                // Only fetch student statuses that aren't in cache or are expired
+                if (studentIdsToFetch.length > 0) {
+                  const batchSize = 10;
                   
-                  studentDocs.forEach((studentDoc, index) => {
-                    if (studentDoc?.exists()) {
-                      const studentData = studentDoc.data();
-                      statusMap[batch[index]] = studentData.isActive !== false; // Default to true if undefined
-                    } else {
-                      statusMap[batch[index]] = true; // Default to active if document doesn't exist or error
-                    }
-                  });
+                  for (let i = 0; i < studentIdsToFetch.length; i += batchSize) {
+                    const batch = studentIdsToFetch.slice(i, i + batchSize);
+                    const studentDocs = await Promise.all(
+                      batch.map(id => getDoc(doc(db, 'users', id)).catch(() => null))
+                    );
+                    
+                    studentDocs.forEach((studentDoc, index) => {
+                      const studentId = batch[index];
+                      if (studentDoc?.exists()) {
+                        const studentData = studentDoc.data();
+                        const isActive = studentData.isActive !== false; // Default to true if undefined
+                        statusMap[studentId] = isActive;
+                        // Update cache
+                        studentStatusCacheRef.current[studentId] = {
+                          status: isActive,
+                          timestamp: now
+                        };
+                      } else {
+                        statusMap[studentId] = true; // Default to active if document doesn't exist
+                        studentStatusCacheRef.current[studentId] = {
+                          status: true,
+                          timestamp: now
+                        };
+                      }
+                    });
+                  }
                 }
                 
                 setStudentStatuses(statusMap);
               } catch (statusError) {
                 console.error('Error fetching student statuses:', statusError);
                 // Don't fail the entire operation if status fetch fails
+                // Use cached values if available
+                const fallbackStatuses: Record<string, boolean> = {};
+                studentIds.forEach(id => {
+                  const cached = studentStatusCacheRef.current[id];
+                  fallbackStatuses[id] = cached?.status ?? true;
+                });
+                setStudentStatuses(fallbackStatuses);
               }
             }
           } else {
@@ -119,10 +156,20 @@ export const usePendingRequests = (userUid: string | undefined) => {
           const studentData = studentDoc.data();
           // If student is inactive (isActive === false), prevent approval
           if (studentData.isActive === false) {
-            debouncedToast('Cannot approve attendance: Student account is discontinued. Please reactivate the student first.', 'error');
+            debouncedToast('⚠️ Cannot approve attendance: Student account is discontinued. Please reactivate the student in Student Management before approving attendance.', 'error');
             setLoading(false);
+            // Update cache with current status
+            studentStatusCacheRef.current[studentId] = {
+              status: false,
+              timestamp: Date.now()
+            };
             return;
           }
+          // Update cache with current status
+          studentStatusCacheRef.current[studentId] = {
+            status: studentData.isActive !== false,
+            timestamp: Date.now()
+          };
         }
       }
       

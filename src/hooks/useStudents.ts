@@ -219,23 +219,33 @@ export const useStudents = () => {
     }
   };
 
-  // Toggle student active status (mark as discontinued/reactivate)
+  /**
+   * Toggle student active status (mark as discontinued/reactivate)
+   * 
+   * When marking as discontinued:
+   * - Stops analytics and fee calculations for the student
+   * - Preserves all attendance records and history
+   * - Prevents student from marking new attendance
+   * - Student account and data remain intact
+   * - Can be reactivated at any time
+   * 
+   * When reactivating:
+   * - Resumes analytics and fee calculations
+   * - Includes student in bulk attendance operations
+   * - All historical data remains accessible
+   * - Analytics continue from where they left off
+   * 
+   * Note: Confirmation is handled in the UI component (StudentManagementCard)
+   * This function performs the actual status change operation
+   * 
+   * @param studentId - ID of the student to toggle status
+   * @param studentName - Display name of the student (for messages)
+   * @param currentStatus - Current active status (true, false, or undefined)
+   * @throws Error if the operation fails
+   */
   const toggleStudentActiveStatus = async (studentId: string, studentName: string, currentStatus: boolean | undefined) => {
     const newStatus = currentStatus === false; // Toggle: if inactive, make active; if active (or undefined), make inactive
     const action = newStatus ? 'reactivated' : 'discontinued';
-    
-    // Show confirmation dialog
-    if (!newStatus) {
-      // Deactivating
-      if (!window.confirm(`Are you sure you want to mark ${studentName} as discontinued?\n\nThis will:\n• Stop analytics and fee calculations for this student\n• Preserve all attendance records and history\n• The student account and data will remain intact\n• You can reactivate them later if needed`)) {
-        return;
-      }
-    } else {
-      // Reactivating
-      if (!window.confirm(`Reactivate ${studentName}?\n\nThis will:\n• Resume analytics and fee calculations\n• Include them in bulk attendance operations\n• All historical data will be preserved and accessible\n• Analytics will continue from where they left off`)) {
-        return;
-      }
-    }
 
     try {
       await updateDoc(doc(db, 'users', studentId), {
@@ -261,15 +271,14 @@ export const useStudents = () => {
       } else {
         debouncedToast(`Failed to ${action} student. Please try again.`, 'error');
       }
+      throw error; // Re-throw so UI can handle it
     }
   };
 
   // Delete student account
+  // Note: Confirmation is now handled in the UI component (StudentManagementCard)
+  // This function performs the actual deletion operation
   const deleteStudentAccount = async (studentId: string, username: string) => {
-    if (!window.confirm(`Are you sure you want to delete student account for ${username}?\n\nThis will:\n• Delete their login credentials\n• Remove all attendance records\n• Delete their fee information\n• This action cannot be undone!`)) {
-      return;
-    }
-
     try {
       await deleteDoc(doc(db, 'users', studentId));
 
@@ -285,6 +294,10 @@ export const useStudents = () => {
 
       debouncedToast(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`, 'success');
       await refetchStudents();
+      // Dispatch event to refresh dashboard
+      window.dispatchEvent(new CustomEvent('student-updated'));
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.dispatchEvent(new CustomEvent('fee-updated'));
     } catch (error: unknown) {
       console.error('Error deleting student account:', error);
       if (error instanceof Error) {
@@ -292,6 +305,7 @@ export const useStudents = () => {
       } else {
         debouncedToast('Failed to delete account. Please try again.', 'error');
       }
+      throw error; // Re-throw so UI can handle it
     }
   };
 

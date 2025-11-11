@@ -74,9 +74,12 @@ service cloud.firestore {
     match /attendance/{attendanceId} {
       
       // Helper function to check if student is active
+      // Returns true if student is active (isActive === true or undefined)
+      // Returns false only if isActive === false (discontinued)
+      // This prevents inactive students from creating attendance records
       function isStudentActive() {
         let studentDoc = get(/databases/$(database)/documents/users/$(request.resource.data.studentId));
-        return studentDoc.data.isActive != false; // true if active or undefined (defaults to true)
+        return studentDoc.data.isActive != false; // true if active or undefined (defaults to true for backward compatibility)
       }
       
       // A student can read their OWN records, Teachers/Admins can read all
@@ -84,7 +87,9 @@ service cloud.firestore {
 
       allow list: if isSignedIn();
 
-      // CREATE: Student can create 'pending' record ONLY if they are active, Teachers/Admins can create any
+      // CREATE: Student can create 'pending' record ONLY if they are active
+      // Teachers/Admins can create any attendance record (including for inactive students for historical data)
+      // This provides server-side enforcement that inactive students cannot mark attendance
       allow create: if (isSignedIn() && (
         (request.auth.uid == request.resource.data.studentId && request.resource.data.status == 'pending' && isStudentActive())
         || isTeacherOrAdmin()

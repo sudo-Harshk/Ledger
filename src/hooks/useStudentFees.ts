@@ -20,7 +20,14 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
   const [studentFees, setStudentFees] = useState<StudentFee[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch student fees
+  /**
+   * Fetch student fees for the current month
+   * 
+   * IMPORTANT: Only includes active students (isActive !== false)
+   * Discontinued students are excluded from fee calculations and display
+   * 
+   * @returns Array of student fee records for active students only
+   */
   const fetchStudentFees = useCallback(async () => {
     setLoading(true);
     try {
@@ -29,6 +36,7 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
       const studentsSnapshot = await getDocs(studentsQuery);
       // Filter out inactive students (isActive === false) for fee calculations
+      // Only active students should appear in fee summaries
       const studentsList = studentsSnapshot.docs
         .map(doc => ({
           id: doc.id,
