@@ -28,10 +28,13 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
       const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
       const studentsSnapshot = await getDocs(studentsQuery);
-      const studentsList = studentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...(doc.data() as { monthlyFee?: number; displayName?: string })
-      }));
+      // Filter out inactive students (isActive === false) for fee calculations
+      const studentsList = studentsSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...(doc.data() as { monthlyFee?: number; displayName?: string; isActive?: boolean })
+        }))
+        .filter(student => student.isActive !== false); // Only include active students (default to true if undefined)
       const studentIds = studentsList.map(s => s.id);
       const batchSize = 30;
       let approvedAttendanceDocs: QueryDocumentSnapshot[] = [];

@@ -26,6 +26,8 @@ export default function TeacherDashboard() {
   }
   
   const { students } = useStudents();
+  // Filter to only active students for bulk attendance (discontinued students should not receive attendance)
+  const activeStudents = students.filter(student => student.isActive !== false);
   const { currentMonth, daysInMonth, changeMonth } = useCalendar();
   const { 
     showBulkAttendance, 
@@ -44,7 +46,7 @@ export default function TeacherDashboard() {
     addBulkAttendance,
     getCellClasses,
     handleCalendarDayClick
-  } = useBulkAttendance(user?.uid, students, currentMonth, refreshKey, isInitialLoad);
+  } = useBulkAttendance(user?.uid, activeStudents, currentMonth, refreshKey, isInitialLoad);
 
   const providerData = user?.providerData || [];
   const isGoogleLinked = providerData.some((provider) => provider.providerId === 'google.com');
@@ -147,7 +149,7 @@ export default function TeacherDashboard() {
           addBulkAttendance={addBulkAttendance}
           getCellClasses={getCellClasses}
           handleCalendarDayClick={handleCalendarDayClick}
-          students={students}
+          students={activeStudents}
           currentMonth={currentMonth}
           daysInMonth={daysInMonth}
           changeMonth={changeMonth}

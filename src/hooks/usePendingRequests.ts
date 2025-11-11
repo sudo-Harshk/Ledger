@@ -60,6 +60,20 @@ export const usePendingRequests = (userUid: string | undefined) => {
       const studentId = attendanceData.studentId;
       const attendanceDate = new Date(attendanceData.date);
       
+      // Check if student is active before approving
+      if (status === 'approved' && studentId) {
+        const studentDoc = await getDoc(doc(db, 'users', studentId));
+        if (studentDoc.exists()) {
+          const studentData = studentDoc.data();
+          // If student is inactive (isActive === false), prevent approval
+          if (studentData.isActive === false) {
+            debouncedToast('Cannot approve attendance: Student account is discontinued. Please reactivate the student first.', 'error');
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
       await updateDoc(doc(db, 'attendance', requestId), {
         status: status,
         approvedBy: userUid,

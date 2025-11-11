@@ -58,10 +58,15 @@ export const useStudentFeeRecalculation = () => {
         }
         var studentDocs = allStudents;
       } else {
-        // All students
+        // All students - filter to only active students for automatic recalculations
         studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
         const studentsSnapshot = await getDocs(studentsQuery);
-        var studentDocs = studentsSnapshot.docs;
+        // Filter out inactive students (isActive === false) - only recalculate active students
+        // This ensures reactivated students are included, but discontinued students are skipped
+        var studentDocs = studentsSnapshot.docs.filter(doc => {
+          const studentData = doc.data();
+          return studentData.isActive !== false; // Include active students (true or undefined)
+        });
       }
 
       setProgress({ current: 0, total: studentDocs.length });

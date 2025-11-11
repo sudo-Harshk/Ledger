@@ -52,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               role: userData.role,
               displayName: userData.displayName,
               providerData: firebaseUser.providerData,
+              isActive: userData.isActive !== false, // Default to true if undefined, only false if explicitly false
             }
             logger.debug('Setting user state')
             if (isMounted) {
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     role: userData.role,
                     displayName: userData.displayName,
                     providerData: firebaseUser.providerData,
+                    isActive: userData.isActive !== false, // Default to true if undefined, only false if explicitly false
                   }
                   setUser(userInfo);
                 } else {

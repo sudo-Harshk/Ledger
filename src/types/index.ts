@@ -19,6 +19,7 @@ export interface StudentAccount {
   createdAt: Date | Timestamp;
   totalDueByMonth?: TotalDueByMonth;
   createdBy?: string;
+  isActive?: boolean; // true = active, false = discontinued (defaults to true for backward compatibility)
 }
 
 export interface TotalDueByMonth {

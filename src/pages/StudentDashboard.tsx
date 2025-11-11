@@ -173,6 +173,7 @@ export default function StudentDashboard() {
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
   const [lastDataRefresh, setLastDataRefresh] = useState<Date | null>(null);
   const [monthlyDueDate] = useState<Date | null>(null);
+  const [isStudentActive, setIsStudentActive] = useState<boolean>(true); // Track student active status
 
   // Memoized providerData and month checks
   const providerData = useMemo(() => user?.providerData || [], [user]);
@@ -334,6 +335,9 @@ export default function StudentDashboard() {
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        // Update student active status
+        setIsStudentActive(data.isActive !== false); // Default to true if undefined, only false if explicitly false
+        
         // Update fee/payment state
         const raw = data.totalDueByMonth || {};
         const monthKey = getMonthKey(currentMonth);
@@ -454,6 +458,12 @@ export default function StudentDashboard() {
   const markAttendance = async () => {
     if (!user?.uid) return
     
+    // Check if student is active
+    if (!isStudentActive) {
+      debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error')
+      return
+    }
+    
     setLoading(true)
     setFeeSummaryLoading(true); // Show loader immediately
     try {
@@ -484,7 +494,13 @@ export default function StudentDashboard() {
       dispatchAttendanceUpdatedEvent();
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
-      debouncedToast('Failed to mark attendance', 'error')
+      console.error('Error marking attendance:', error);
+      // Check if error is due to permission (inactive student)
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
+        debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher.', 'error')
+      } else {
+        debouncedToast('Failed to mark attendance', 'error')
+      }
     } finally {
       setLoading(false)
       setFeeSummaryLoading(false); // Hide loader after data is fetched
@@ -646,24 +662,37 @@ export default function StudentDashboard() {
             <Card className="md:col-span-2 transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
               <CardHeader>
                 <CardTitle className="text-lg">Mark Attendance</CardTitle>
-                <CardDescription>Mark today's attendance</CardDescription>
+                <CardDescription>
+                  {!isStudentActive 
+                    ? 'Your account has been discontinued. Contact your teacher to reactivate.'
+                    : 'Mark today\'s attendance'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  onClick={markAttendance}
-                  disabled={loading || memoHasMarkedAttendanceToday || !isCurrentMonth}
-                  className={`w-full ${memoHasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
-                >
-                  {loading
-                    ? 'Marking...'
-                    : memoHasMarkedAttendanceToday
-                      ? 'Marked Today'
-                      : isPastMonth
-                        ? 'Disabled for Past months'
-                        : isFutureMonth
-                          ? 'Disabled for Future months'
-                          : 'Mark Today'}
-                </Button>
+                {!isStudentActive ? (
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm text-orange-800 font-medium mb-2">Account Discontinued</p>
+                    <p className="text-xs text-orange-700">
+                      You cannot mark attendance while your account is discontinued. Please contact your teacher to reactivate your account.
+                    </p>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={markAttendance}
+                    disabled={loading || memoHasMarkedAttendanceToday || !isCurrentMonth}
+                    className={`w-full ${memoHasMarkedAttendanceToday || !isCurrentMonth ? 'bg-gray-300 text-gray-500 border border-gray-400 cursor-not-allowed' : ''}`}
+                  >
+                    {loading
+                      ? 'Marking...'
+                      : memoHasMarkedAttendanceToday
+                        ? 'Marked Today'
+                        : isPastMonth
+                          ? 'Disabled for Past months'
+                          : isFutureMonth
+                            ? 'Disabled for Future months'
+                            : 'Mark Today'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 

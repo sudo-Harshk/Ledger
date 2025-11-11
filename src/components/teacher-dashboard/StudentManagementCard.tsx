@@ -4,7 +4,7 @@ import { useStudents, useAuth } from '@/hooks';
 
 export default function StudentManagementCard() {
   const { user } = useAuth();
-  const { students, loadingStudents, createUserLoading, refetchStudents, createStudentAccount, deleteStudentAccount } = useStudents();
+  const { students, loadingStudents, createUserLoading, refetchStudents, createStudentAccount, toggleStudentActiveStatus, deleteStudentAccount } = useStudents();
   
   // Local state for create student form
   const [showCreateUser, setShowCreateUser] = useState(false);
@@ -13,6 +13,7 @@ export default function StudentManagementCard() {
   const [newStudentEmail, setNewStudentEmail] = useState('');
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0);
+  const [showInactiveStudents, setShowInactiveStudents] = useState(false);
 
   const handleCreateStudent = async () => {
     if (!user?.uid) return;
@@ -139,48 +140,96 @@ export default function StudentManagementCard() {
           <div className="min-h-[160px] animate-pulse" />
         ) : (
           <div className="space-y-3">
-            <h4 className="font-medium">Existing Students ({students.length})</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">
+                Existing Students ({students.filter(s => showInactiveStudents || s.isActive !== false).length})
+                {students.some(s => s.isActive === false) && (
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({students.filter(s => s.isActive === false).length} inactive)
+                  </span>
+                )}
+              </h4>
+              {students.some(s => s.isActive === false) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowInactiveStudents(!showInactiveStudents)}
+                  className="text-xs"
+                >
+                  {showInactiveStudents ? 'Hide Inactive' : 'Show Inactive'}
+                </Button>
+              )}
+            </div>
             {students.length === 0 ? (
               <p className="text-center text-gray-500 py-4">No students found</p>
             ) : (
-              students.map((student) => (
-                <div key={student.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{student.displayName}</p>
-                    <p className="text-sm text-gray-600">
-                      @{student.username} • {student.email} • ₹{student.monthlyFee}/month
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Created: {(() => {
-                        const d = student.createdAt;
-                        if (!d) return '';
-                        if (typeof d === 'object' && !(d instanceof Date) && d !== null && 'toDate' in d && typeof d.toDate === 'function') {
-                          return (d as { toDate: () => Date }).toDate().toLocaleDateString();
-                        } else if (typeof d === 'string' || typeof d === 'number') {
-                          return new Date(d).toLocaleDateString();
-                        } else if (d instanceof Date) {
-                          return d.toLocaleDateString();
-                        } else {
-                          return '';
-                        }
-                      })()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                      Active
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteStudentAccount(student.id, student.username)}
-                      className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+              students
+                .filter(student => showInactiveStudents || student.isActive !== false)
+                .map((student) => {
+                  const isActive = student.isActive !== false; // Default to true if undefined
+                  return (
+                    <div 
+                      key={student.id} 
+                      className={`flex items-center justify-between p-3 border rounded-lg ${
+                        !isActive ? 'bg-gray-50 opacity-75' : ''
+                      }`}
                     >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{student.displayName}</p>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            isActive 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-200 text-gray-700'
+                          }`}>
+                            {isActive ? 'Active' : 'Discontinued'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          @{student.username} • {student.email} • ₹{student.monthlyFee}/month
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Created: {(() => {
+                            const d = student.createdAt;
+                            if (!d) return '';
+                            if (typeof d === 'object' && !(d instanceof Date) && d !== null && 'toDate' in d && typeof d.toDate === 'function') {
+                              return (d as { toDate: () => Date }).toDate().toLocaleDateString();
+                            } else if (typeof d === 'string' || typeof d === 'number') {
+                              return new Date(d).toLocaleDateString();
+                            } else if (d instanceof Date) {
+                              return d.toLocaleDateString();
+                            } else {
+                              return '';
+                            }
+                          })()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleStudentActiveStatus(student.id, student.displayName, student.isActive)}
+                          className={
+                            isActive
+                              ? "text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors duration-200"
+                              : "text-green-600 border-green-200 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-colors duration-200"
+                          }
+                        >
+                          {isActive ? 'Mark Discontinued' : 'Reactivate'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteStudentAccount(student.id, student.username)}
+                          className="text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
+                          title="Permanently delete student account and all records"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
             )}
           </div>
         )}

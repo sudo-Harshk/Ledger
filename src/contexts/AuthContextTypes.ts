@@ -7,6 +7,7 @@ export interface User {
   role: 'student' | 'teacher' | 'admin'
   displayName?: string
   providerData: ProviderData[]
+  isActive?: boolean // For students: true = active, false = discontinued (defaults to true)
 }
 
 export interface AuthContextType {

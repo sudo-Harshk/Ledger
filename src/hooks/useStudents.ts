@@ -10,6 +10,7 @@ import {
   endBefore,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   writeBatch,
   limitToLast,
@@ -183,7 +184,8 @@ export const useStudents = () => {
         displayName: newStudentName,
         monthlyFee: newStudentMonthlyFee,
         createdAt: new Date(),
-        createdBy: userUid
+        createdBy: userUid,
+        isActive: true // New students are active by default
       });
       await refetchStudents();
       debouncedToast(`Student account created successfully! Username: ${newStudentUsername}`, 'success');
@@ -214,6 +216,51 @@ export const useStudents = () => {
       }
     } finally {
       setCreateUserLoading(false);
+    }
+  };
+
+  // Toggle student active status (mark as discontinued/reactivate)
+  const toggleStudentActiveStatus = async (studentId: string, studentName: string, currentStatus: boolean | undefined) => {
+    const newStatus = currentStatus === false; // Toggle: if inactive, make active; if active (or undefined), make inactive
+    const action = newStatus ? 'reactivated' : 'discontinued';
+    
+    // Show confirmation dialog
+    if (!newStatus) {
+      // Deactivating
+      if (!window.confirm(`Are you sure you want to mark ${studentName} as discontinued?\n\nThis will:\n• Stop analytics and fee calculations for this student\n• Preserve all attendance records and history\n• The student account and data will remain intact\n• You can reactivate them later if needed`)) {
+        return;
+      }
+    } else {
+      // Reactivating
+      if (!window.confirm(`Reactivate ${studentName}?\n\nThis will:\n• Resume analytics and fee calculations\n• Include them in bulk attendance operations\n• All historical data will be preserved and accessible\n• Analytics will continue from where they left off`)) {
+        return;
+      }
+    }
+
+    try {
+      await updateDoc(doc(db, 'users', studentId), {
+        isActive: newStatus
+      });
+      
+      if (newStatus) {
+        debouncedToast(`Student ${studentName} has been reactivated successfully! Analytics and fee calculations will resume.`, 'success');
+      } else {
+        debouncedToast(`Student ${studentName} has been marked as discontinued. All data is preserved and can be reactivated anytime.`, 'success');
+      }
+      
+      await refetchStudents();
+      // Dispatch event to refresh dashboard - this will trigger all components to refresh
+      window.dispatchEvent(new CustomEvent('student-updated'));
+      // Also trigger attendance and fee updates
+      window.dispatchEvent(new CustomEvent('attendance-updated'));
+      window.dispatchEvent(new CustomEvent('fee-updated'));
+    } catch (error: unknown) {
+      console.error('Error toggling student active status:', error);
+      if (error instanceof Error) {
+        debouncedToast(`Failed to ${action} student: ${error.message}`, 'error');
+      } else {
+        debouncedToast(`Failed to ${action} student. Please try again.`, 'error');
+      }
     }
   };
 
@@ -254,6 +301,7 @@ export const useStudents = () => {
     createUserLoading,
     refetchStudents,
     createStudentAccount,
+    toggleStudentActiveStatus,
     deleteStudentAccount,
     fetchStudentsPage
   };
