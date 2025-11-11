@@ -150,7 +150,6 @@ export default function BulkAttendanceCard({
             <span className="text-gray-600">No Attendance</span>
           </div>
         </div>
-        {/* Selection Calendar - hidden on mobile, visible on sm+ */}
         <div className="hidden sm:block mb-4">
           <div className="overflow-x-auto">
             <div className="min-w-[560px] grid grid-cols-7 gap-1">
@@ -208,7 +207,6 @@ export default function BulkAttendanceCard({
             Tip: After selecting a date range, click on individual days to toggle their status
           </p>
         </div>
-        {/* Quick Date Presets */}
         <div className="mb-4">
           <Label className="text-sm font-medium mb-2 block">Quick Presets:</Label>
           <div className="flex flex-wrap gap-2">

@@ -33,13 +33,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     let timeoutId: NodeJS.Timeout | null = null
     
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Prevent state updates on unmounted component
       if (!isMounted) return
       
       if (firebaseUser) {
         try {
           
-          // Get user data from Firestore
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
           logger.debug('Firestore user document exists:', userDoc.exists())
           
@@ -52,24 +50,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
               role: userData.role,
               displayName: userData.displayName,
               providerData: firebaseUser.providerData,
-              isActive: userData.isActive !== false, // Default to true if undefined, only false if explicitly false
+              isActive: userData.isActive !== false
             }
             logger.debug('Setting user state')
             if (isMounted) {
               setUser(userInfo);
             }
           } else {
-            // User exists in Auth but not in Firestore - wait a bit for sync
             logger.warn('User authenticated but no Firestore document found - waiting for sync...')
             
-            // Clear any existing timeout
             if (timeoutId) {
               clearTimeout(timeoutId)
             }
             
-            // Wait for Firestore to sync, then check again (reduced delay)
             timeoutId = setTimeout(async () => {
-              // Check if component is still mounted before proceeding
               if (!isMounted) return
               
               try {
@@ -84,11 +78,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     role: userData.role,
                     displayName: userData.displayName,
                     providerData: firebaseUser.providerData,
-                    isActive: userData.isActive !== false, // Default to true if undefined, only false if explicitly false
+                    isActive: userData.isActive !== false
                   }
                   setUser(userInfo);
                 } else {
-                  // Still no document after retry - this is an incomplete account
                   logger.error('User document still not found after retry - incomplete account')
                   await signOut(auth)
                   if (isMounted) {
@@ -102,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   setUser(null)
                 }
               }
-            }, 1000) // Reduced delay to 1 second
+            }, 1000)
           }
         } catch (error: unknown) {
           logger.error('Error fetching user data:', error)
@@ -121,7 +114,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     })
 
-    // Cleanup function
     return () => {
       isMounted = false
       unsubscribe()
@@ -172,12 +164,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       const result = await signInWithEmailAndPassword(auth, loginEmail, password)
       
-      // Check if user document exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
       if (!userDoc.exists()) {
-        // User exists in Auth but not in Firestore - this is an incomplete account
         logger.warn('User authenticated but no Firestore document found - incomplete account')
-        // Sign out the user since they don't have a complete account
         await signOut(auth)
         throw new Error('Your account is incomplete. Please contact your administrator.')
       }
@@ -197,7 +186,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await signInWithPopup(auth, provider)
       const additionalInfo = getAdditionalUserInfo(result)
       if (additionalInfo?.isNewUser) {
-        // Unauthorized: delete user and show error
         if (auth.currentUser) {
           try {
             await deleteUser(auth.currentUser)
@@ -208,14 +196,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         debouncedToast('Account not registered. Please contact your teacher.', 'error')
         throw new Error('Account not registered. Please contact your teacher.')
       }
-      // Check if user document exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
       if (!userDoc.exists()) {
-        // Create user document if it doesn't exist (should not happen for existing users)
         try {
           await setDoc(doc(db, 'users', result.user.uid), {
             username: result.user.email,
-            role: 'student', // Default role, adjust as needed
+            role: 'student',
             displayName: result.user.displayName || '',
             email: result.user.email || '',
             createdAt: new Date(),
@@ -223,7 +209,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           logger.info('Created Firestore user document for Google user')
         } catch (setDocError) {
           logger.error('Error creating user document:', setDocError)
-          // If document creation fails, sign out the user
           await signOut(auth)
           throw new Error('Failed to create user account. Please try again.')
         }
@@ -244,7 +229,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await signInWithPopup(auth, provider)
       const additionalInfo = getAdditionalUserInfo(result)
       if (additionalInfo?.isNewUser) {
-        // Unauthorized: delete user and show error
         if (auth.currentUser) {
           try {
             await deleteUser(auth.currentUser)
@@ -255,14 +239,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         debouncedToast('Account not registered. Please contact your teacher.', 'error')
         throw new Error('Account not registered. Please contact your teacher.')
       }
-      // Check if user document exists in Firestore
       const userDoc = await getDoc(doc(db, 'users', result.user.uid))
       if (!userDoc.exists()) {
-        // Create user document if it doesn't exist (should not happen for existing users)
         try {
           await setDoc(doc(db, 'users', result.user.uid), {
             username: result.user.email,
-            role: 'student', // Default role, adjust as needed
+            role: 'student',
             displayName: result.user.displayName || '',
             email: result.user.email || '',
             createdAt: new Date(),
@@ -270,7 +252,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           logger.info('Created Firestore user document for GitHub user')
         } catch (setDocError) {
           logger.error('Error creating user document:', setDocError)
-          // If document creation fails, sign out the user
           await signOut(auth)
           throw new Error('Failed to create user account. Please try again.')
         }

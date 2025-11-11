@@ -29,14 +29,12 @@ export function useAdminAnalytics(refreshKey?: number) {
 
   useEffect(() => {
     if (!user) {
-      // If not signed in yet, don't attach listeners
       setMonthlyRevenue([]);
       setMonthlyAttendance([]);
       setTrackedStudents([]);
       setLoading(true);
       return;
     }
-    // Keep unsubscribe functions to clean up real-time listeners on refresh    
     let unsubscribePlatformMonthly: (() => void) | null = null;
     let unsubscribeAttendanceFallback: (() => void) | null = null;
     let unsubscribeCurrentMonthLive: (() => void) | null = null;
@@ -46,12 +44,10 @@ export function useAdminAnalytics(refreshKey?: number) {
       try {
         setLoading(true);
 
-        // Determine start date: August 1st of the current year
         const now = new Date();
         const startFromAugust = new Date(now.getFullYear(), 7, 1);
         const startFromLastAugust = new Date(now.getFullYear() - 1, 7, 1);      
 
-        // Live revenue from platformMonthlyRevenue (pre-aggregated)
         const revenueQuery = query(collection(db, 'platformMonthlyRevenue'), orderBy('month', 'asc'));                                                          
         unsubscribeRevenue = onSnapshot(revenueQuery, (snap) => {
           const revenueData: MonthlyRevenueData[] = snap.docs
@@ -69,21 +65,19 @@ export function useAdminAnalytics(refreshKey?: number) {
             .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                         
           setMonthlyRevenue(revenueData);
         }, (error) => {
-          // Silently handle permission errors (e.g., when user logs out)
           if (error.code === 'permission-denied') {
             return;
           }
           console.error('Error in revenue listener:', error);
         });
 
-        // Always seed from collectionGroup as immediate fallback (runs in parallel with listener)                                                              
         (async () => {
           try {
             const cgSnap = await getDocs(collectionGroup(db, 'monthlySummaries'));                                                                              
             const totals: Record<string, number> = {};
             cgSnap.forEach((d) => {
               const data = d.data() as { revenue?: number };
-              const monthId = d.id; // expected YYYY-MM
+              const monthId = d.id;
               if (/^\d{4}-\d{1,2}$/.test(monthId)) {
                 const iso = `${monthId}-01`;
                 const parsed = new Date(iso);
@@ -96,9 +90,7 @@ export function useAdminAnalytics(refreshKey?: number) {
               .map(([m, rev]) => ({ month: `${m}-01`, revenue: rev }))
               .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                       
             if (seeded.length > 0) {
-              // Always update - this ensures we show data from monthlySummaries even if platformMonthlyRevenue is empty                                        
               setMonthlyRevenue((prev) => {
-                // If prev is empty or has no data, use seeded; otherwise merge 
                 if (!prev || prev.length === 0) return seeded;
                 const prevMonths = new Set(prev.map((p) => p.month));
                 const merged = [...prev, ...seeded.filter((s) => !prevMonths.has(s.month))];                                                                    
@@ -108,23 +100,18 @@ export function useAdminAnalytics(refreshKey?: number) {
             }
           } catch (e) {
             console.error('Fallback revenue aggregation error:', e);
-            // ignore fallback errors; primary is the real-time aggregate       
           }
         })();
 
-        // Fetch attendance data from August onward (server-side filter when possible)                                                                          
         const toIsoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;               
         const startFromAugustStr = toIsoDate(startFromAugust);
         const startFromLastAugustStr = toIsoDate(startFromLastAugust);
 
-        // Fetch and track which students have attendance records
         const fetchTrackedStudents = async () => {
           try {
-            // Get all students
             const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
             const studentsSnapshot = await getDocs(studentsQuery);
             
-            // Get all unique student IDs from attendance records
             const attendanceQuery = query(
               collection(db, 'attendance'),
               where('status', '==', 'approved')
@@ -139,7 +126,6 @@ export function useAdminAnalytics(refreshKey?: number) {
               }
             });
 
-            // Match student IDs with their names
             const students: TrackedStudent[] = [];
             studentsSnapshot.forEach((doc) => {
               const studentData = doc.data();
@@ -151,27 +137,22 @@ export function useAdminAnalytics(refreshKey?: number) {
               }
             });
 
-            // Sort by name for consistent display
             students.sort((a, b) => a.name.localeCompare(b.name));
             setTrackedStudents(students);
           } catch (error) {
             console.error('Error fetching tracked students:', error);
-            // Don't fail the entire analytics fetch if this fails
           }
         };
 
-        // Fetch tracked students
         fetchTrackedStudents();
 
-        // Try platformMonthlyAttendance first (pre-aggregated monthly counts) with live updates                                                                
         const platformMonthlyRef = query(collection(db, 'platformMonthlyAttendance'), orderBy('month', 'asc'));                                                 
         const platformMonthlyOnce = await getDocs(platformMonthlyRef);
         if (!platformMonthlyOnce.empty) {
-          // Seed current values immediately
           const seed: MonthlyAttendanceData[] = [];
           platformMonthlyOnce.forEach((docSnap) => {
             const data = docSnap.data() as { month?: string; presentDays?: number };                                                                            
-            const monthKey = data.month || docSnap.id; // expect YYYY-MM        
+            const monthKey = data.month || docSnap.id;
             if (monthKey) {
               seed.push({
                 month: /\d{4}-\d{2}/.test(monthKey) ? `${monthKey}-01` : monthKey,                                                                              
@@ -183,7 +164,6 @@ export function useAdminAnalytics(refreshKey?: number) {
           seed.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                       
           setMonthlyAttendance(seed);
 
-          // Start live listener
           unsubscribePlatformMonthly = onSnapshot(platformMonthlyRef, (snap) => {                                                                               
             const live: MonthlyAttendanceData[] = [];
             snap.forEach((docSnap) => {
@@ -200,14 +180,12 @@ export function useAdminAnalytics(refreshKey?: number) {
             live.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                                     
             setMonthlyAttendance(live);
           }, (error) => {
-            // Silently handle permission errors (e.g., when user logs out)
             if (error.code === 'permission-denied') {
               return;
             }
             console.error('Error in platform monthly attendance listener:', error);
           });
 
-          // Additionally, ensure the current month is always live and exact from attendance                                                                    
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);  
           const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
           const currentMonthId = toIsoDate(startOfMonth);
@@ -220,7 +198,6 @@ export function useAdminAnalytics(refreshKey?: number) {
           unsubscribeCurrentMonthLive = onSnapshot(currentMonthQuery, (snap) => {                                                                               
             const approvedCount = snap.size;
             setMonthlyAttendance((prev) => {
-              // If prev hasn't been set yet, initialize with one entry for current month                                                                       
               if (!prev || prev.length === 0) {
                 return [{ month: currentMonthId, attendance: approvedCount, totalStudents: 0 }];                                                                
               }
@@ -233,7 +210,6 @@ export function useAdminAnalytics(refreshKey?: number) {
                 return item;
               });
               if (!found) {
-                // Insert maintaining sort order
                 const withCurrent = [...updated, { month: currentMonthId, attendance: approvedCount, totalStudents: 0 }];                                       
                 withCurrent.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());                                                          
                 return withCurrent;
@@ -241,15 +217,12 @@ export function useAdminAnalytics(refreshKey?: number) {
               return updated;
             });
           }, (error) => {
-            // Silently handle permission errors (e.g., when user logs out)
             if (error.code === 'permission-denied') {
               return;
             }
             console.error('Error in current month attendance listener:', error);
           });
         } else {
-          // Compute on the fly from attendance records
-          // Only include approved records to match student dashboard's approved days                                                                           
           const attendanceQuery = query(
             collection(db, 'attendance'),
             where('status', '==', 'approved'),
@@ -258,7 +231,6 @@ export function useAdminAnalytics(refreshKey?: number) {
           );
           let attendanceSnapshot = await getDocs(attendanceQuery);
 
-          // Fallback: if no docs since this August, try since last August      
           if (attendanceSnapshot.empty) {
             const prevAugQuery = query(
               collection(db, 'attendance'),
@@ -269,7 +241,6 @@ export function useAdminAnalytics(refreshKey?: number) {
             attendanceSnapshot = await getDocs(prevAugQuery);
           }
 
-          // Fallback 2: still empty, fetch recent records regardless of date (client-side aggregate)                                                           
           if (attendanceSnapshot.empty) {
             const recentQuery = query(
               collection(db, 'attendance'),
@@ -301,14 +272,11 @@ export function useAdminAnalytics(refreshKey?: number) {
             return attendanceData;
           };
 
-          // Seed from current snapshot
           setMonthlyAttendance(buildFromSnapshot(attendanceSnapshot));
 
-          // Start live listener for approved attendance
           unsubscribeAttendanceFallback = onSnapshot(attendanceQuery, (snap) => {                                                                               
             setMonthlyAttendance(buildFromSnapshot(snap));
           }, (error) => {
-            // Silently handle permission errors (e.g., when user logs out)
             if (error.code === 'permission-denied') {
               return;
             }

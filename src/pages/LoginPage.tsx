@@ -6,8 +6,6 @@ import { debouncedToast } from '../lib/debouncedToast';
 import { FiEye, FiEyeOff } from 'react-icons/fi'
 import Footer from '../components/Footer'
 
-// Removed ScrambleText component
-
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +22,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      // Only show toast if just logged in
       if (justLoggedIn.current) {
         if (user.displayName) {
           debouncedToast(`Welcome back, ${user.displayName}!`, 'success');
@@ -33,14 +30,12 @@ export default function LoginPage() {
         }
         justLoggedIn.current = false;
       }
-      // Always redirect if user is present and on login page
       if (location.pathname === '/login') {
         navigate(`/${user.role}`);
       }
     }
   }, [user, navigate, location.pathname])
 
-  // Cleanup effect
   useEffect(() => {
     return () => {
       isMounted.current = false;
@@ -54,9 +49,7 @@ export default function LoginPage() {
     try {
       await login(username, password)
       justLoggedIn.current = true
-      // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
-      // Only update state if component is still mounted
       if (isMounted.current) {
         if (error instanceof Error) {
           setError(error.message);
@@ -73,14 +66,12 @@ export default function LoginPage() {
     }
   }
 
-  // --- THIS IS THE NEWLY ADDED FUNCTION ---
   const handleGoogleSignIn = async () => {
     setError("");
     setLoading(true);
     try {
-      await loginWithGoogle(); // This calls the function from your useAuth hook
+      await loginWithGoogle();
       justLoggedIn.current = true;
-      // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
       if (isMounted.current) {
         if (error instanceof Error) {
@@ -97,7 +88,6 @@ export default function LoginPage() {
       }
     }
   }
-  // ----------------------------------------
 
   const handleGitHubSignIn = async () => {
     setError("");
@@ -105,7 +95,6 @@ export default function LoginPage() {
     try {
       await loginWithGitHub();
       justLoggedIn.current = true;
-      // Navigation and toast will be handled in useEffect
     } catch (error: unknown) {
       if (isMounted.current) {
         if (error instanceof Error) {
@@ -125,19 +114,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-palette-light-cream">
-      {/* Floating Navigation Header */}
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
           <div className="flex items-center gap-2">
             <div className="font-bold text-2xl tracking-widest cursor-pointer text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }} onClick={() => user ? window.location.href = `/${user.role}` : window.location.href = '/'}>Ledger</div>
           </div>
           <nav className="flex gap-8 text-palette-dark-red font-medium text-lg">
-            {/* Removed Home button */}
           </nav>
         </header>
       </div>
       
-      {/* Main Content with proper spacing */}
       <main className="flex-1 flex items-center justify-center px-4 py-12 relative">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <div className="w-96 h-96 rounded-full bg-gradient-to-br from-palette-golden/30 via-palette-deep-red/20 to-palette-light-cream/0 blur-3xl opacity-60"></div>
@@ -150,7 +136,6 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-             {/* Info Banner: Only teacher-created users can access */}
              <div className="mb-4">
                <div className="rounded-xl border border-palette-golden bg-card-base text-palette-deep-red flex items-center gap-3 px-5 py-4 shadow-sm">
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-palette-deep-red flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" /></svg>
@@ -230,13 +215,11 @@ export default function LoginPage() {
                 )}
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-                {/* Divider */}
                 <div className="flex items-center my-4">
                 <div className="flex-grow border-t border-palette-golden/30" />
                 <span className="mx-4 text-xs text-palette-dark-teal">Or sign in with</span>
                 <div className="flex-grow border-t border-palette-golden/30" />
               </div>
-              {/* Google Sign-In Button */}
               <Button
                 type="button"
                 variant="outline"
@@ -255,7 +238,6 @@ export default function LoginPage() {
                 Sign in with Google
               </Button>
               
-              {/* GitHub Sign-In Button */}
               <Button
                 type="button"
                 variant="outline"
@@ -281,10 +263,8 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </main>
-      {/* reCAPTCHA container for phone auth (invisible, required for Firebase) */}
       <div id="recaptcha-container" style={{ display: 'none' }} />
       
-      {/* Footer with proper spacing */}
       <div className="mt-auto">
         <Footer />
       </div>

@@ -11,7 +11,6 @@ const Footer: React.FC<FooterProps> = () => {
     <footer className="w-full bg-gradient-to-r from-palette-light-cream via-palette-golden/5 to-palette-light-cream border-t border-palette-golden/30 mt-auto">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Brand Section */}
           <div className="flex items-center gap-6">
             <div className="font-bold text-2xl tracking-widest text-palette-dark-red" style={{ fontFamily: "'Blackflag', sans-serif" }}>
               Ledger
@@ -22,7 +21,6 @@ const Footer: React.FC<FooterProps> = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
             <a 
@@ -41,7 +39,6 @@ const Footer: React.FC<FooterProps> = () => {
           </div>
         </div>
 
-        {/* Bottom Section */}
         <div className="border-t border-palette-golden/20 mt-6 pt-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-palette-dark-teal text-sm">

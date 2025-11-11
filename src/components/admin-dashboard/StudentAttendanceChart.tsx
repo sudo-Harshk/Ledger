@@ -130,7 +130,6 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
           </ResponsiveContainer>
         </div>
 
-        {/* Student Legend */}
         {trackedStudents && trackedStudents.length > 0 && (
           <div className="mt-4 pt-4 border-t border-palette-golden/30">
             <div className="flex items-center gap-2 flex-wrap">
@@ -177,7 +176,6 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
           </div>
         )}
 
-        {/* Summary Stats */}
         <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-palette-golden/30">
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">

@@ -11,7 +11,6 @@ export async function linkGitHubAccount() {
     const provider = new GithubAuthProvider();
     await linkWithPopup(auth.currentUser, provider);
     debouncedToast('GitHub account linked successfully!', 'success');
-    // Optionally, you may want to reload the page or user data here
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/credential-already-in-use') {
       debouncedToast('This GitHub account is already linked to another user.', 'error');

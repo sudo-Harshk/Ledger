@@ -15,7 +15,6 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
     const monthYear = `${currentMonth.getFullYear()}-${(currentMonth.getMonth() + 1).toString().padStart(2, '0')}`;
     const summaryDocRef = doc(db, 'users', userUid, 'monthlySummaries', monthYear);
     
-    // If refreshTrigger is provided, force a fresh fetch and update timestamp
     if (refreshTrigger !== undefined) {
       getDoc(summaryDocRef).then(async (docSnapshot: DocumentSnapshot<DocumentData>) => {
         if (!isMounted) return;
@@ -25,7 +24,6 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
             const data = docSnapshot.data();
             const currentTime = Timestamp.now();
             
-            // Update the lastUpdated timestamp in the database
             await setDoc(summaryDocRef, {
               revenue: data.revenue || 0,
               lastUpdated: currentTime,
@@ -58,7 +56,6 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
         }
       });
     } else {
-      // Use real-time listener for normal operation
       const unsubscribe = onSnapshot(summaryDocRef, 
         (docSnapshot: DocumentSnapshot<DocumentData>) => {
           if (!isMounted) return;
@@ -79,7 +76,6 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
           }
         },
         (error) => {
-          // Silently handle permission errors (e.g., when user logs out)
           if (error.code === 'permission-denied') {
             if (isMounted) {
               setLoading(false);
@@ -103,7 +99,6 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
       };
     }
     
-    // Cleanup function for refreshTrigger case
     return () => {
       isMounted = false;
     };

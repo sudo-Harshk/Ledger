@@ -10,21 +10,17 @@ export default function AdminDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const { monthlyRevenue, monthlyAttendance, trackedStudents, loading } = useAdminAnalytics(refreshKey);
 
-  // Don't render if user is not available
   if (!user) {
     return null;
   }
 
   return (
     <div className="min-h-screen bg-palette-light-cream">
-      {/* Navigation */}
       <Navigation 
         onRefresh={async () => {
           try {
             setRefreshing(true);
-            // Recalculate all monthly revenue from paid student fees
             await backfillPlatformMonthlyRevenue();
-            // Then refresh the analytics display
             setRefreshKey((k) => k + 1);
             debouncedToast('Revenue recalculated and refreshed', 'success');
           } catch (error) {
@@ -37,19 +33,15 @@ export default function AdminDashboard() {
         refreshing={refreshing}
       />
       
-      {/* Main Content */}
       <main className="pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4">
 
-          {/* Page Title */}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold text-palette-dark-red">Admin Dashboard</h1>
           </div>
 
-          {/* Main Content Area */}
           <div className="w-full">
             <div className="space-y-6">
-              {/* Charts Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MonthlyRevenueChart data={monthlyRevenue} loading={loading} />
                 <StudentAttendanceChart data={monthlyAttendance} loading={loading} trackedStudents={trackedStudents} />
@@ -60,7 +52,6 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

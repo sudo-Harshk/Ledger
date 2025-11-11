@@ -264,7 +264,7 @@ export default function StudentDashboard() {
           totalDays: approvedDays,
           absentDays,
           monthlyFee,
-          totalAmount: Math.round(totalAmount * 100) / 100 // Round to 2 decimal places
+          totalAmount: Math.round(totalAmount * 100) / 100
         });
       }
     } catch (error) {
@@ -384,7 +384,6 @@ export default function StudentDashboard() {
       });
       setAttendanceRecords(records);
       
-      // Update fee summary when attendance changes
       const approvedDays = records.filter(r => r.status === 'approved').length;
       const absentDays = records.filter(r => r.status === 'absent').length;
       
@@ -396,7 +395,6 @@ export default function StudentDashboard() {
           Math.round((approvedDays * (prev.monthlyFee / monthEnd.getDate())) * 100) / 100 : 0
       }));
     }, (error) => {
-      // Silently handle permission errors (e.g., when user logs out)
       if (error.code === 'permission-denied') {
         return;
       }
@@ -405,15 +403,12 @@ export default function StudentDashboard() {
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
   
-  // Utility to get today's confetti key
   const getTodayConfettiKey = () => {
     const now = new Date();
     return `confetti_shown_${formatLocalDate(now)}`;
   };
 
-  // Detect new approval for today only
   useEffect(() => {
-    // Only run confetti logic if viewing the current month
     const now = new Date();
     const isCurrentMonth =
       currentMonth.getMonth() === now.getMonth() &&
@@ -426,14 +421,12 @@ export default function StudentDashboard() {
     const confettiAlreadyShown = localStorage.getItem(confettiKey) === 'true';
     const prevStatus = prevTodayStatus.current;
 
-    // Skip confetti logic on first load
     if (isFirstLoad.current) {
       prevTodayStatus.current = currentStatus;
       isFirstLoad.current = false;
       return;
     }
 
-    // Only trigger confetti if status transitions from not approved to approved and not already shown
     const isFirstApproval =
       (prevStatus === 'pending' || prevStatus === 'absent' || prevStatus === 'rejected' || prevStatus === null) &&
       currentStatus === 'approved' &&
@@ -444,7 +437,6 @@ export default function StudentDashboard() {
       setTimeout(() => setShowConfetti(false), 1500);
       localStorage.setItem(confettiKey, 'true');
     }
-    // Update previous status for next effect run
     prevTodayStatus.current = currentStatus;
   }, [attendanceRecords, currentMonth]);
 
@@ -529,12 +521,10 @@ export default function StudentDashboard() {
     return days;
   }, [currentMonth]);
 
-  // Memoize hasMarkedAttendanceToday
   const memoHasMarkedAttendanceToday = useMemo(() => {
     return attendanceRecords.some(record => record.date === formatLocalDate(new Date()));
   }, [attendanceRecords]);
 
-  // Memoize getAttendanceStatus
   const getAttendanceStatus = useCallback((day: number | null) => {
     if (!day) return null;
     const dateStr = formatLocalDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
@@ -542,7 +532,6 @@ export default function StudentDashboard() {
     return record?.status || null;
   }, [attendanceRecords, currentMonth]);
 
-  // Memoize getStatusColor
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'approved': return 'bg-green-500';
@@ -553,7 +542,6 @@ export default function StudentDashboard() {
     }
   }, []);
 
-  // Memoize changeMonth
   const changeMonth = useCallback((direction: 'prev' | 'next') => {
     setCurrentMonth(prev => {
       const newMonth = new Date(prev);
@@ -570,11 +558,9 @@ export default function StudentDashboard() {
     });
   }, [PLATFORM_START]);
 
-  // Memoize handleRefresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Force refresh all data by calling all load functions in parallel
       await Promise.all([
         loadAttendanceRecords(),
         loadFeeSummary(),
@@ -597,7 +583,6 @@ export default function StudentDashboard() {
     }
   }, [shouldShowPlatformStartToast]);
 
-  // Utility to get a deterministic random emoji for today
   const getTodayEmoji = () => {
     const today = new Date();
     const daySeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
@@ -605,8 +590,6 @@ export default function StudentDashboard() {
     return approvedDaysEmojis[index];
   };
 
-  // Emoji list for Approved Days card
-  // Don't render if user is not available
   if (!user) {
     return null
   }
@@ -618,7 +601,6 @@ export default function StudentDashboard() {
       <main className="flex-grow">
         <div className="p-6">
           <div className="max-w-6xl mx-auto space-y-6">
-            {/* Updated X ago info */}
             <div className="flex items-center gap-2 mb-2" title={lastDataRefresh ? lastDataRefresh.toLocaleString() : (lastTotalDueUpdate ? lastTotalDueUpdate.toLocaleString() : '')}>
               <svg className="w-4 h-4 text-palette-dark-teal" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
               <span className="text-sm font-medium text-palette-dark-teal">
@@ -626,7 +608,6 @@ export default function StudentDashboard() {
                  lastTotalDueUpdate ? `Updated ${formatDistanceToNow(lastTotalDueUpdate)} ago` : 'Loading...'}
               </span>
             </div>
-            {/* Due Date Reminder Banner */}
             {monthlyDueDate && isCurrentMonth && daysUntilDue <= 5 && daysUntilDue >= 0 && paymentStatus !== 'paid' && (
               <DueDateBanner 
                 dueDate={monthlyDueDate} 
@@ -636,7 +617,6 @@ export default function StudentDashboard() {
                 totalDueAmount={totalDueAmount}
               />
             )}
-            {/* Account Settings Card for Google Link */}
             {!isGoogleLinked && (
               <Card className="mb-8">
                 <CardHeader>
@@ -651,7 +631,6 @@ export default function StudentDashboard() {
                 </CardContent>
               </Card>
             )}
-            {/* Dashboard Header with Settings */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-palette-dark-red">Dashboard</h2>
               <div className="flex items-center gap-2">
@@ -662,9 +641,7 @@ export default function StudentDashboard() {
                 )}
               </div>
             </div>
-            {/* Quick Actions - Bento Design */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-            {/* Large Attendance Card */}
             <Card className="md:col-span-2 transition-all duration-200 bg-card-elevated shadow-lg border border-palette-golden/30">
               <CardHeader>
                 <CardTitle className="text-lg">Mark Attendance</CardTitle>
@@ -702,18 +679,14 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
-            {/* Medium Approved Days Card */}
             <ApprovedDaysCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} getTodayEmoji={getTodayEmoji} />
 
 
-            {/* Small Daily Rate Card */}
             <DailyRateCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} currentMonth={currentMonth} />
 
-            {/* Small Total Due Card */}
             <TotalDueCard feeSummaryLoading={feeSummaryLoading} feeSummary={feeSummary} totalDueAmount={totalDueAmount} paymentStatus={paymentStatus} paymentDate={paymentDate} />
           </div>
 
-          {/* Calendar - hidden on mobile, visible on sm+ */}
           <Card className="hidden sm:block bg-card-elevated shadow-lg border border-palette-golden/30">
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -808,7 +781,6 @@ export default function StudentDashboard() {
               )}
             </CardContent>
           </Card>
-          {/* Alternative content for mobile */}
           <Card className="sm:hidden bg-card-elevated shadow-lg border border-palette-golden/30">
             <CardContent>
               <div className="text-center text-palette-dark-teal py-8">
@@ -825,7 +797,6 @@ export default function StudentDashboard() {
         onClose={() => setSettingsOpen(false)} 
         isGitHubLinked={isGitHubLinked}
         onAfterLink={async () => {
-          // Ensure latest providerData so modal updates and button disappears
           if (auth.currentUser?.reload) {
             await auth.currentUser.reload();
           }

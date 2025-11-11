@@ -31,7 +31,6 @@ export const useStudents = () => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [createUserLoading, setCreateUserLoading] = useState(false);
 
-  // Initial fetch function (separate from pagination)
   const initialFetchStudents = useCallback(async () => {
     setLoadingStudents(true);
     try {

@@ -62,7 +62,6 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
         absentAttendanceDocs = absentAttendanceDocs.concat(absentSnap.docs);
       }
       
-      // Group attendance by studentId
       const approvedByStudent: Record<string, number> = {};
       approvedAttendanceDocs.forEach(doc => {
         const data = doc.data();
@@ -76,7 +75,6 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
         absentByStudent[data.studentId]++;
       });
       
-      // Calculate fees for each student
       const fees: StudentFee[] = studentsList.map(student => {
         const approvedDays = approvedByStudent[student.id] || 0;
         const absentDays = absentByStudent[student.id] || 0;
@@ -85,7 +83,6 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
         const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
         const totalAmount = approvedDays * dailyRate;
         
-        // Get payment status from totalDueByMonth
         const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
         const totalDueByMonth = (student as any).totalDueByMonth || {};
         const monthData = totalDueByMonth[monthKey] || {};
@@ -114,7 +111,6 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
     }
   }, [currentMonth]);
 
-  // Handle mark as paid
   const handleMarkAsPaid = async (studentId: string, monthKey: string) => {
     const loadingToast = toast.loading('Recording payment...');
     try {
@@ -144,12 +140,10 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
         [`totalDueByMonth.${monthKey}.paymentDate`]: (await import('firebase/firestore')).serverTimestamp(),
       });
       
-      // Update platform monthly revenue instantly for admin dashboard
       try {
         await updatePlatformMonthlyRevenue(monthKey);
       } catch (revenueError) {
         console.error('Error updating platform revenue:', revenueError);
-        // Don't fail the payment if revenue update fails
       }
       
       toast.dismiss(loadingToast);
@@ -159,7 +153,6 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       toast.dismiss(loadingToast);
       console.error('Mark as paid error:', error);
       
-      // Provide more specific error messages
       if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
         toast.error('Permission denied. Please ensure you have teacher/admin access.');
       } else if (error instanceof Error) {
@@ -176,12 +169,10 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
     }
   };
 
-  // Utility to get month key
   const getMonthKey = (date: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  // Load data when month changes or refresh is triggered
   useEffect(() => {
     fetchStudentFees();
   }, [currentMonth, fetchStudentFees, refreshTrigger]);

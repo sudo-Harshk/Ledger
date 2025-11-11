@@ -6,7 +6,6 @@ import { getFirestore } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
-// Check if environment variables are available
 const checkEnvVar = (name: string, defaultValue?: string) => {
   const value = import.meta.env[name];
   if (!value && !defaultValue) {
@@ -25,10 +24,7 @@ const firebaseConfig = {
   appId: checkEnvVar('VITE_FIREBASE_APP_ID'),
 };
 
-// Initialize Firebase
 export const app = initializeApp(firebaseConfig);
-
-// Add this after imports
 
 declare global {
   interface Window {
@@ -36,12 +32,10 @@ declare global {
   }
 }
 
-// Enable App Check debug mode in development
 if (!import.meta.env.PROD) {
   window.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN;
 }
 
-// Initialize App Check with reCAPTCHA v3 in all environments
 if (import.meta.env.MODE !== 'staging') {
   initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(checkEnvVar('VITE_RECAPTCHA_V3_SITE_KEY')),
@@ -55,7 +49,6 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app, 'us-central1');
 
-// Add error handling for Firebase initialization
 auth.onAuthStateChanged((user) => {
   if (user) {
     logger.info('Firebase Auth initialized successfully');

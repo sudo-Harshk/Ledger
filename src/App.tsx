@@ -6,7 +6,6 @@ import './App.css'
 import ToastProvider from './components/ToastProvider';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Lazy load large dashboard components
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'))
@@ -24,7 +23,6 @@ function App() {
         stack: event.reason?.stack
       });
       
-      // Prevent the default behavior (which would log to console)
       event.preventDefault();
     };
 
@@ -48,7 +46,6 @@ function App() {
     };
   }, []);
 
-  // Protected Route Component - moved inside App function to be within AuthProvider
   function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: string[] }) {
     const { user, loading } = useAuth()
     

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { FlippableCard } from '../components';
 
-// Tooltip component
 const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, children }) => {
   const [show, setShow] = useState(false);
   return (
@@ -27,8 +26,6 @@ const Tooltip: React.FC<{ text: string; children: React.ReactNode }> = ({ text, 
 
 
 
-
-// LiveQuote component
 const LiveQuote: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center mt-20 mb-8">
@@ -48,7 +45,6 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-palette-light-cream" style={{ fontFamily: "'Roboto Mono', monospace" }}>
-      {/* Navigation */}
       <div className="floating-nav-wrapper">
         <header className="floating-nav-header">
           <div className="flex items-center gap-2">
@@ -75,17 +71,13 @@ const LandingPage: React.FC = () => {
         </nav>
         </header>
       </div>
-      {/* Main Content Container */}
       <main className="relative">
-        {/* Background gradient */}
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="w-full h-full bg-gradient-to-br from-palette-golden/10 via-palette-deep-red/5 to-palette-light-cream/0"></div>
         </div>
 
-        {/* Home Section */}
         <section id="home" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20">
           <div className="max-w-5xl mx-auto w-full flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
-            {/* Left Side: Headline and sub-headline */}
             <div className="flex-1 flex flex-col justify-center items-start gap-4 md:gap-6 w-full md:w-1/2 max-w-xl md:pr-8">
               <Tooltip text="Attendance Management">
                 <div className="text-3xl text-palette-deep-red font-bold mb-2 cursor-help" style={{fontFamily: 'Noto Sans JP, sans-serif'}}>
@@ -98,7 +90,6 @@ const LandingPage: React.FC = () => {
               <p className="text-lg text-palette-dark-teal mb-4">
                 Ledger App transforms attendance into a smooth, satisfying experience—no more admin headaches, just classroom harmony.
               </p>
-              {/* Info Banner */}
               <div className="w-full">
                 <div className="max-w-xl">
                   <div className="rounded-xl border border-palette-golden bg-card-base text-palette-deep-red flex items-center gap-3 px-5 py-4 shadow-md">
@@ -118,14 +109,11 @@ const LandingPage: React.FC = () => {
               </button>
             </div>
             
-            {/* Right Side: What is Ledger, highlights, testimonial */}
             <div className="flex-1 flex flex-col items-center md:items-start gap-4 md:gap-6 w-full md:w-1/2 max-w-xl md:pl-8 mt-8 md:mt-0">
-              {/* What is Ledger? */}
               <div className="bg-card-elevated rounded-xl shadow-xl p-4 md:p-6 max-w-2xl text-center md:text-left border border-palette-golden/50">
                 <span className="font-bold text-palette-deep-red">What is Ledger?</span> <br />
                 <span className="text-palette-dark-teal">Ledger is a modern, Japanese-inspired web app for teachers and students to track attendance, approvals, and progress—beautifully and effortlessly.</span>
               </div>
-              {/* Testimonial/Quote */}
               <div className="flex items-center w-full justify-center md:justify-start mt-2 mb-8">
                 <Tooltip text="A teacher plants the seeds of knowledge with a caring heart.">
                   <span className="italic text-palette-dark-teal text-center md:text-left max-w-xl mx-auto md:mx-0 cursor-help">
@@ -138,7 +126,6 @@ const LandingPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Team Section */}
         <section id="team" className="relative z-10 min-h-screen flex items-center justify-center px-4 py-20">
           <div className="max-w-5xl mx-auto w-full flex flex-col items-center">
             <h2 className="text-2xl md:text-3xl font-bold text-palette-deep-red mb-8 text-center">
@@ -146,10 +133,8 @@ const LandingPage: React.FC = () => {
             </h2>
             
             <div className="flex flex-col md:flex-row gap-16 w-full justify-center items-stretch relative mb-12">
-              {/* Background gradient for team section */}
               <div className="absolute inset-0 bg-gradient-to-br from-palette-golden/5 via-palette-deep-red/3 to-palette-light-cream/0 rounded-3xl -z-10"></div>
               
-              {/* Developer 1 */}
               <FlippableCard
                 className="relative flex-1 min-h-[320px] md:w-[480px] w-full"
                 style={{ maxWidth: '100%' }}
@@ -197,7 +182,6 @@ const LandingPage: React.FC = () => {
                 }
               />
               
-              {/* Developer 2 */}
               <FlippableCard
                 className="relative flex-1 min-h-[320px] md:w-[480px] w-full"
                 style={{ maxWidth: '100%' }}
@@ -246,12 +230,10 @@ const LandingPage: React.FC = () => {
               />
             </div>
             
-            {/* Live Quote */}
             <LiveQuote />
           </div>
         </section>
       </main>
-      {/* Footer */}
       <Footer />
     </div>
   );

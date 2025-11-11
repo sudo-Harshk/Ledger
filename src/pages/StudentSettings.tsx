@@ -22,7 +22,6 @@ export default function StudentSettings() {
     setLoading(true);
     try {
       await linkGitHubAccount();
-      // Reload Firebase user to get updated providerData
       if (auth.currentUser?.reload) {
         await auth.currentUser.reload();
       }
@@ -45,7 +44,6 @@ export default function StudentSettings() {
         </CardHeader>
         <CardContent>
           {isGitHubLinked ? (
-            // This is shown if the account is ALREADY linked
             <div className="flex items-center gap-3 p-4 bg-card-base rounded-md border border-palette-golden/30">
               <FaGithub className="h-6 w-6 text-palette-dark-teal" />
               <span className="font-medium text-palette-dark-red">
@@ -53,7 +51,6 @@ export default function StudentSettings() {
               </span>
             </div>
           ) : (
-            // This is shown if the account is NOT linked
             <div className="flex flex-col gap-4">
               <p className="text-palette-dark-teal">
                 Your GitHub account is not linked. Link it for an alternative

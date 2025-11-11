@@ -9,13 +9,11 @@ interface ConfettiProps {
 export const Confetti = ({ trigger }: ConfettiProps) => {
   useEffect(() => {
     if (!trigger) return;
-    const end = Date.now() + 1.5 * 1000; // 3 seconds
+    const end = Date.now() + 1.5 * 1000;
     
-    // Get colors from CSS variables dynamically
     const getComputedColor = (varName: string): string => {
       const cssVar = getComputedStyle(document.documentElement)
         .getPropertyValue(varName);
-      // Convert HSL string to hex
       const [h, s, l] = cssVar.trim().split(' ');
       const hue = parseInt(h);
       const sat = parseInt(s) / 100;
@@ -70,8 +68,6 @@ export const Confetti = ({ trigger }: ConfettiProps) => {
       requestAnimationFrame(frame);
     };
     frame();
-    // Only run when trigger changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
 
   return null;

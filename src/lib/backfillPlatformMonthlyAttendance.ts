@@ -3,7 +3,6 @@ import { db } from '@/firebase';
 import { debouncedToast } from './debouncedToast';
 
 function formatMonthKey(dateStr: string): string | null {
-  // expects YYYY-MM-DD
   const parts = dateStr.split('-');
   if (parts.length < 2) return null;
   const [y, m] = parts;
@@ -13,7 +12,6 @@ function formatMonthKey(dateStr: string): string | null {
 
 export async function backfillPlatformMonthlyAttendance(startFrom?: string) {
   try {
-    // Optional server-side filter by date string boundary (YYYY-MM-DD)
     const base = collection(db, 'attendance');
     const q = startFrom
       ? query(base, where('date', '>=', startFrom), orderBy('date', 'asc'))

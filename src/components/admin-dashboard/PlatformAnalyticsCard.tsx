@@ -37,7 +37,6 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
       try {
         setLoading(true);
         
-        // Fetch all users
         const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
         const usersSnapshot = await getDocs(usersQuery);
         
@@ -56,7 +55,6 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           const userData = doc.data();
           totalUsers++;
           
-          // Check if user was created in the last month
           if (userData.createdAt && userData.createdAt.toDate && userData.createdAt.toDate() > oneMonthAgo) {
             recentUsers++;
           }
@@ -65,16 +63,14 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
             totalTeachers++;
           } else if (userData.role === 'student') {
             totalStudents++;
-            // Separate active and inactive students
             if (userData.isActive === false) {
               inactiveStudents++;
             } else {
-              activeStudents++; // Includes students with isActive === true or undefined
+              activeStudents++;
             }
           }
         });
 
-        // Fetch revenue summaries
         const revenueQuery = query(collection(db, 'revenueSummaries'));
         const revenueSnapshot = await getDocs(revenueQuery);
         
@@ -143,10 +139,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           </svg>
           Platform Analytics
         </CardTitle>
-        <CardDescription>Real-time overview of platform statistics and performance metrics</CardDescription>
+        <CardDescription>Real-time overview of platform statistics and performance metrics        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
             <div className="flex items-center justify-between">
@@ -222,7 +217,6 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           </div>
         </div>
 
-        {/* Performance Insights */}
         <div className="bg-gradient-to-r from-palette-golden/10 to-palette-golden/5 rounded-xl p-6 border border-palette-golden/30">
           <h3 className="text-lg font-semibold text-palette-dark-red mb-4 flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +246,6 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           </div>
         </div>
         
-        {/* Footer */}
         <div className="pt-4 border-t border-palette-golden/30 flex items-center justify-between">
           <div className="text-sm text-palette-dark-teal">
             Last updated: {new Date().toLocaleString()}

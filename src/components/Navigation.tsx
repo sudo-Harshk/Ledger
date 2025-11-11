@@ -28,14 +28,12 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
   }
 
   const handleRecalculate = async () => {
-    await recalculateAllStudents(selectedMonth, false) // Disable toast notifications
-    // Refresh all dashboard cards after recalculating
+    await recalculateAllStudents(selectedMonth, false)
     if (onRefresh) {
       onRefresh()
     }
   }
 
-  // Don't render if user is not available
   if (!user) {
     return null
   }
@@ -43,7 +41,6 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
   return (
     <nav className="bg-palette-light-cream py-6 px-8 mx-4 mt-4 rounded-xl shadow-lg border border-palette-golden/20 backdrop-blur-sm">
       <div className="flex items-center justify-between w-full">
-        {/* Logo on the far left */}
         <div className="flex-shrink-0">
           <span 
             className="font-bold text-lg sm:text-xl md:text-2xl tracking-widest text-palette-dark-red cursor-pointer" 
