@@ -173,10 +173,17 @@ export default function StudentDashboard() {
   const [lastTotalDueUpdate, setLastTotalDueUpdate] = useState<Date | null>(null);
   const [lastDataRefresh, setLastDataRefresh] = useState<Date | null>(null);
   const [monthlyDueDate] = useState<Date | null>(null);
-  const [isStudentActive, setIsStudentActive] = useState<boolean>(true); // Track student active status
+  const [isStudentActive, setIsStudentActive] = useState<boolean>(user?.isActive !== false);
 
   // Memoized providerData and month checks
   const providerData = useMemo(() => user?.providerData || [], [user]);
+  
+  // Update isStudentActive when user changes
+  useEffect(() => {
+    if (user?.isActive !== undefined) {
+      setIsStudentActive(user.isActive !== false);
+    }
+  }, [user?.isActive]);
   const isGoogleLinked = useMemo(() => providerData.some((provider) => provider.providerId === 'google.com'), [providerData]);
   const isGitHubLinked = useMemo(() => providerData.some((provider) => provider.providerId === 'github.com'), [providerData]);
   const now = useMemo(() => new Date(), []);
@@ -495,11 +502,31 @@ export default function StudentDashboard() {
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
       console.error('Error marking attendance:', error);
-      // Check if error is due to permission (inactive student)
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
-        debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher.', 'error')
+      // Check if error is due to permission (inactive student or other permission issues)
+      if (error && typeof error === 'object' && 'code' in error) {
+        if (error.code === 'permission-denied') {
+          // Double-check student status for better error message
+          try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.isActive === false) {
+                debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error');
+                setIsStudentActive(false); // Update state immediately
+                return;
+              }
+            }
+          } catch (checkError) {
+            console.error('Error checking student status:', checkError);
+          }
+          debouncedToast('Permission denied: Unable to mark attendance. Please contact your teacher if this issue persists.', 'error');
+        } else if (error.code === 'unavailable') {
+          debouncedToast('Network error: Please check your connection and try again.', 'error');
+        } else {
+          debouncedToast(`Failed to mark attendance: ${error.code}. Please try again.`, 'error');
+        }
       } else {
-        debouncedToast('Failed to mark attendance', 'error')
+        debouncedToast('Failed to mark attendance. Please try again.', 'error');
       }
     } finally {
       setLoading(false)

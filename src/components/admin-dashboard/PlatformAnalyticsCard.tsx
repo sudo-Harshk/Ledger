@@ -47,6 +47,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         
+        let activeStudents = 0;
+        let inactiveStudents = 0;
+        
         usersSnapshot.forEach((doc) => {
           const userData = doc.data();
           totalUsers++;
@@ -60,6 +63,12 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
             totalTeachers++;
           } else if (userData.role === 'student') {
             totalStudents++;
+            // Separate active and inactive students
+            if (userData.isActive === false) {
+              inactiveStudents++;
+            } else {
+              activeStudents++; // Includes students with isActive === true or undefined
+            }
           }
         });
 
@@ -76,14 +85,15 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
         });
 
         const monthlyGrowth = totalUsers > 0 ? (recentUsers / totalUsers) * 100 : 0;
-        const avgRevenuePerStudent = totalStudents > 0 ? totalRevenue / totalStudents : 0;
+        // Calculate average revenue per active student (more meaningful metric)
+        const avgRevenuePerStudent = activeStudents > 0 ? totalRevenue / activeStudents : 0;
 
         setAnalytics({
           totalUsers,
           totalTeachers,
-          totalStudents,
+          totalStudents, // Total includes both active and inactive
           totalRevenue,
-          activeUsers: totalUsers, // For now, assume all users are active
+          activeUsers: activeStudents, // Active students count
           monthlyGrowth,
           avgRevenuePerStudent
         });
@@ -176,8 +186,8 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-600 text-sm font-medium">Students</p>
-                <p className="text-2xl font-bold text-purple-800">{analytics.totalStudents}</p>
+                <p className="text-purple-600 text-sm font-medium">Active Students</p>
+                <p className="text-2xl font-bold text-purple-800">{analytics.activeUsers}</p>
               </div>
               <div className="w-10 h-10 bg-purple-200 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +196,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
               </div>
             </div>
             <div className="mt-2 text-xs text-purple-600">
-              Enrolled learners
+              {analytics.totalStudents > analytics.activeUsers 
+                ? `${analytics.totalStudents} total (${analytics.totalStudents - analytics.activeUsers} inactive)`
+                : 'Enrolled learners'}
             </div>
           </div>
 

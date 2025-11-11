@@ -3,6 +3,8 @@ import { db } from '@/firebase';
 import { debouncedToast } from './debouncedToast';
 
 // Calculates total revenue from all paid student fees for a month
+// Revenue represents money RECEIVED, so includes all payments regardless of current student status
+// This preserves historical accuracy - if a payment was made, it should count even if student is now inactive
 async function calculateMonthlyRevenue(monthKey: string): Promise<number> {
   const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
   const studentsSnap = await getDocs(studentsQuery);
@@ -15,6 +17,7 @@ async function calculateMonthlyRevenue(monthKey: string): Promise<number> {
     const monthData = totalDueByMonth[monthKey];
     
     // Check if this month has paid data
+    // Include all payments regardless of current student status (historical accuracy)
     if (typeof monthData === 'object' && monthData !== null) {
       if (monthData.status === 'paid' && monthData.amountPaid) {
         totalRevenue += monthData.amountPaid;
@@ -75,6 +78,8 @@ export async function updatePlatformMonthlyRevenue(monthKey: string) {
 }
 
 // Aggregates paid student fees into platformMonthlyRevenue/{YYYY-MM}
+// Includes ALL students for historical accuracy (preserves payment records)
+// Revenue represents money RECEIVED, so all payments count regardless of current student status
 export async function backfillPlatformMonthlyRevenue() {
   try {
     // Get all students with their totalDueByMonth data
@@ -92,6 +97,7 @@ export async function backfillPlatformMonthlyRevenue() {
         const monthData = totalDueByMonth[monthKey];
         
         // Check if this month has paid data
+        // Include all payments regardless of current student status (historical accuracy)
         if (typeof monthData === 'object' && monthData !== null) {
           if (monthData.status === 'paid' && monthData.amountPaid) {
             if (/^\d{4}-\d{2}$/.test(monthKey)) {

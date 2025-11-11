@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, query, where, getDocs, writeBatch, doc, onSnapshot, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
+import { collection, query, where, getDocs, writeBatch, doc, getDoc, onSnapshot, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { differenceInCalendarDays } from 'date-fns';
@@ -188,6 +188,46 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
 
     setBulkAttendanceLoading(true);
     try {
+      // Verify all selected students are still active before proceeding
+      const studentStatusChecks = await Promise.all(
+        filteredStudents.map(async (studentDoc) => {
+          try {
+            const studentDocRef = doc(db, 'users', studentDoc.id);
+            const studentSnapshot = await getDoc(studentDocRef);
+            if (studentSnapshot.exists()) {
+              const studentData = studentSnapshot.data();
+              return {
+                id: studentDoc.id,
+                isActive: studentData.isActive !== false, // Default to true if undefined
+                studentData: studentSnapshot.data()
+              };
+            }
+            return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() };
+          } catch (error) {
+            console.error(`Error checking student ${studentDoc.id}:`, error);
+            return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() }; // Default to active on error
+          }
+        })
+      );
+      
+      // Filter out inactive students
+      const activeStudentsForAttendance = studentStatusChecks.filter(s => s.isActive);
+      const inactiveStudents = studentStatusChecks.filter(s => !s.isActive);
+      
+      if (inactiveStudents.length > 0) {
+        const inactiveNames = inactiveStudents.map(s => s.studentData?.displayName || s.id).join(', ');
+        debouncedToast(
+          `Warning: ${inactiveStudents.length} student(s) (${inactiveNames}) are discontinued and will be skipped.`,
+          'error'
+        );
+      }
+      
+      if (activeStudentsForAttendance.length === 0) {
+        debouncedToast('No active students selected for attendance. Please select active students.', 'error');
+        setBulkAttendanceLoading(false);
+        return;
+      }
+      
       let totalRecordsCreated = 0;
       let presentRecords = 0;
       let absentRecords = 0;
@@ -199,12 +239,13 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
         const dateStr = formatLocalDate(currentDate);
         const finalStatus = defaultAttendanceStatus;
         
-        for (const studentDoc of filteredStudents) {
-          const studentData = studentDoc.data();
-          const attendanceId = `${studentDoc.id}_${dateStr}`;
+        // Only process active students
+        for (const activeStudent of activeStudentsForAttendance) {
+          const studentData = activeStudent.studentData;
+          const attendanceId = `${activeStudent.id}_${dateStr}`;
           currentBatch.set(doc(db, 'attendance', attendanceId), {
-            studentId: studentDoc.id,
-            studentName: studentData.displayName || 'Unknown Student',
+            studentId: activeStudent.id,
+            studentName: studentData?.displayName || 'Unknown Student',
             date: dateStr,
             status: finalStatus === 'present' ? 'approved' : 'absent',
             timestamp: new Date(),
@@ -238,15 +279,24 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
         await currentBatch.commit();
       }
       
-      const studentsCount = filteredStudents.length;
-      debouncedToast(`Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`, 'success');
+      const studentsCount = activeStudentsForAttendance.length;
+      const skippedCount = inactiveStudents.length;
+      let successMessage = `Bulk attendance added successfully!\n\n• Date Range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n• Students: ${studentsCount}\n• Total Records: ${totalRecordsCreated}\n• Present: ${presentRecords}\n• Absent: ${absentRecords}\n• Days: ${daysCount}`;
+      if (skippedCount > 0) {
+        successMessage += `\n• Skipped: ${skippedCount} inactive student(s)`;
+      }
+      debouncedToast(successMessage, 'success');
       
       // Dispatch event to refresh dashboard
       dispatchAttendanceUpdatedEvent();
       
-      // Auto-recalculate fees for selected students if present attendance was added
-      if (presentRecords > 0) {
+      // Auto-recalculate fees for active students if present attendance was added
+      if (presentRecords > 0 && activeStudentsForAttendance.length > 0) {
         try {
+          // Recalculate only for active students who received attendance
+          const activeStudentIds = activeStudentsForAttendance.map(s => s.id);
+          // Use recalculateAllStudents which already filters inactive students, or recalculate specific students
+          // Since recalculateAllStudents filters inactive, we can use it safely
           await recalculateAllStudents(startDate, false); // Disable toast notifications
         } catch (recalcError) {
           console.error('Error recalculating fees after bulk attendance:', recalcError);

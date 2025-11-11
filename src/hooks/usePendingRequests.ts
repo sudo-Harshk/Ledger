@@ -1,12 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 import type { PendingRequest } from '@/types';
 
+export interface PendingRequestWithStatus extends PendingRequest {
+  isStudentActive?: boolean;
+}
+
 export const usePendingRequests = (userUid: string | undefined) => {
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [studentStatuses, setStudentStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const { recalculateSingleStudent } = useStudentFeeRecalculation();
 
@@ -16,13 +21,52 @@ export const usePendingRequests = (userUid: string | undefined) => {
 
     const q = query(collection(db, 'attendance'), where('status', '==', 'pending'));
     const unsubscribe = onSnapshot(q, 
-      (querySnapshot: QuerySnapshot<DocumentData>) => {
+      async (querySnapshot: QuerySnapshot<DocumentData>) => {
         try {
           const requests = querySnapshot.docs.map(doc => ({ 
             id: doc.id, 
             ...doc.data() 
           })) as PendingRequest[];
           setPendingRequests(requests);
+          
+          // Fetch student statuses for all pending requests
+          if (requests.length > 0) {
+            const studentIds = requests
+              .map(r => r.studentId)
+              .filter((id): id is string => !!id)
+              .filter((id, index, self) => self.indexOf(id) === index); // Unique IDs
+            
+            if (studentIds.length > 0) {
+              try {
+                // Fetch student documents in batches
+                const statusMap: Record<string, boolean> = {};
+                const batchSize = 10;
+                
+                for (let i = 0; i < studentIds.length; i += batchSize) {
+                  const batch = studentIds.slice(i, i + batchSize);
+                  const studentDocs = await Promise.all(
+                    batch.map(id => getDoc(doc(db, 'users', id)).catch(() => null))
+                  );
+                  
+                  studentDocs.forEach((studentDoc, index) => {
+                    if (studentDoc?.exists()) {
+                      const studentData = studentDoc.data();
+                      statusMap[batch[index]] = studentData.isActive !== false; // Default to true if undefined
+                    } else {
+                      statusMap[batch[index]] = true; // Default to active if document doesn't exist or error
+                    }
+                  });
+                }
+                
+                setStudentStatuses(statusMap);
+              } catch (statusError) {
+                console.error('Error fetching student statuses:', statusError);
+                // Don't fail the entire operation if status fetch fails
+              }
+            }
+          } else {
+            setStudentStatuses({});
+          }
         } catch (error) {
           console.error('Error processing pending requests:', error);
         }
@@ -43,6 +87,14 @@ export const usePendingRequests = (userUid: string | undefined) => {
       }
     };
   }, [userUid]);
+
+  // Combine pending requests with student statuses
+  const pendingRequestsWithStatus = useMemo(() => {
+    return pendingRequests.map(request => ({
+      ...request,
+      isStudentActive: request.studentId ? (studentStatuses[request.studentId] !== false) : true
+    })) as PendingRequestWithStatus[];
+  }, [pendingRequests, studentStatuses]);
 
   // Approve or reject attendance
   const approveAttendance = async (requestId: string, status: 'approved' | 'rejected') => {
@@ -103,7 +155,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
   };
 
   return {
-    pendingRequests,
+    pendingRequests: pendingRequestsWithStatus,
     loading,
     approveAttendance
   };
