@@ -15,11 +15,9 @@ export const usePendingRequests = (userUid: string | undefined) => {
   const [loading, setLoading] = useState(false);
   const { recalculateSingleStudent } = useStudentFeeRecalculation();
   
-  // Cache for student statuses to avoid redundant fetches
   const studentStatusCacheRef = useRef<Record<string, { status: boolean; timestamp: number }>>({});
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+  const CACHE_DURATION = 5 * 60 * 1000;
 
-  // Real-time listener for pending requests
   useEffect(() => {
     if (!userUid) return;
 
@@ -33,12 +31,11 @@ export const usePendingRequests = (userUid: string | undefined) => {
           })) as PendingRequest[];
           setPendingRequests(requests);
           
-          // Fetch student statuses for all pending requests (with caching)
           if (requests.length > 0) {
             const studentIds = requests
               .map(r => r.studentId)
               .filter((id): id is string => !!id)
-              .filter((id, index, self) => self.indexOf(id) === index); // Unique IDs
+              .filter((id, index, self) => self.indexOf(id) === index);
             
             if (studentIds.length > 0) {
               try {
@@ -46,7 +43,6 @@ export const usePendingRequests = (userUid: string | undefined) => {
                 const now = Date.now();
                 const studentIdsToFetch: string[] = [];
                 
-                // Check cache first
                 studentIds.forEach(id => {
                   const cached = studentStatusCacheRef.current[id];
                   if (cached && (now - cached.timestamp) < CACHE_DURATION) {
@@ -56,7 +52,6 @@ export const usePendingRequests = (userUid: string | undefined) => {
                   }
                 });
                 
-                // Only fetch student statuses that aren't in cache or are expired
                 if (studentIdsToFetch.length > 0) {
                   const batchSize = 10;
                   
@@ -70,15 +65,14 @@ export const usePendingRequests = (userUid: string | undefined) => {
                       const studentId = batch[index];
                       if (studentDoc?.exists()) {
                         const studentData = studentDoc.data();
-                        const isActive = studentData.isActive !== false; // Default to true if undefined
+                        const isActive = studentData.isActive !== false;
                         statusMap[studentId] = isActive;
-                        // Update cache
                         studentStatusCacheRef.current[studentId] = {
                           status: isActive,
                           timestamp: now
                         };
                       } else {
-                        statusMap[studentId] = true; // Default to active if document doesn't exist
+                        statusMap[studentId] = true;
                         studentStatusCacheRef.current[studentId] = {
                           status: true,
                           timestamp: now
@@ -91,8 +85,6 @@ export const usePendingRequests = (userUid: string | undefined) => {
                 setStudentStatuses(statusMap);
               } catch (statusError) {
                 console.error('Error fetching student statuses:', statusError);
-                // Don't fail the entire operation if status fetch fails
-                // Use cached values if available
                 const fallbackStatuses: Record<string, boolean> = {};
                 studentIds.forEach(id => {
                   const cached = studentStatusCacheRef.current[id];
@@ -125,7 +117,6 @@ export const usePendingRequests = (userUid: string | undefined) => {
     };
   }, [userUid]);
 
-  // Combine pending requests with student statuses
   const pendingRequestsWithStatus = useMemo(() => {
     return pendingRequests.map(request => ({
       ...request,
@@ -133,12 +124,10 @@ export const usePendingRequests = (userUid: string | undefined) => {
     })) as PendingRequestWithStatus[];
   }, [pendingRequests, studentStatuses]);
 
-  // Approve or reject attendance
   const approveAttendance = async (requestId: string, status: 'approved' | 'rejected') => {
     if (!userUid) return;
     setLoading(true);
     try {
-      // Get attendance record to extract student ID
       const attendanceDoc = await getDoc(doc(db, 'attendance', requestId));
       if (!attendanceDoc.exists()) {
         debouncedToast('Attendance record not found', 'error');
@@ -149,23 +138,19 @@ export const usePendingRequests = (userUid: string | undefined) => {
       const studentId = attendanceData.studentId;
       const attendanceDate = new Date(attendanceData.date);
       
-      // Check if student is active before approving
       if (status === 'approved' && studentId) {
         const studentDoc = await getDoc(doc(db, 'users', studentId));
         if (studentDoc.exists()) {
           const studentData = studentDoc.data();
-          // If student is inactive (isActive === false), prevent approval
           if (studentData.isActive === false) {
             debouncedToast('⚠️ Cannot approve attendance: Student account is discontinued. Please reactivate the student in Student Management before approving attendance.', 'error');
             setLoading(false);
-            // Update cache with current status
             studentStatusCacheRef.current[studentId] = {
               status: false,
               timestamp: Date.now()
             };
             return;
           }
-          // Update cache with current status
           studentStatusCacheRef.current[studentId] = {
             status: studentData.isActive !== false,
             timestamp: Date.now()
@@ -179,7 +164,6 @@ export const usePendingRequests = (userUid: string | undefined) => {
         approvedAt: new Date()
       });
       
-      // Auto-recalculate fees for this student if attendance is approved
       if (status === 'approved' && studentId) {
         try {
           await recalculateSingleStudent(studentId, attendanceDate, false);

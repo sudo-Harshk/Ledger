@@ -7,7 +7,6 @@ export default function StudentManagementCard() {
   const { user } = useAuth();
   const { students, loadingStudents, createUserLoading, refetchStudents, createStudentAccount, toggleStudentActiveStatus, deleteStudentAccount } = useStudents();
   
-  // Local state for create student form
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentUsername, setNewStudentUsername] = useState('');
@@ -16,7 +15,6 @@ export default function StudentManagementCard() {
   const [newStudentMonthlyFee, setNewStudentMonthlyFee] = useState(0);
   const [showInactiveStudents, setShowInactiveStudents] = useState(false);
   
-  // Confirmation dialog state
   const [confirmationDialog, setConfirmationDialog] = useState<{
     open: boolean;
     type: 'discontinue' | 'reactivate' | 'delete' | null;
@@ -47,7 +45,6 @@ export default function StudentManagementCard() {
     );
     
     if (success) {
-      // Reset form
       setNewStudentUsername('');
       setNewStudentName('');
       setNewStudentEmail('');
@@ -154,7 +151,6 @@ export default function StudentManagementCard() {
             </div>
           </div>
         )}
-        {/* Students List */}
         {loadingStudents ? (
           <div className="min-h-[160px] animate-pulse" />
         ) : (
@@ -185,7 +181,7 @@ export default function StudentManagementCard() {
               students
                 .filter(student => showInactiveStudents || student.isActive !== false)
                 .map((student) => {
-                  const isActive = student.isActive !== false; // Default to true if undefined
+                  const isActive = student.isActive !== false;
                   return (
                     <div 
                       key={student.id} 
@@ -280,7 +276,6 @@ export default function StudentManagementCard() {
         )}
       </CardContent>
       
-      {/* Confirmation Dialogs */}
       <ConfirmationDialog
         open={confirmationDialog.open && confirmationDialog.type === 'discontinue'}
         onClose={() => {
@@ -295,7 +290,6 @@ export default function StudentManagementCard() {
               await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              // Error is already handled in the hook
               console.error('Error toggling student status:', error);
             } finally {
               setIsProcessing(false);
@@ -324,7 +318,6 @@ export default function StudentManagementCard() {
               await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              // Error is already handled in the hook
               console.error('Error toggling student status:', error);
             } finally {
               setIsProcessing(false);
@@ -353,7 +346,6 @@ export default function StudentManagementCard() {
               await deleteStudentAccount(confirmationDialog.studentId, confirmationDialog.studentUsername);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              // Error is already handled in the hook
               console.error('Error deleting student:', error);
             } finally {
               setIsProcessing(false);

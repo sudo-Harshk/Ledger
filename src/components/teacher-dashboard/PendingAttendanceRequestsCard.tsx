@@ -29,7 +29,7 @@ export default function PendingAttendanceRequestsCard() {
             {pendingRequests.map((request: PendingRequestWithStatus) => {
               const dateObj = request.date ? new Date(request.date) : null;
               const timestampObj = convertToDate(request.timestamp);
-              const isStudentActive = request.isStudentActive !== false; // Default to true if undefined
+              const isStudentActive = request.isStudentActive !== false;
               const isInactive = request.isStudentActive === false;
               
               return (

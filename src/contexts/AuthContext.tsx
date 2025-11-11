@@ -136,9 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       let loginEmail = username
       
-      // If it doesn't contain @, treat it as a username and look up the email
       if (!username.includes('@')) {
-        // This is a username login (student) - use Cloud Function for secure lookup
         logger.debug('Username login detected; looking up email for username:', username)
         try {
           const lookupUsername = httpsCallable<{ username: string }, { email: string }>(
@@ -150,13 +148,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           logger.debug('Username login detected; resolved email:', loginEmail)
         } catch (functionError: unknown) {
           logger.error('Error calling username lookup function:', functionError)
-          // Handle Firebase Functions errors
-          // Firebase Functions errors have a 'code' property with format 'functions/{errorCode}'
           if (functionError && typeof functionError === 'object' && 'code' in functionError) {
             const firebaseError = functionError as { code: string; message?: string }
             const errorCode = firebaseError.code
             
-            // Handle specific error codes from the Cloud Function
             if (errorCode === 'functions/not-found' || errorCode === 'not-found') {
               throw new Error('Username not found. Please check your username and try again.')
             } else if (errorCode === 'functions/failed-precondition' || errorCode === 'failed-precondition') {
@@ -169,11 +164,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               throw new Error('Service temporarily unavailable. Please try again later.')
             }
           }
-          // Generic error for any other cases (network errors, etc.)
           throw new Error('Unable to verify username. Please try again or contact your teacher.')
         }
       } else {
-        // This is an email login (teacher)
         logger.debug('Email login detected for teacher')
       }
       

@@ -1,14 +1,12 @@
 import { Timestamp } from 'firebase/firestore';
 import type { UserInfo } from 'firebase/auth';
 
-// Firebase Auth Types
 export type ProviderId = 'google.com' | 'github.com' | 'password' | string;
 
 export interface ProviderData extends UserInfo {
   providerId: ProviderId;
 }
 
-// Student Types
 export interface StudentAccount {
   id: string;
   username: string;
@@ -19,18 +17,6 @@ export interface StudentAccount {
   createdAt: Date | Timestamp;
   totalDueByMonth?: TotalDueByMonth;
   createdBy?: string;
-  /**
-   * Student active status
-   * - true: Active student (can mark attendance, included in analytics)
-   * - false: Discontinued student (cannot mark attendance, excluded from analytics, but data preserved)
-   * - undefined: Treated as active for backward compatibility with existing students
-   * 
-   * When a student is marked as discontinued:
-   * - All historical data (attendance, payments, fees) is preserved
-   * - Student cannot mark new attendance
-   * - Student is excluded from fee calculations and analytics
-   * - Student can be reactivated at any time to resume operations
-   */
   isActive?: boolean;
 }
 
@@ -44,7 +30,6 @@ export interface TotalDueEntry {
   paymentDate?: Timestamp | Date;
 }
 
-// Attendance Types
 export interface AttendanceRecord {
   date: string;
   status: 'pending' | 'approved' | 'rejected' | 'absent';
@@ -77,7 +62,6 @@ export interface PendingRequest {
   approvedAt?: Date | Timestamp;
 }
 
-// Financial Types
 export interface FinancialSummary {
   revenue: number;
   lastUpdated: Timestamp | null;
@@ -90,21 +74,17 @@ export interface FeeSummary {
   totalAmount: number;
 }
 
-// Document Snapshot Types
 export interface DocumentSnapshotData {
   [key: string]: unknown;
 }
 
-// Confetti Types
 export type ConfettiTrigger = number | string | boolean | null | undefined;
 
-// Error Types (for error handling)
 export interface FirebaseError {
   code: string;
   message: string;
   stack?: string;
 }
 
-// Utility type for Firebase Timestamp conversions
 export type TimestampLike = Timestamp | Date | string | number;
 

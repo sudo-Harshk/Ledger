@@ -5,40 +5,20 @@ import { formatLocalDate, dispatchFeeUpdatedEvent } from '@/lib';
 import toast from 'react-hot-toast';
 
 interface RecalculationOptions {
-  studentIds?: string[]; // Specific students, or empty for all
+  studentIds?: string[];
   month: Date;
   batchSize?: number;
-  showToast?: boolean; // Whether to show success toast
+  showToast?: boolean;
 }
 
 export const useStudentFeeRecalculation = () => {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
-  // Get month key for database storage
   const getMonthKey = (date: Date) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   };
 
-  /**
-   * Recalculate fees for specific students or all students
-   * 
-   * IMPORTANT: This function automatically filters out inactive students (isActive === false)
-   * to prevent calculating fees for discontinued students.
-   * 
-   * Behavior:
-   * - If studentIds are provided: Only recalculates fees for those students (if active)
-   * - If studentIds are empty: Recalculates fees for all active students
-   * - Inactive students are always excluded, even if explicitly requested
-   * - Preserves payment status when recalculating (paid/unpaid)
-   * 
-   * @param options - Recalculation options
-   * @param options.studentIds - Optional array of student IDs to recalculate (if empty, all active students)
-   * @param options.month - Month to recalculate fees for
-   * @param options.batchSize - Batch size for processing (default: 10)
-   * @param options.showToast - Whether to show success toast (default: true)
-   * @returns Result object with success status and students processed
-   */
   const recalculateStudentFees = useCallback(async ({ 
     studentIds, 
     month, 
@@ -54,10 +34,8 @@ export const useStudentFeeRecalculation = () => {
       const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
       const totalDaysInMonth = monthEnd.getDate();
 
-      // Get students to update
       let studentsQuery;
       if (studentIds && studentIds.length > 0) {
-        // Specific students - batch them due to Firestore 'in' limitation
         const studentBatches = [];
         for (let i = 0; i < studentIds.length; i += 10) {
           const batchIds = studentIds.slice(i, i + 10);
@@ -74,33 +52,26 @@ export const useStudentFeeRecalculation = () => {
           const snapshot = await getDocs(batchQuery);
           allStudents.push(...snapshot.docs);
         }
-        // Filter out inactive students even when specific studentIds are provided
-        // This prevents recalculating fees for discontinued students
         var studentDocs = allStudents.filter(doc => {
           const studentData = doc.data();
-          return studentData.isActive !== false; // Include active students (true or undefined)
+          return studentData.isActive !== false;
         });
         
-        // Warn if any requested students were filtered out
         if (studentDocs.length < allStudents.length) {
           const filteredCount = allStudents.length - studentDocs.length;
           console.warn(`Filtered out ${filteredCount} inactive student(s) from fee recalculation`);
         }
       } else {
-        // All students - filter to only active students for automatic recalculations
         studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
         const studentsSnapshot = await getDocs(studentsQuery);
-        // Filter out inactive students (isActive === false) - only recalculate active students
-        // This ensures reactivated students are included, but discontinued students are skipped
         var studentDocs = studentsSnapshot.docs.filter(doc => {
           const studentData = doc.data();
-          return studentData.isActive !== false; // Include active students (true or undefined)
+          return studentData.isActive !== false;
         });
       }
 
       setProgress({ current: 0, total: studentDocs.length });
 
-      // Process students in batches to avoid overwhelming Firestore
       const batches = [];
       for (let i = 0; i < studentDocs.length; i += batchSize) {
         batches.push(studentDocs.slice(i, i + batchSize));
@@ -114,7 +85,6 @@ export const useStudentFeeRecalculation = () => {
           const studentId = studentDoc.id;
           const monthlyFee = studentData.monthlyFee || 0;
 
-          // Get approved attendance for this month
           const approvedQuery = query(
             collection(db, 'attendance'),
             where('studentId', '==', studentId),
@@ -126,17 +96,14 @@ export const useStudentFeeRecalculation = () => {
           const approvedSnapshot = await getDocs(approvedQuery);
           const approvedDays = approvedSnapshot.size;
 
-          // Calculate total amount due
           const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0;
           const totalAmount = Math.round(approvedDays * dailyRate * 100) / 100;
 
-          // Get existing due data to preserve payment status
           const existingDue = studentData.totalDueByMonth?.[monthKey] || {};
           const currentStatus = existingDue.status || 'unpaid';
           const paymentDate = existingDue.paymentDate || null;
           const amountPaid = existingDue.amountPaid || 0;
 
-          // Update student's fee record
           const userRef = doc(db, 'users', studentId);
           await updateDoc(userRef, {
             [`totalDueByMonth.${monthKey}`]: {
@@ -155,7 +122,6 @@ export const useStudentFeeRecalculation = () => {
           return { studentId, totalAmount, approvedDays };
         });
 
-        // Wait for current batch to complete
         await Promise.all(batchPromises);
         processedCount += batch.length;
         setProgress({ current: processedCount, total: studentDocs.length });
@@ -166,7 +132,6 @@ export const useStudentFeeRecalculation = () => {
         toast.success(`Recalculated fees for ${studentDocs.length} students for ${month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`);
       }
 
-      // Dispatch event to refresh dashboard
       dispatchFeeUpdatedEvent();
 
       return {
@@ -190,7 +155,6 @@ export const useStudentFeeRecalculation = () => {
     }
   }, []);
 
-  // Recalculate fees for a single student (useful after attendance approval)
   const recalculateSingleStudent = useCallback(async (studentId: string, month: Date, showToast = true) => {
     return await recalculateStudentFees({ 
       studentIds: [studentId], 
@@ -199,7 +163,6 @@ export const useStudentFeeRecalculation = () => {
     });
   }, [recalculateStudentFees]);
 
-  // Recalculate fees for all students
   const recalculateAllStudents = useCallback(async (month: Date, showToast = true) => {
     return await recalculateStudentFees({ month, showToast });
   }, [recalculateStudentFees]);

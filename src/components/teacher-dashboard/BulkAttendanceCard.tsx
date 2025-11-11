@@ -51,14 +51,12 @@ export default function BulkAttendanceCard({
   
   const PLATFORM_START = new Date(import.meta.env.VITE_PLATFORM_START || '2025-08-01');
   
-  // Confirmation dialog state for bulk operations
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [bulkConfirmDetails, setBulkConfirmDetails] = useState<{
     totalRecords: number;
     estimatedBatches: number;
   } | null>(null);
   
-  // Handle bulk attendance with confirmation
   const handleAddBulkAttendance = async () => {
     if (!bulkStartDate || !bulkEndDate) {
       return;
@@ -70,13 +68,11 @@ export default function BulkAttendanceCard({
     const totalRecords = daysCount * selectedStudents.length;
     const maxBatchSize = 500;
     
-    // Show confirmation for large operations
     if (totalRecords > maxBatchSize) {
       const estimatedBatches = Math.ceil(totalRecords / maxBatchSize);
       setBulkConfirmDetails({ totalRecords, estimatedBatches });
       setShowBulkConfirm(true);
     } else {
-      // Small operation, proceed directly
       await addBulkAttendance();
     }
   };
@@ -90,7 +86,6 @@ export default function BulkAttendanceCard({
         <CardDescription>Enter a date range to add approved attendance for all students.</CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Student Selection */}
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between mb-3">
             <span className="font-medium text-gray-800">
@@ -123,7 +118,6 @@ export default function BulkAttendanceCard({
           </div>
         </div>
 
-        {/* Month navigation for selection calendar */}
         <div className="flex items-center justify-between mb-3">
           <Label className="text-sm font-medium">Select Date Range</Label>
           <div className="flex gap-2">
@@ -134,7 +128,6 @@ export default function BulkAttendanceCard({
             <Button variant="outline" size="sm" onClick={() => changeMonth('next')}>→</Button>
           </div>
         </div>
-        {/* Calendar Legend */}
         <div className="mb-3 flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
@@ -182,7 +175,6 @@ export default function BulkAttendanceCard({
             </div>
           </div>
         </div>
-        {/* Alternative content for mobile */}
         <div className="sm:hidden mb-4">
           <Card>
             <CardContent>
@@ -192,7 +184,6 @@ export default function BulkAttendanceCard({
             </CardContent>
           </Card>
         </div>
-        {/* Attendance Status Selector */}
         <div className="mb-4 p-4 border rounded-lg bg-gray-50">
           <Label className="text-sm font-medium mb-3 block">Mark Selected Range as:</Label>
           <div className="flex gap-0 items-center rounded-lg overflow-hidden border w-fit bg-white shadow-sm">
@@ -296,7 +287,6 @@ export default function BulkAttendanceCard({
             />
           </div>
         </div>
-        {/* Preview Section */}
         {bulkStartDate && bulkEndDate && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">Preview:</h4>
@@ -311,7 +301,6 @@ export default function BulkAttendanceCard({
             <p className="text-sm text-blue-600 mt-2">
               Total records: <strong>{selectedStudents.length * ((bulkStartDate === bulkEndDate) ? 1 : Math.ceil((new Date(bulkEndDate).getTime() - new Date(bulkStartDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)}</strong>
             </p>
-            {/* Revenue Preview */}
             {defaultAttendanceStatus === 'present' && revenuePreview.days > 0 && revenuePreview.dailyRate > 0 && (
               <div className="mt-3 p-3 bg-blue-100 border border-blue-300 rounded">
                 <div className="font-semibold text-blue-900 mb-1">Estimated Revenue for this period:</div>
@@ -343,7 +332,6 @@ export default function BulkAttendanceCard({
         </div>
       </CardContent>
       
-      {/* Confirmation Dialog for Large Bulk Operations */}
       <ConfirmationDialog
         open={showBulkConfirm}
         onClose={() => {

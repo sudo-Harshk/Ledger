@@ -57,12 +57,10 @@ export const useStudents = () => {
     }
   }, [pageSize]);
 
-  // Automatically fetch students when hook is initialized
   useEffect(() => {
     initialFetchStudents();
-  }, []); // Remove initialFetchStudents from dependencies to prevent infinite loops
+  }, []);
 
-  // Fetch paginated students
   const fetchStudentsPage = useCallback(async (direction: 'next' | 'prev') => {
     setLoadingStudents(true);
     try {
@@ -85,7 +83,6 @@ export const useStudents = () => {
           limitToLast(pageSize)
         );
       } else {
-        // Fallback to initial fetch
         return await initialFetchStudents();
       }
 
@@ -104,7 +101,6 @@ export const useStudents = () => {
     }
   }, [lastVisibleStudent, firstVisibleStudent, pageSize, initialFetchStudents]);
 
-  // Refetch students (used after creating/deleting)
   const refetchStudents = async () => {
     try {
       await initialFetchStudents();
@@ -114,7 +110,6 @@ export const useStudents = () => {
     }
   };
 
-  // Create student account
   const createStudentAccount = async (
     newStudentUsername: string,
     newStudentName: string,
@@ -140,14 +135,12 @@ export const useStudents = () => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStudentEmail)) {
       debouncedToast('Please enter a valid email address', 'error');
       return;
     }
 
-    // Check if username already exists
     const existingStudentsQuery = query(
       collection(db, 'users'), 
       where('username', '==', newStudentUsername),
@@ -159,7 +152,6 @@ export const useStudents = () => {
       return;
     }
 
-    // Check if email already exists
     const existingEmailQuery = query(
       collection(db, 'users'), 
       where('email', '==', newStudentEmail)
@@ -185,11 +177,11 @@ export const useStudents = () => {
         monthlyFee: newStudentMonthlyFee,
         createdAt: new Date(),
         createdBy: userUid,
-        isActive: true // New students are active by default
+        isActive: true
       });
       await refetchStudents();
       debouncedToast(`Student account created successfully! Username: ${newStudentUsername}`, 'success');
-      return true; // Success
+      return true;
     } catch (error: unknown) {
       console.error('Error creating student account:', error);
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
@@ -203,14 +195,12 @@ export const useStudents = () => {
       } else {
         debouncedToast('Failed to create account. Please try again.', 'error');
       }
-      // If Firebase Auth user was created but Firestore write failed, clean up
       if (auth.currentUser) {
         try {
           await deleteUser(auth.currentUser);
           logger.info('Successfully cleaned up Firebase Auth user after failed account creation');
         } catch (deleteError) {
           logger.error('Error cleaning up Firebase Auth user:', deleteError);
-          // Log this as a critical issue that needs manual intervention
           console.error('CRITICAL: Failed to clean up Firebase Auth user. Manual cleanup required in Firebase Console.');
         }
       }
@@ -219,32 +209,8 @@ export const useStudents = () => {
     }
   };
 
-  /**
-   * Toggle student active status (mark as discontinued/reactivate)
-   * 
-   * When marking as discontinued:
-   * - Stops analytics and fee calculations for the student
-   * - Preserves all attendance records and history
-   * - Prevents student from marking new attendance
-   * - Student account and data remain intact
-   * - Can be reactivated at any time
-   * 
-   * When reactivating:
-   * - Resumes analytics and fee calculations
-   * - Includes student in bulk attendance operations
-   * - All historical data remains accessible
-   * - Analytics continue from where they left off
-   * 
-   * Note: Confirmation is handled in the UI component (StudentManagementCard)
-   * This function performs the actual status change operation
-   * 
-   * @param studentId - ID of the student to toggle status
-   * @param studentName - Display name of the student (for messages)
-   * @param currentStatus - Current active status (true, false, or undefined)
-   * @throws Error if the operation fails
-   */
   const toggleStudentActiveStatus = async (studentId: string, studentName: string, currentStatus: boolean | undefined) => {
-    const newStatus = currentStatus === false; // Toggle: if inactive, make active; if active (or undefined), make inactive
+    const newStatus = currentStatus === false;
     const action = newStatus ? 'reactivated' : 'discontinued';
 
     try {
@@ -259,9 +225,7 @@ export const useStudents = () => {
       }
       
       await refetchStudents();
-      // Dispatch event to refresh dashboard - this will trigger all components to refresh
       window.dispatchEvent(new CustomEvent('student-updated'));
-      // Also trigger attendance and fee updates
       window.dispatchEvent(new CustomEvent('attendance-updated'));
       window.dispatchEvent(new CustomEvent('fee-updated'));
     } catch (error: unknown) {
@@ -271,13 +235,10 @@ export const useStudents = () => {
       } else {
         debouncedToast(`Failed to ${action} student. Please try again.`, 'error');
       }
-      throw error; // Re-throw so UI can handle it
+      throw error;
     }
   };
 
-  // Delete student account
-  // Note: Confirmation is now handled in the UI component (StudentManagementCard)
-  // This function performs the actual deletion operation
   const deleteStudentAccount = async (studentId: string, username: string) => {
     try {
       await deleteDoc(doc(db, 'users', studentId));
@@ -294,7 +255,6 @@ export const useStudents = () => {
 
       debouncedToast(`Student account for ${username} deleted successfully!\n\nNote: The Firebase Auth user account still exists and needs to be manually removed from Firebase Console for complete cleanup.`, 'success');
       await refetchStudents();
-      // Dispatch event to refresh dashboard
       window.dispatchEvent(new CustomEvent('student-updated'));
       window.dispatchEvent(new CustomEvent('attendance-updated'));
       window.dispatchEvent(new CustomEvent('fee-updated'));
@@ -305,7 +265,7 @@ export const useStudents = () => {
       } else {
         debouncedToast('Failed to delete account. Please try again.', 'error');
       }
-      throw error; // Re-throw so UI can handle it
+      throw error;
     }
   };
 

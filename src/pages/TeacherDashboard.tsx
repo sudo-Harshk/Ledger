@@ -20,14 +20,11 @@ export default function TeacherDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Don't render if user is not available
   if (!user) {
     return null;
   }
   
   const { students } = useStudents();
-  // Filter to only active students for bulk attendance (discontinued students should not receive attendance)
-  // Memoize to prevent creating new array on every render (performance optimization)
   const activeStudents = useMemo(() => 
     students.filter(student => student.isActive !== false),
     [students]
@@ -56,30 +53,24 @@ export default function TeacherDashboard() {
   const isGoogleLinked = providerData.some((provider) => provider.providerId === 'google.com');
   const isGitHubLinked = providerData.some((provider) => provider.providerId === 'github.com');
 
-  // Refresh function to trigger re-renders of all dashboard cards
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      // Increment refresh key to force all components to re-render and re-fetch data
       setRefreshKey(prev => prev + 1);
-      
-      // Add a small delay to show the refreshing state
       await new Promise(resolve => setTimeout(resolve, 500));
     } finally {
       setIsRefreshing(false);
     }
   }, []);
 
-  // Mark initial load as complete after a short delay
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialLoad(false);
-    }, 100); // Very short delay to allow initial render
+    }, 100);
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Auto-refresh when data changes
   useEffect(() => {
     const events = [
       'attendance-updated',
@@ -93,12 +84,10 @@ export default function TeacherDashboard() {
       handleRefresh();
     };
 
-    // Add event listeners
     events.forEach(event => {
       window.addEventListener(event, handleDataUpdate);
     });
 
-    // Cleanup event listeners
     return () => {
       events.forEach(event => {
         window.removeEventListener(event, handleDataUpdate);

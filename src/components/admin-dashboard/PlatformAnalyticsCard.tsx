@@ -87,16 +87,15 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
         });
 
         const monthlyGrowth = totalUsers > 0 ? (recentUsers / totalUsers) * 100 : 0;
-        // Calculate average revenue per active student (more meaningful metric)
         const avgRevenuePerStudent = activeStudents > 0 ? totalRevenue / activeStudents : 0;
 
         setAnalytics({
           totalUsers,
           totalTeachers,
-          totalStudents, // Total includes both active and inactive
+          totalStudents,
           totalRevenue,
-          activeUsers: activeStudents, // Active students count
-          inactiveStudents, // Inactive students count
+          activeUsers: activeStudents,
+          inactiveStudents,
           monthlyGrowth,
           avgRevenuePerStudent
         });

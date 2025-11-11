@@ -29,20 +29,16 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
   });
   const { recalculateAllStudents } = useStudentFeeRecalculation();
 
-  // Use refs to store stable student data - updated via effect
   const studentsMapRef = useRef<Map<string, StudentAccount>>(new Map());
   const studentIdsRef = useRef<string[]>([]);
   const studentIdsKeyRef = useRef<string>('');
   
-  // Update student data when students array changes (by content, not reference)
   useEffect(() => {
-    // Compute current student data key
     const currentKey = students
       .map(s => `${s.id}:${s.monthlyFee || 0}`)
       .sort()
       .join('|');
     
-    // Only update if content actually changed
     const prevKey = studentIdsRef.current
       .map(id => {
         const student = studentsMapRef.current.get(id);
@@ -53,57 +49,48 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       .join('|');
     
     if (currentKey !== prevKey) {
-      // Update student IDs
       const ids = students.map(s => s.id).sort();
       studentIdsRef.current = ids;
       studentIdsKeyRef.current = ids.join(',');
       
-      // Update students map
       const map = new Map<string, StudentAccount>();
       students.forEach(student => {
         map.set(student.id, student);
       });
       studentsMapRef.current = map;
     }
-  }, [students]); // This effect runs when students array reference changes, but only updates if content changed
+  }, [students]);
   
-  // Get current values from refs (these are stable references)
   const studentIds = studentIdsRef.current;
   const studentIdsKey = studentIdsKeyRef.current;
   
-  // Auto-select students - only run once per student set
   const lastAutoSelectedKeyRef = useRef<string>('');
   
   useEffect(() => {
-    // Skip if student IDs haven't changed since last auto-select
     if (studentIdsKey === lastAutoSelectedKeyRef.current || studentIdsKey === '') {
       return;
     }
     
-    // Mark that we've auto-selected for this set of students
     lastAutoSelectedKeyRef.current = studentIdsKey;
     
     if (studentIds.length === 1) {
-      // Auto-select single student
       const currentStudentId = studentIds[0];
       setSelectedStudents(prev => {
         if (prev.length === 1 && prev[0] === currentStudentId) {
-          return prev; // Already selected, don't update
+          return prev;
         }
         return [currentStudentId];
       });
     } else if (studentIds.length > 1) {
-      // Auto-select all students if none selected
       setSelectedStudents(prev => {
         if (prev.length === 0) {
           return [...studentIds];
         }
-        return prev; // Don't change if students are already selected
+        return prev;
       });
     }
-  }, [studentIdsKey, studentIds.length]); // Only depend on stable key
+  }, [studentIdsKey, studentIds.length]);
   
-  // Calculate revenue preview
   const selectedStudentsKey = useMemo(() => [...selectedStudents].sort().join(','), [selectedStudents]);
   
   useEffect(() => {
@@ -124,7 +111,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     let total = 0;
     let dailyRate = 0;
     if (selectedStudents.length > 0) {
-      // Use studentsMapRef for efficient lookups
       dailyRate = selectedStudents.reduce((sum, studentId) => {
         const student = studentsMapRef.current.get(studentId);
         return sum + (student?.monthlyFee || 0) / daysInMonth;
@@ -134,15 +120,13 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     setRevenuePreview({ days, dailyRate, total });
   }, [bulkStartDate, bulkEndDate, selectedStudentsKey, studentIdsKey, defaultAttendanceStatus]);
   
-  // Load filtered attendance data based on selected students
   const currentMonthKey = useMemo(() => `${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, [currentMonth]);
   
   useEffect(() => {
     if (isInitialLoad) {
-      return; // Skip loading on initial render for better performance
+      return;
     }
     
-    // Create a stable copy of selectedStudents for use in the callback
     const selectedStudentsSnapshot = [...selectedStudents];
     
     if (selectedStudentsSnapshot.length === 0) {
@@ -166,12 +150,10 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     const unsubscribe = onSnapshot(q, 
       (querySnapshot: QuerySnapshot<DocumentData>) => {
         try {
-          // Use Sets temporarily for efficient lookups, then convert to arrays for state
           const presentDatesSet = new Set<string>();
           const absentDatesSet = new Set<string>();
           const studentAttendanceData: Record<string, { presentDates: string[], absentDates: string[] }> = {};
           
-          // Initialize student data structures using the snapshot
           selectedStudentsSnapshot.forEach(studentId => {
             studentAttendanceData[studentId] = {
               presentDates: [],
@@ -183,7 +165,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
             const data = doc.data();
             const studentId = data.studentId;
             
-            // Only process data for selected students (use snapshot)
             if (selectedStudentsSnapshot.includes(studentId)) {
               if (data.status === 'approved') {
                 presentDatesSet.add(data.date);
@@ -199,7 +180,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
             }
           });
           
-          // Convert Sets to arrays for state storage (sorted for consistency)
           setFilteredAttendanceData({ 
             presentDates: Array.from(presentDatesSet).sort(), 
             absentDates: Array.from(absentDatesSet).sort(), 
@@ -223,7 +203,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     };
   }, [selectedStudentsKey, currentMonthKey, refreshTrigger, isInitialLoad]);
 
-  // Add bulk attendance
   const addBulkAttendance = async () => {
     if (!userUid) return;
     if (!bulkStartDate || !bulkEndDate) {
@@ -242,7 +221,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       return;
     }
 
-    // Calculate total records to check batch limits
     const daysCount = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
     const studentsSnapshot = await getDocs(studentsQuery);
@@ -251,19 +229,14 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       return;
     }
     
-    // Filter to only selected students
     const filteredStudents = studentsSnapshot.docs.filter(doc => selectedStudents.includes(doc.id));
     if (filteredStudents.length === 0) {
       debouncedToast('No students selected for attendance', 'error');
       return;
     }
     
-    // Note: Confirmation for large operations is now handled in the UI component (BulkAttendanceCard)
-    // This function proceeds directly with the operation
     setBulkAttendanceLoading(true);
     try {
-      // Verify all selected students are still active before proceeding
-      // This prevents creating attendance for students who were marked inactive during selection
       const studentStatusChecks = await Promise.all(
         filteredStudents.map(async (studentDoc) => {
           try {
@@ -273,19 +246,18 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
               const studentData = studentSnapshot.data();
               return {
                 id: studentDoc.id,
-                isActive: studentData.isActive !== false, // Default to true if undefined
+                isActive: studentData.isActive !== false,
                 studentData: studentSnapshot.data()
               };
             }
             return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() };
           } catch (error) {
             console.error(`Error checking student ${studentDoc.id}:`, error);
-            return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() }; // Default to active on error
+            return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() };
           }
         })
       );
       
-      // Filter out inactive students
       const activeStudentsForAttendance = studentStatusChecks.filter(s => s.isActive);
       const inactiveStudents = studentStatusChecks.filter(s => !s.isActive);
       
@@ -308,15 +280,13 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       let absentRecords = 0;
       let currentBatch = writeBatch(db);
       let batchSize = 0;
-      const maxBatchSize = 500; // Firestore batch write limit
+      const maxBatchSize = 500;
       
       const currentDate = new Date(startDate);
       while (currentDate <= endDate) {
         const dateStr = formatLocalDate(currentDate);
         const finalStatus = defaultAttendanceStatus;
         
-        // Only process active students
-        // Note: Firestore security rules provide additional server-side enforcement
         for (const activeStudent of activeStudentsForAttendance) {
           try {
             const studentData = activeStudent.studentData;
@@ -342,28 +312,23 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
               absentRecords++;
             }
             
-            // Commit batch when it reaches the limit
             if (batchSize >= maxBatchSize) {
               await currentBatch.commit();
               currentBatch = writeBatch(db);
               batchSize = 0;
             }
           } catch (studentError) {
-            // Log error for individual student but continue with others
             console.error(`Error preparing attendance for student ${activeStudent.id} on ${dateStr}:`, studentError);
           }
         }
         currentDate.setDate(currentDate.getDate() + 1);
       }
       
-      // Commit any remaining operations in the final batch
       if (batchSize > 0) {
         try {
           await currentBatch.commit();
         } catch (batchError) {
           console.error('Error committing final batch:', batchError);
-          // Continue to show success message for records that were created
-          // The error will be caught by outer try-catch
           throw batchError;
         }
       }
@@ -376,22 +341,17 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       }
       debouncedToast(successMessage, 'success');
       
-      // Dispatch event to refresh dashboard
       dispatchAttendanceUpdatedEvent();
       
-      // Auto-recalculate fees for active students if present attendance was added
       if (presentRecords > 0 && activeStudentsForAttendance.length > 0) {
         try {
-          // Use recalculateAllStudents which already filters inactive students
-          // Since recalculateAllStudents filters inactive, we can use it safely
-          await recalculateAllStudents(startDate, false); // Disable toast notifications
+          await recalculateAllStudents(startDate, false);
         } catch (recalcError) {
           console.error('Error recalculating fees after bulk attendance:', recalcError);
           debouncedToast('Bulk attendance added, but failed to update fees. Please recalculate manually.', 'error');
         }
       }
       
-      // Reset form
       setBulkStartDate('');
       setBulkEndDate('');
       setDefaultAttendanceStatus('present');
@@ -399,7 +359,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     } catch (error) {
       console.error('Error adding bulk attendance:', error);
       
-      // Provide more specific error messages
       if (error && typeof error === 'object' && 'code' in error) {
         if (error.code === 'permission-denied') {
           debouncedToast('Permission denied: Unable to add bulk attendance. Some students may have been marked as inactive during the operation. Please refresh and try again.', 'error');
@@ -420,7 +379,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     }
   };
 
-  // Calendar helpers
   const toDateStr = useCallback((d: Date) => formatLocalDate(d), []);
 
   const isSelected = useCallback((dateStr: string) => 
@@ -436,7 +394,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     return d >= s && d <= e;
   }, [bulkStartDate, bulkEndDate]);
 
-  // Memoize present/absent dates as Sets for efficient lookups in getCellClasses
   const presentDatesSet = useMemo(() => new Set(filteredAttendanceData.presentDates), [filteredAttendanceData.presentDates]);
   const absentDatesSet = useMemo(() => new Set(filteredAttendanceData.absentDates), [filteredAttendanceData.absentDates]);
   
@@ -446,7 +403,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     const selected = isSelected(dateStr);
     const inRange = isInRange(dateStr);
     
-    // Use memoized Sets for efficient lookups
     const hasPresentAttendance = presentDatesSet.has(dateStr);
     const hasAbsentAttendance = absentDatesSet.has(dateStr);
     
@@ -491,7 +447,6 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
     setBulkEndDate('');
   }, [bulkStartDate, bulkEndDate, toDateStr]);
 
-  // Student selection helpers
   const toggleStudentSelection = (studentId: string) => {
     setSelectedStudents(prev => 
       prev.includes(studentId) 

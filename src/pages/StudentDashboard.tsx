@@ -10,7 +10,6 @@ import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } fr
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import { Link as LinkIcon, CheckCircle } from 'lucide-react';
 
-// --- Types ---
 interface AttendanceRecord {
   date: string;
   status: 'pending' | 'approved' | 'rejected' | 'absent';
@@ -24,7 +23,6 @@ interface FeeSummary {
   totalAmount: number;
 }
 
-// --- Card Skeleton ---
 const CardSkeleton: React.FC<{ description?: string; height?: number; className?: string }> = ({ description, height = 80, className }) => (
   <Card className={`animate-pulse ${className || ''}`}>
     <CardHeader>
@@ -41,7 +39,6 @@ const CardSkeleton: React.FC<{ description?: string; height?: number; className?
   </Card>
 );
 
-// --- Extracted Card Components ---
 type ApprovedDaysCardProps = {
   feeSummaryLoading: boolean;
   feeSummary: FeeSummary;
@@ -145,8 +142,6 @@ const TotalDueCard: React.FC<TotalDueCardProps> = React.memo(({ feeSummaryLoadin
   )
 ));
 
-// --- Main Dashboard ---
-
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -175,10 +170,8 @@ export default function StudentDashboard() {
   const [monthlyDueDate] = useState<Date | null>(null);
   const [isStudentActive, setIsStudentActive] = useState<boolean>(user?.isActive !== false);
 
-  // Memoized providerData and month checks
   const providerData = useMemo(() => user?.providerData || [], [user]);
   
-  // Update isStudentActive when user changes
   useEffect(() => {
     if (user?.isActive !== undefined) {
       setIsStudentActive(user.isActive !== false);
@@ -223,7 +216,6 @@ export default function StudentDashboard() {
       })
       
       setAttendanceRecords(records)
-      // Check if attendance is already marked for today
     } catch (error) {
       debouncedToast('Failed to load attendance records. Please refresh the page and try again.', 'error')
     } finally {
@@ -241,7 +233,6 @@ export default function StudentDashboard() {
         const userData = userDoc.data()
         const monthlyFee = userData.monthlyFee || 0
 
-        // Always fetch real-time attendance data for accurate display
         const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
         const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
         
@@ -265,7 +256,6 @@ export default function StudentDashboard() {
         const approvedDays = approvedSnapshot.size
         const absentDays = absentSnapshot.size
         
-        // Calculate daily rate: monthly fee / total days in month
         const totalDaysInMonth = monthEnd.getDate()
         const dailyRate = monthlyFee > 0 ? monthlyFee / totalDaysInMonth : 0
         const totalAmount = approvedDays * dailyRate
@@ -320,7 +310,6 @@ export default function StudentDashboard() {
     }
   }, [user?.uid, currentMonth]);
 
-  // Load initial data when user or month changes
   useEffect(() => {
     if (user?.uid) {
       Promise.all([
@@ -335,17 +324,14 @@ export default function StudentDashboard() {
     }
   }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
 
-  // Real-time listener for user document (fees, payment status, etc.)
   useEffect(() => {
     if (!user?.uid) return;
     const userDocRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Update student active status
-        setIsStudentActive(data.isActive !== false); // Default to true if undefined, only false if explicitly false
+        setIsStudentActive(data.isActive !== false);
         
-        // Update fee/payment state
         const raw = data.totalDueByMonth || {};
         const monthKey = getMonthKey(currentMonth);
         let due = 0;
@@ -465,25 +451,22 @@ export default function StudentDashboard() {
   const markAttendance = async () => {
     if (!user?.uid) return
     
-    // Check if student is active
     if (!isStudentActive) {
       debouncedToast('Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error')
       return
     }
     
     setLoading(true)
-    setFeeSummaryLoading(true); // Show loader immediately
+    setFeeSummaryLoading(true);
     try {
       const today = formatLocalDate(new Date())
       
-      // Check if already marked today
       const existingRecord = attendanceRecords.find(record => record.date === today)
       if (existingRecord) {
         debouncedToast('Attendance already marked for today', 'error')
         return
       }
       
-      // Create attendance record
       await setDoc(doc(db, 'attendance', `${user.uid}_${today}`), {
         studentId: user.uid,
         studentName: user.displayName || 'Unknown Student',
@@ -494,7 +477,6 @@ export default function StudentDashboard() {
         year: currentMonth.getFullYear()
       })
       
-      // Reload records and due
       await loadAttendanceRecords()
       await loadFeeSummary()
       await loadTotalDue()
@@ -502,17 +484,15 @@ export default function StudentDashboard() {
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
       console.error('Error marking attendance:', error);
-      // Check if error is due to permission (inactive student or other permission issues)
       if (error && typeof error === 'object' && 'code' in error) {
         if (error.code === 'permission-denied') {
-          // Double-check student status for better error message
           try {
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             if (userDoc.exists()) {
               const userData = userDoc.data();
               if (userData.isActive === false) {
                 debouncedToast('⚠️ Cannot mark attendance: Your account has been marked as discontinued. Please contact your teacher to reactivate your account.', 'error');
-                setIsStudentActive(false); // Update state immediately
+                setIsStudentActive(false);
                 return;
               }
             }
@@ -530,11 +510,10 @@ export default function StudentDashboard() {
       }
     } finally {
       setLoading(false)
-      setFeeSummaryLoading(false); // Hide loader after data is fetched
+      setFeeSummaryLoading(false);
     }
   }
 
-  // Memoize days array for calendar
   const daysInMonth = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();

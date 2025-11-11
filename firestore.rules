@@ -2,7 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -30,66 +29,44 @@ service cloud.firestore {
       return !changed.hasAny(protectedFields);
     }
 
-    // --- Collection Rules ---
-
-    // Rules for the 'users' collection
     match /users/{userId} {
       
-      // A user can read their OWN document
       allow read: if isSignedIn() && request.auth.uid == userId;
       
-      // A Teacher/Admin can read OTHER user documents
       allow read: if isSignedIn() 
                     && request.auth.uid != userId 
                     && isTeacherOrAdmin();
       
-      // List queries: Only Teachers and Admins can list users.
-      // Username lookup for student login is now handled by Cloud Function (lookupUsername).
       allow list: if isTeacherOrAdmin(); 
 
-      // CREATE: Teachers/Admins or a new user creating their own doc.
       allow create: if isSignedIn() && (isTeacherOrAdmin() || request.auth.uid == userId);
 
-      // UPDATE: Students can only modify non-protected fields.
       allow update: if isSignedIn() && (
         (request.auth.uid == userId && isValidUserUpdate())
         ||
         isTeacherOrAdmin()
       );
 
-      // DELETE: Only Teachers and Admins can delete user documents.
       allow delete: if isTeacherOrAdmin();
 
-      // Rules for the 'monthlySummaries' subcollection
       match /monthlySummaries/{monthId} {
-        // Needed for get()
         allow read: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
-        // Needed for queries/collectionGroup
         allow list: if isSignedIn() && (request.auth.uid == userId || isTeacherOrAdmin());
         allow write: if isTeacherOrAdmin();
       }
     }
 
-    // Rules for the 'attendance' collection
     match /attendance/{attendanceId} {
       
-      // Helper function to check if student is active
-      // Returns true if student is active (isActive === true or undefined)
-      // Returns false only if isActive === false (discontinued)
-      // This prevents inactive students from creating attendance records
       function isStudentActive() {
         let studentDoc = get(/databases/$(database)/documents/users/$(request.resource.data.studentId));
-        return studentDoc.data.isActive != false; // true if active or undefined (defaults to true for backward compatibility)
+        return studentDoc.data.isActive != false;
       }
       
-      // A student can read their OWN records, Teachers/Admins can read all
       allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || isTeacherOrAdmin());
 
       allow list: if isSignedIn();
 
-      // CREATE: Student can create 'pending' record ONLY if they are active
-      // Teachers/Admins can create any attendance record (including for inactive students for historical data)
-      // This provides server-side enforcement that inactive students cannot mark attendance
       allow create: if (isSignedIn() && (
         (request.auth.uid == request.resource.data.studentId && request.resource.data.status == 'pending' && isStudentActive())
         || isTeacherOrAdmin()
@@ -99,28 +76,24 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isTeacherOrAdmin();
     }
     
-    // Rules for the 'revenueSummaries' collection
     match /revenueSummaries/{summaryId} {
         allow read: if isSignedIn();
         allow list: if isSignedIn();
         allow write: if isSignedIn() && isTeacherOrAdmin();
     }
 
-    // Rules for aggregated monthly attendance counts
     match /platformMonthlyAttendance/{monthId} {
       allow read: if isSignedIn();
       allow list: if isSignedIn();
       allow write: if isTeacherOrAdmin();
     }
 
-    // Rules for aggregated monthly revenue
     match /platformMonthlyRevenue/{monthId} {
       allow read: if isSignedIn();
       allow list: if isSignedIn();
       allow write: if isTeacherOrAdmin();
     }
 
-    // Collection-group rules for monthlySummaries to support collectionGroup queries
     match /{path=**}/monthlySummaries/{monthId} {
       allow read: if isSignedIn() && isTeacherOrAdmin();
       allow list: if isSignedIn() && isTeacherOrAdmin();
