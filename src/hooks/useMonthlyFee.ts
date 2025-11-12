@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { debouncedToast } from '@/lib';
+import logger from '@/lib/logger';
 
 export const useMonthlyFee = (userUid: string | undefined) => {
   const [monthlyFee, setMonthlyFee] = useState(0);
@@ -37,7 +38,7 @@ export const useMonthlyFee = (userUid: string | undefined) => {
       setMonthlyFee(0);
       return 0;
     } catch (error) {
-      console.error('Error fetching monthly fee:', error);
+      logger.error('Error fetching monthly fee:', error);
       return 0;
     }
   }, [userUid]);
@@ -65,7 +66,7 @@ export const useMonthlyFee = (userUid: string | undefined) => {
       setIsUpdated(true);
       setTimeout(() => setIsUpdated(false), 500);
     } catch (error) {
-      console.error('Error updating monthly fee:', error);
+      logger.error('Error updating monthly fee:', error);
       debouncedToast('Failed to update monthly fee', 'error');
     } finally {
       setLoading(false);

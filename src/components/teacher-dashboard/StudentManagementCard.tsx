@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Inpu
 import { useState } from 'react';
 import { useStudents, useAuth } from '@/hooks';
 import { ConfirmationDialog } from '@/components';
+import logger from '@/lib/logger';
 
 export default function StudentManagementCard() {
   const { user } = useAuth();
@@ -290,7 +291,7 @@ export default function StudentManagementCard() {
               await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              console.error('Error toggling student status:', error);
+              logger.error('Error toggling student status:', error);
             } finally {
               setIsProcessing(false);
             }
@@ -318,7 +319,7 @@ export default function StudentManagementCard() {
               await toggleStudentActiveStatus(confirmationDialog.studentId, confirmationDialog.studentName, confirmationDialog.currentStatus);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              console.error('Error toggling student status:', error);
+              logger.error('Error toggling student status:', error);
             } finally {
               setIsProcessing(false);
             }
@@ -346,7 +347,7 @@ export default function StudentManagementCard() {
               await deleteStudentAccount(confirmationDialog.studentId, confirmationDialog.studentUsername);
               setConfirmationDialog({ ...confirmationDialog, open: false });
             } catch (error) {
-              console.error('Error deleting student:', error);
+              logger.error('Error deleting student:', error);
             } finally {
               setIsProcessing(false);
             }

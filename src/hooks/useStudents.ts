@@ -46,9 +46,9 @@ export const useStudents = () => {
       setFirstVisibleStudent(snapshot.docs[0]);
       setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
     } catch (error) {
-      console.error('useStudents error details:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+      logger.error('useStudents error details:', error);
+      logger.error('Error type:', typeof error);
+      logger.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
       toast.error('Failed to fetch students. Please try again.');
       setStudents([]);
     } finally {
@@ -93,7 +93,7 @@ export const useStudents = () => {
         setLastVisibleStudent(snapshot.docs[snapshot.docs.length - 1]);
       }
     } catch (error) {
-      console.error('Error fetching students page:', error);
+      logger.error('Error fetching students page:', error);
       toast.error('Failed to fetch students. Please try again.');
     } finally {
       setLoadingStudents(false);
@@ -104,7 +104,7 @@ export const useStudents = () => {
     try {
       await initialFetchStudents();
     } catch (error) {
-      console.error('Error refetching students:', error);
+      logger.error('Error refetching students:', error);
       toast.error('Failed to refresh students list.');
     }
   };
@@ -182,7 +182,7 @@ export const useStudents = () => {
       debouncedToast(`Student account created successfully! Username: ${newStudentUsername}`, 'success');
       return true;
     } catch (error: unknown) {
-      console.error('Error creating student account:', error);
+      logger.error('Error creating student account:', error);
       if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
         debouncedToast('Email is already in use. Please choose a different email.', 'error');
       } else if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/weak-password') {
@@ -200,7 +200,7 @@ export const useStudents = () => {
           logger.info('Successfully cleaned up Firebase Auth user after failed account creation');
         } catch (deleteError) {
           logger.error('Error cleaning up Firebase Auth user:', deleteError);
-          console.error('CRITICAL: Failed to clean up Firebase Auth user. Manual cleanup required in Firebase Console.');
+          logger.error('CRITICAL: Failed to clean up Firebase Auth user. Manual cleanup required in Firebase Console.');
         }
       }
     } finally {
@@ -228,7 +228,7 @@ export const useStudents = () => {
       window.dispatchEvent(new CustomEvent('attendance-updated'));
       window.dispatchEvent(new CustomEvent('fee-updated'));
     } catch (error: unknown) {
-      console.error('Error toggling student active status:', error);
+      logger.error('Error toggling student active status:', error);
       if (error instanceof Error) {
         debouncedToast(`Failed to ${action} student: ${error.message}`, 'error');
       } else {
@@ -258,7 +258,7 @@ export const useStudents = () => {
       window.dispatchEvent(new CustomEvent('attendance-updated'));
       window.dispatchEvent(new CustomEvent('fee-updated'));
     } catch (error: unknown) {
-      console.error('Error deleting student account:', error);
+      logger.error('Error deleting student account:', error);
       if (error instanceof Error) {
         debouncedToast(`Failed to delete account: ${error.message}`, 'error');
       } else {

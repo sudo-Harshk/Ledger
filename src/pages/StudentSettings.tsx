@@ -5,6 +5,7 @@ import { debouncedToast } from '../lib/debouncedToast';
 import { linkGitHubAccount } from '../lib/linkGitHubAccount';
 import { FaGithub } from 'react-icons/fa';
 import { auth } from '../firebase';
+import logger from '../lib/logger';
 
 export default function StudentSettings() {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ export default function StudentSettings() {
         await auth.currentUser.reload();
       }
     } catch (error) {
-      console.error('Error linking GitHub account:', error);
+      logger.error('Error linking GitHub account:', error);
       debouncedToast('Failed to link account. Please try again.', 'error');
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 import { setDoc, doc, serverTimestamp, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { debouncedToast } from './debouncedToast';
+import logger from './logger';
 
 async function calculateMonthlyRevenue(monthKey: string): Promise<number> {
   const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
@@ -41,7 +42,7 @@ export async function updateTeacherMonthlySummaries(monthKey: string, totalReven
     await Promise.all(updatePromises);
     return totalRevenue;
   } catch (e) {
-    console.error('Update teacher monthly summaries error', e);
+    logger.error('Update teacher monthly summaries error', e);
     throw e;
   }
 }
@@ -60,7 +61,7 @@ export async function updatePlatformMonthlyRevenue(monthKey: string) {
 
     return totalRevenue;
   } catch (e) {
-    console.error('Update platform monthly revenue error', e);
+    logger.error('Update platform monthly revenue error', e);
     throw e;
   }
 }
@@ -108,7 +109,7 @@ export async function backfillPlatformMonthlyRevenue() {
     debouncedToast('Monthly revenue backfilled', 'success');
     return totals;
   } catch (e) {
-    console.error('Backfill revenue error', e);
+    logger.error('Backfill revenue error', e);
     debouncedToast('Backfill revenue failed', 'error');
     throw e;
   }

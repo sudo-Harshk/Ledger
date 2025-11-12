@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 import { db } from '@/firebase';
 import { formatLocalDate, dispatchFeeUpdatedEvent } from '@/lib';
 import toast from 'react-hot-toast';
+import logger from '@/lib/logger';
 
 interface RecalculationOptions {
   studentIds?: string[];
@@ -59,7 +60,7 @@ export const useStudentFeeRecalculation = () => {
         
         if (studentDocs.length < allStudents.length) {
           const filteredCount = allStudents.length - studentDocs.length;
-          console.warn(`Filtered out ${filteredCount} inactive student(s) from fee recalculation`);
+          logger.warn(`Filtered out ${filteredCount} inactive student(s) from fee recalculation`);
         }
       } else {
         studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
@@ -141,7 +142,7 @@ export const useStudentFeeRecalculation = () => {
       };
 
     } catch (error: unknown) {
-      console.error('Error recalculating student fees:', error);
+      logger.error('Error recalculating student fees:', error);
       toast.dismiss(loadingToast);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Failed to recalculate fees: ${errorMessage}`);

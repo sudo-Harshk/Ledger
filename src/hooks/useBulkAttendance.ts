@@ -5,6 +5,7 @@ import { formatLocalDate, debouncedToast, dispatchAttendanceUpdatedEvent } from 
 import { differenceInCalendarDays } from 'date-fns';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 import type { StudentAccount } from '@/types';
+import logger from '@/lib/logger';
 
 export const useBulkAttendance = (userUid: string | undefined, students: StudentAccount[], currentMonth: Date, refreshTrigger?: number, isInitialLoad?: boolean) => {
   const [showBulkAttendance, setShowBulkAttendance] = useState(false);
@@ -186,11 +187,11 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
             studentAttendanceData 
           });
         } catch (error) {
-          console.error('Error processing filtered attendance data:', error);
+          logger.error('Error processing filtered attendance data:', error);
         }
       },
       (error) => {
-        console.error('Error in filtered attendance data listener:', error);
+        logger.error('Error in filtered attendance data listener:', error);
       }
     );
 
@@ -198,7 +199,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       try {
         unsubscribe();
       } catch (error) {
-        console.error('Error unsubscribing from filtered attendance data:', error);
+        logger.error('Error unsubscribing from filtered attendance data:', error);
       }
     };
   }, [selectedStudentsKey, currentMonthKey, refreshTrigger, isInitialLoad]);
@@ -252,7 +253,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
             }
             return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() };
           } catch (error) {
-            console.error(`Error checking student ${studentDoc.id}:`, error);
+            logger.error(`Error checking student ${studentDoc.id}:`, error);
             return { id: studentDoc.id, isActive: true, studentData: studentDoc.data() };
           }
         })
@@ -318,7 +319,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
               batchSize = 0;
             }
           } catch (studentError) {
-            console.error(`Error preparing attendance for student ${activeStudent.id} on ${dateStr}:`, studentError);
+            logger.error(`Error preparing attendance for student ${activeStudent.id} on ${dateStr}:`, studentError);
           }
         }
         currentDate.setDate(currentDate.getDate() + 1);
@@ -328,7 +329,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
         try {
           await currentBatch.commit();
         } catch (batchError) {
-          console.error('Error committing final batch:', batchError);
+          logger.error('Error committing final batch:', batchError);
           throw batchError;
         }
       }
@@ -347,7 +348,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
         try {
           await recalculateAllStudents(startDate, false);
         } catch (recalcError) {
-          console.error('Error recalculating fees after bulk attendance:', recalcError);
+          logger.error('Error recalculating fees after bulk attendance:', recalcError);
           debouncedToast('Bulk attendance added, but failed to update fees. Please recalculate manually.', 'error');
         }
       }
@@ -357,7 +358,7 @@ export const useBulkAttendance = (userUid: string | undefined, students: Student
       setDefaultAttendanceStatus('present');
       setShowBulkAttendance(false);
     } catch (error) {
-      console.error('Error adding bulk attendance:', error);
+      logger.error('Error adding bulk attendance:', error);
       
       if (error && typeof error === 'object' && 'code' in error) {
         if (error.code === 'permission-denied') {

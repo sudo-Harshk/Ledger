@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, onSnapshot, getDoc, setDoc, Timestamp, type DocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 import type { FinancialSummary } from '@/types';
+import logger from '@/lib/logger';
 
 export const useFinancialSummary = (userUid: string | undefined, currentMonth: Date, refreshTrigger?: number) => {
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
@@ -44,13 +45,13 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
             setLoading(false);
           }
         } catch (error) {
-          console.error('Error processing financial summary:', error);
+          logger.error('Error processing financial summary:', error);
           if (isMounted) {
             setLoading(false);
           }
         }
       }).catch((error) => {
-        console.error('Error fetching financial summary:', error);
+        logger.error('Error fetching financial summary:', error);
         if (isMounted) {
           setLoading(false);
         }
@@ -71,7 +72,7 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
             }
             setLoading(false);
           } catch (error) {
-            console.error('Error processing financial summary:', error);
+            logger.error('Error processing financial summary:', error);
             setLoading(false);
           }
         },
@@ -82,7 +83,7 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
             }
             return;
           }
-          console.error('Error in financial summary listener:', error);
+          logger.error('Error in financial summary listener:', error);
           if (isMounted) {
             setLoading(false);
           }
@@ -94,7 +95,7 @@ export const useFinancialSummary = (userUid: string | undefined, currentMonth: D
         try {
           unsubscribe();
         } catch (error) {
-          console.error('Error unsubscribing from financial summary:', error);
+          logger.error('Error unsubscribing from financial summary:', error);
         }
       };
     }

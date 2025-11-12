@@ -7,7 +7,14 @@ interface LookupUsernameRequest {
   username: string;
 }
 
-export const lookupUsername = functions.https.onCall(async (request) => {
+export const lookupUsername = functions
+  .runWith({
+    maxInstances: 10,
+    timeoutSeconds: 10,
+    memory: '256MB',
+  })
+  .https
+  .onCall(async (request) => {
   const data = request.data as LookupUsernameRequest;
   const username = data.username;
 

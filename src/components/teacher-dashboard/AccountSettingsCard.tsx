@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
 import { linkGoogleAccount, linkGitHubAccount } from '../../lib';
 import { useState } from 'react';
+import logger from '../../lib/logger';
 
 interface AccountSettingsCardProps {
   show: boolean;
@@ -24,7 +25,7 @@ export default function AccountSettingsCard({
     try {
       await linkGoogleAccount();
     } catch (error) {
-      console.error('Error linking Google account:', error);
+      logger.error('Error linking Google account:', error);
     } finally {
       setLinkingProvider(null);
     }
@@ -37,7 +38,7 @@ export default function AccountSettingsCard({
     try {
       await linkGitHubAccount();
     } catch (error) {
-      console.error('Error linking GitHub account:', error);
+      logger.error('Error linking GitHub account:', error);
     } finally {
       setLinkingProvider(null);
     }

@@ -42,7 +42,7 @@ if (import.meta.env.MODE !== 'staging') {
     isTokenAutoRefreshEnabled: true,
   });
 } else {
-  console.log("App Check disabled for staging environment");
+  logger.info("App Check disabled for staging environment");
 }
 
 export const auth = getAuth(app);

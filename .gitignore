@@ -98,6 +98,13 @@ Thumbs.db
 
 # Project specific
 admin-scripts/
+admin-scripts/**/*.json
+admin-scripts/package.json
 *.txt
 !README.txt
 !CHANGELOG.txt
+
+# Service account keys (CRITICAL: Never commit these)
+**/serviceAccountKey.json
+**/*service-account*.json
+**/*-key.json

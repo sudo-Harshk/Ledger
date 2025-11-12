@@ -3,6 +3,7 @@ import { Navigation, Footer } from '@/components';
 import { MonthlyRevenueChart, StudentAttendanceChart } from '@/components/admin-dashboard';
 import { useState } from 'react';
 import { debouncedToast, backfillPlatformMonthlyRevenue } from '@/lib';
+import logger from '@/lib/logger';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -24,7 +25,7 @@ export default function AdminDashboard() {
             setRefreshKey((k) => k + 1);
             debouncedToast('Revenue recalculated and refreshed', 'success');
           } catch (error) {
-            console.error('Error refreshing revenue:', error);
+            logger.error('Error refreshing revenue:', error);
             debouncedToast('Failed to refresh revenue', 'error');
           } finally {
             setRefreshing(false);

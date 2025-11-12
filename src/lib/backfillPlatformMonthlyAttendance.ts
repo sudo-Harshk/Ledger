@@ -1,6 +1,7 @@
 import { collection, getDocs, orderBy, query, setDoc, doc, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { debouncedToast } from './debouncedToast';
+import logger from './logger';
 
 function formatMonthKey(dateStr: string): string | null {
   const parts = dateStr.split('-');
@@ -39,7 +40,7 @@ export async function backfillPlatformMonthlyAttendance(startFrom?: string) {
     debouncedToast('Monthly attendance backfilled', 'success');
     return counts;
   } catch (e) {
-    console.error('Backfill error', e);
+    logger.error('Backfill error', e);
     debouncedToast('Backfill failed', 'error');
     throw e;
   }

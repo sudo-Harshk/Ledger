@@ -3,6 +3,7 @@ import { collection, collectionGroup, getDocs, query, orderBy, where, limit, onS
 import { useAuth } from '@/hooks';
 import { db } from '../firebase';
 import { debouncedToast } from '../lib/debouncedToast';
+import logger from '../lib/logger';
 
 interface MonthlyRevenueData {
   month: string;
@@ -68,7 +69,7 @@ export function useAdminAnalytics(refreshKey?: number) {
           if (error.code === 'permission-denied') {
             return;
           }
-          console.error('Error in revenue listener:', error);
+          logger.error('Error in revenue listener:', error);
         });
 
         (async () => {
@@ -99,7 +100,7 @@ export function useAdminAnalytics(refreshKey?: number) {
               });
             }
           } catch (e) {
-            console.error('Fallback revenue aggregation error:', e);
+            logger.error('Fallback revenue aggregation error:', e);
           }
         })();
 
@@ -140,7 +141,7 @@ export function useAdminAnalytics(refreshKey?: number) {
             students.sort((a, b) => a.name.localeCompare(b.name));
             setTrackedStudents(students);
           } catch (error) {
-            console.error('Error fetching tracked students:', error);
+            logger.error('Error fetching tracked students:', error);
           }
         };
 
@@ -183,7 +184,7 @@ export function useAdminAnalytics(refreshKey?: number) {
             if (error.code === 'permission-denied') {
               return;
             }
-            console.error('Error in platform monthly attendance listener:', error);
+            logger.error('Error in platform monthly attendance listener:', error);
           });
 
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);  
@@ -220,7 +221,7 @@ export function useAdminAnalytics(refreshKey?: number) {
             if (error.code === 'permission-denied') {
               return;
             }
-            console.error('Error in current month attendance listener:', error);
+            logger.error('Error in current month attendance listener:', error);
           });
         } else {
           const attendanceQuery = query(
@@ -280,12 +281,12 @@ export function useAdminAnalytics(refreshKey?: number) {
             if (error.code === 'permission-denied') {
               return;
             }
-            console.error('Error in attendance fallback listener:', error);
+            logger.error('Error in attendance fallback listener:', error);
           });
         }
 
       } catch (error) {
-        console.error('Error fetching admin analytics:', error);
+        logger.error('Error fetching admin analytics:', error);
         debouncedToast('Failed to load analytics data', 'error');
       } finally {
         setLoading(false);

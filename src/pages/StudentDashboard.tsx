@@ -9,6 +9,7 @@ import { formatLocalDate, debouncedToast, linkGoogleAccount, dispatchAttendanceU
 import { doc, setDoc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import { Link as LinkIcon, CheckCircle } from 'lucide-react';
+import logger from '@/lib/logger';
 
 interface AttendanceRecord {
   date: string;
@@ -268,7 +269,7 @@ export default function StudentDashboard() {
         });
       }
     } catch (error) {
-      console.error('Error loading fee summary:', error)
+      logger.error('Error loading fee summary:', error)
       debouncedToast('Failed to load fee summary. Please refresh the page and try again.', 'error')
     } finally {
       setFeeSummaryLoading(false)
@@ -306,7 +307,7 @@ export default function StudentDashboard() {
         setLastTotalDueUpdate(lastUpdate ? (lastUpdate.toDate ? lastUpdate.toDate() : new Date(lastUpdate)) : null);
       }
     } catch (error) {
-      console.error('Error loading total due amount:', error);
+      logger.error('Error loading total due amount:', error);
     }
   }, [user?.uid, currentMonth]);
 
@@ -319,7 +320,7 @@ export default function StudentDashboard() {
       ]).then(() => {
         setLastDataRefresh(new Date());
       }).catch((error) => {
-        console.error('Error loading initial data:', error);
+        logger.error('Error loading initial data:', error);
       });
     }
   }, [user, currentMonth, loadAttendanceRecords, loadFeeSummary, loadTotalDue])
@@ -357,7 +358,7 @@ export default function StudentDashboard() {
       if (error.code === 'permission-denied') {
         return;
       }
-      console.error('Error in user document listener:', error);
+      logger.error('Error in user document listener:', error);
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
@@ -398,7 +399,7 @@ export default function StudentDashboard() {
       if (error.code === 'permission-denied') {
         return;
       }
-      console.error('Error in attendance listener:', error);
+      logger.error('Error in attendance listener:', error);
     });
     return () => unsubscribe();
   }, [user?.uid, currentMonth]);
@@ -475,7 +476,7 @@ export default function StudentDashboard() {
       dispatchAttendanceUpdatedEvent();
       debouncedToast('Attendance marked successfully! Waiting for teacher approval.', 'success')
     } catch (error) {
-      console.error('Error marking attendance:', error);
+      logger.error('Error marking attendance:', error);
       if (error && typeof error === 'object' && 'code' in error) {
         if (error.code === 'permission-denied') {
           try {
@@ -489,7 +490,7 @@ export default function StudentDashboard() {
               }
             }
           } catch (checkError) {
-            console.error('Error checking student status:', checkError);
+            logger.error('Error checking student status:', checkError);
           }
           debouncedToast('Permission denied: Unable to mark attendance. Please contact your teacher if this issue persists.', 'error');
         } else if (error.code === 'unavailable') {
@@ -569,7 +570,7 @@ export default function StudentDashboard() {
       setLastDataRefresh(new Date());
       debouncedToast('Data refreshed successfully!', 'success');
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      logger.error('Error refreshing data:', error);
       debouncedToast('Failed to refresh data. Please try again.', 'error');
     } finally {
       setRefreshing(false);

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { debouncedToast } from '../../lib/debouncedToast';
+import logger from '../../lib/logger';
 
 interface PlatformAnalyticsCardProps {
   refreshKey: number;
@@ -96,7 +97,7 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           avgRevenuePerStudent
         });
       } catch (error) {
-        console.error('Error fetching analytics:', error);
+        logger.error('Error fetching analytics:', error);
         debouncedToast('Failed to load platform analytics', 'error');
       } finally {
         setLoading(false);

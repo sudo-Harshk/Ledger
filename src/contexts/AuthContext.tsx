@@ -89,19 +89,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   }
                 }
               } catch (error) {
-                logger.error('Error during retry:', error)
-                await signOut(auth)
-                if (isMounted) {
-                  setUser(null)
+                // Check if error is due to offline/unavailable status
+                const isOfflineError = error && typeof error === 'object' && 'code' in error && 
+                  (error.code === 'unavailable' || 
+                   error.code === 'failed-precondition' ||
+                   (error as { message?: string }).message?.includes('offline'));
+                
+                if (isOfflineError) {
+                  logger.debug('Retry failed due to offline status, will retry when online')
+                  // Don't sign out on offline errors - allow app to work offline
+                } else {
+                  logger.error('Error during retry:', error)
+                  await signOut(auth)
+                  if (isMounted) {
+                    setUser(null)
+                  }
                 }
               }
             }, 1000)
           }
         } catch (error: unknown) {
-          logger.error('Error fetching user data:', error)
-          console.error('AuthContext error details:', error)
-          if (isMounted) {
-            setUser(null)
+          // Check if error is due to offline/unavailable status
+          const isOfflineError = error && typeof error === 'object' && 'code' in error && 
+            (error.code === 'unavailable' || 
+             error.code === 'failed-precondition' ||
+             (error as { message?: string }).message?.includes('offline'));
+          
+          if (isOfflineError) {
+            // Don't log offline errors as errors - Firestore handles offline mode automatically
+            logger.debug('User data fetch failed due to offline status, will retry when online')
+            // Don't set user to null - allow app to work in offline mode
+            // Firestore will automatically retry when connection is restored
+          } else {
+            logger.error('Error fetching user data:', error)
+            if (isMounted) {
+              setUser(null)
+            }
           }
         }
       } else {
@@ -125,6 +148,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (username: string, password: string) => {
     try {
+      // Input validation
+      if (!username || typeof username !== 'string' || username.trim().length === 0) {
+        throw new Error('Username is required');
+      }
+      if (username.length > 100) {
+        throw new Error('Username is too long');
+      }
+      if (!password || typeof password !== 'string' || password.length === 0) {
+        throw new Error('Password is required');
+      }
       
       let loginEmail = username
       

@@ -4,6 +4,7 @@ import { db } from '@/firebase';
 import { debouncedToast, dispatchAttendanceUpdatedEvent } from '@/lib';
 import { useStudentFeeRecalculation } from './useStudentFeeRecalculation';
 import type { PendingRequest } from '@/types';
+import logger from '@/lib/logger';
 
 export interface PendingRequestWithStatus extends PendingRequest {
   isStudentActive?: boolean;
@@ -84,7 +85,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
                 
                 setStudentStatuses(statusMap);
               } catch (statusError) {
-                console.error('Error fetching student statuses:', statusError);
+                logger.error('Error fetching student statuses:', statusError);
                 const fallbackStatuses: Record<string, boolean> = {};
                 studentIds.forEach(id => {
                   const cached = studentStatusCacheRef.current[id];
@@ -97,14 +98,14 @@ export const usePendingRequests = (userUid: string | undefined) => {
             setStudentStatuses({});
           }
         } catch (error) {
-          console.error('Error processing pending requests:', error);
+          logger.error('Error processing pending requests:', error);
         }
       },
       (error) => {
         if (error.code === 'permission-denied') {
           return;
         }
-        console.error('Error in pending requests listener:', error);
+        logger.error('Error in pending requests listener:', error);
       }
     );
 
@@ -112,7 +113,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
       try {
         unsubscribe();
       } catch (error) {
-        console.error('Error unsubscribing from pending requests:', error);
+        logger.error('Error unsubscribing from pending requests:', error);
       }
     };
   }, [userUid]);
@@ -169,7 +170,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
           await recalculateSingleStudent(studentId, attendanceDate, false);
           debouncedToast(`Attendance approved!`, 'success');
         } catch (recalcError) {
-          console.error('Error recalculating fees after approval:', recalcError);
+          logger.error('Error recalculating fees after approval:', recalcError);
           debouncedToast(`Attendance approved, but failed to update fees. Please recalculate manually.`, 'error');
         }
       } else {
@@ -178,7 +179,7 @@ export const usePendingRequests = (userUid: string | undefined) => {
       
       dispatchAttendanceUpdatedEvent();
     } catch (error) {
-      console.error('Error updating attendance:', error);
+      logger.error('Error updating attendance:', error);
       debouncedToast('Failed to update attendance', 'error');
     } finally {
       setLoading(false);

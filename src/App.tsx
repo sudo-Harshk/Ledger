@@ -1,10 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import './App.css'
-import ToastProvider from './components/ToastProvider';
-import LoadingSpinner from './components/LoadingSpinner';
+import { ToastProvider, LoadingSpinner, ErrorBoundary } from './components';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'))
@@ -14,37 +13,6 @@ const LandingPage = lazy(() => import('./pages/LandingPage'))
 const StudentSettings = lazy(() => import('./pages/StudentSettings'))
 
 function App() {
-  useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error('Unhandled promise rejection:', event.reason);
-      console.error('Promise rejection details:', {
-        reason: event.reason,
-        type: typeof event.reason,
-        stack: event.reason?.stack
-      });
-      
-      event.preventDefault();
-    };
-
-    const handleError = (event: ErrorEvent) => {
-      console.error('Global error:', event.error);
-      console.error('Error details:', {
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
-        error: event.error
-      });
-    };
-
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleError);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleError);
-    };
-  }, []);
 
   function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: string[] }) {
     const { user, loading } = useAuth()
@@ -65,11 +33,12 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-background relative">
-          <div className="relative z-20">
-          <Routes>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-background relative">
+            <div className="relative z-20">
+            <Routes>
             <Route path="/login" element={
               <Suspense fallback={<LoadingSpinner message="Loading Login..." />}>
                 <LoginPage />
@@ -121,12 +90,13 @@ function App() {
               </Suspense>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            </Routes>
+            </div>
+            <ToastProvider />
           </div>
-          <ToastProvider />
-        </div>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

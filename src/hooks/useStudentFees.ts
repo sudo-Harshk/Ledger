@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, doc, updateDoc, getDoc, type QueryDo
 import { db } from '@/firebase';
 import { formatLocalDate, updatePlatformMonthlyRevenue } from '@/lib';
 import toast from 'react-hot-toast';
+import logger from '@/lib/logger';
 
 interface StudentFee {
   studentId: string;
@@ -104,7 +105,7 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       });
       setStudentFees(fees);
     } catch (error) {
-      console.error('Error fetching student fees:', error);
+      logger.error('Error fetching student fees:', error);
       toast.error('Failed to fetch student fees');
     } finally {
       setLoading(false);
@@ -143,7 +144,7 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       try {
         await updatePlatformMonthlyRevenue(monthKey);
       } catch (revenueError) {
-        console.error('Error updating platform revenue:', revenueError);
+        logger.error('Error updating platform revenue:', revenueError);
       }
       
       toast.dismiss(loadingToast);
@@ -151,7 +152,7 @@ export const useStudentFees = (currentMonth: Date, refreshTrigger?: number) => {
       await fetchStudentFees();
     } catch (error: unknown) {
       toast.dismiss(loadingToast);
-      console.error('Mark as paid error:', error);
+      logger.error('Mark as paid error:', error);
       
       if (error && typeof error === 'object' && 'code' in error && error.code === 'permission-denied') {
         toast.error('Permission denied. Please ensure you have teacher/admin access.');

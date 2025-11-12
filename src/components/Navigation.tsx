@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FiRefreshCw } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
+import logger from '@/lib/logger'
 
 interface NavigationProps {
   onRefresh?: () => void
@@ -22,7 +23,7 @@ export default function Navigation({ onRefresh, refreshing, showRecalculate = fa
       await logout()
       toast.success('Logged out successfully')
     } catch (error) {
-      console.error('Logout failed:', error)
+      logger.error('Logout failed:', error)
       toast.error('Logout failed. Please try again.')
     }
   }

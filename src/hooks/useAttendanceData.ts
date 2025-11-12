@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { formatLocalDate } from '@/lib';
+import logger from '@/lib/logger';
 
 export const useAttendanceData = (currentMonth: Date) => {
   const [attendanceData, setAttendanceData] = useState({ presentDates: new Set(), absentDates: new Set() });
@@ -31,11 +32,11 @@ export const useAttendanceData = (currentMonth: Date) => {
           });
           setAttendanceData({ presentDates, absentDates });
         } catch (error) {
-          console.error('Error processing attendance data:', error);
+          logger.error('Error processing attendance data:', error);
         }
       },
       (error) => {
-        console.error('Error in attendance data listener:', error);
+        logger.error('Error in attendance data listener:', error);
       }
     );
 
@@ -43,7 +44,7 @@ export const useAttendanceData = (currentMonth: Date) => {
       try {
         unsubscribe();
       } catch (error) {
-        console.error('Error unsubscribing from attendance data:', error);
+        logger.error('Error unsubscribing from attendance data:', error);
       }
     };
   }, [currentMonth]);
