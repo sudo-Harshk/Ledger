@@ -1,6 +1,6 @@
 import { useAuth, useAdminAnalytics } from '@/hooks';
 import { Navigation, Footer } from '@/components';
-import { MonthlyRevenueChart, StudentAttendanceChart } from '@/components/admin-dashboard';
+import { PlatformAnalyticsCard, MonthlyRevenueChart, StudentAttendanceChart } from '@/components/admin-dashboard';
 import { useState } from 'react';
 import { debouncedToast, backfillPlatformMonthlyRevenue } from '@/lib';
 import logger from '@/lib/logger';
@@ -43,6 +43,8 @@ export default function AdminDashboard() {
 
           <div className="w-full">
             <div className="space-y-6">
+              <PlatformAnalyticsCard refreshKey={refreshKey} />
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MonthlyRevenueChart data={monthlyRevenue} loading={loading} />
                 <StudentAttendanceChart data={monthlyAttendance} loading={loading} trackedStudents={trackedStudents} />
