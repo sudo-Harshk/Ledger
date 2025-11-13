@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { debouncedToast } from '../../lib/debouncedToast';
 import logger from '../../lib/logger';
@@ -18,6 +18,8 @@ interface AnalyticsData {
   inactiveStudents?: number; // Optional: inactive students count
   monthlyGrowth: number;
   avgRevenuePerStudent: number;
+  currentMonthRevenue: number;
+  studentRetentionRate: number;
 }
 
 export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsCardProps) {
@@ -29,7 +31,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
     activeUsers: 0,
     inactiveStudents: 0,
     monthlyGrowth: 0,
-    avgRevenuePerStudent: 0
+    avgRevenuePerStudent: 0,
+    currentMonthRevenue: 0,
+    studentRetentionRate: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -83,8 +87,23 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           }
         });
 
+        // Get current month revenue
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        let currentMonthRevenue = 0;
+        try {
+          const currentMonthDoc = await getDoc(doc(db, 'platformMonthlyRevenue', currentMonthKey));
+          if (currentMonthDoc.exists()) {
+            const data = currentMonthDoc.data();
+            currentMonthRevenue = data.revenue || 0;
+          }
+        } catch (error) {
+          logger.error('Error fetching current month revenue:', error);
+        }
+
         const monthlyGrowth = totalUsers > 0 ? (recentUsers / totalUsers) * 100 : 0;
         const avgRevenuePerStudent = activeStudents > 0 ? totalRevenue / activeStudents : 0;
+        const studentRetentionRate = totalStudents > 0 ? (activeStudents / totalStudents) * 100 : 0;
 
         setAnalytics({
           totalUsers,
@@ -94,7 +113,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           activeUsers: activeStudents,
           inactiveStudents,
           monthlyGrowth,
-          avgRevenuePerStudent
+          avgRevenuePerStudent,
+          currentMonthRevenue,
+          studentRetentionRate
         });
       } catch (error) {
         logger.error('Error fetching analytics:', error);
@@ -203,17 +224,17 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
           <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4 border border-orange-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-600 text-sm font-medium">Total Revenue</p>
-                <p className="text-2xl font-bold text-orange-800">₹{analytics.totalRevenue.toLocaleString()}</p>
+                <p className="text-orange-600 text-sm font-medium">Current Month Revenue</p>
+                <p className="text-2xl font-bold text-orange-800">₹{analytics.currentMonthRevenue.toLocaleString()}</p>
               </div>
               <div className="w-10 h-10 bg-orange-200 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
             </div>
             <div className="mt-2 text-xs text-orange-600">
-              ₹{analytics.avgRevenuePerStudent.toFixed(0)} avg per student
+              {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
             </div>
           </div>
         </div>
@@ -240,9 +261,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-palette-dark-red">
-                {analytics.totalRevenue > 0 ? ((analytics.totalRevenue / analytics.totalStudents) * 12).toFixed(0) : '0'}
+                {analytics.studentRetentionRate.toFixed(1)}%
               </div>
-              <div className="text-sm text-palette-dark-teal">Annual Revenue Potential</div>
+              <div className="text-sm text-palette-dark-teal">Student Retention Rate</div>
             </div>
           </div>
         </div>
