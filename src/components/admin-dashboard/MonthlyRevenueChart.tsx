@@ -58,15 +58,37 @@ export default function MonthlyRevenueChart({ data, loading }: MonthlyRevenueCha
   }
 
   const formatMonth = (monthStr: string) => {
-    const date = new Date(monthStr);
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    try {
+      // Handle YYYY-MM format by appending -01
+      const dateStr = monthStr.includes('T') ? monthStr : `${monthStr}-01`;
+      const date = new Date(dateStr);
+      
+      // Validate date is valid
+      if (isNaN(date.getTime())) {
+        // Fallback: try to parse as YYYY-MM
+        const parts = monthStr.split('-');
+        if (parts.length >= 2) {
+          const year = parts[0];
+          const month = parts[1];
+          return `${new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { month: 'short' })} ${year.slice(-2)}`;
+        }
+        return monthStr; // Return original if all parsing fails
+      }
+      
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    } catch (error) {
+      // Fallback to showing the month string if parsing fails
+      return monthStr;
+    }
   };
 
-  const chartData = data.map(item => ({
-    ...item,
-    month: formatMonth(item.month),
-    revenue: Math.round(item.revenue)
-  }));
+  const chartData = data
+    .filter(item => item && item.month && typeof item.revenue === 'number' && !isNaN(item.revenue))
+    .map(item => ({
+      ...item,
+      month: formatMonth(item.month),
+      revenue: Math.round(item.revenue || 0)
+    }));
 
   return (
     <Card className="bg-card-elevated shadow-xl border-0">
@@ -123,20 +145,41 @@ export default function MonthlyRevenueChart({ data, loading }: MonthlyRevenueCha
         <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-palette-golden/30">
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
-              ₹{data.length > 0 ? Math.round(data.reduce((sum, item) => sum + item.revenue, 0) / data.length).toLocaleString() : '0'}
+              {data.length > 0 ? (
+                (() => {
+                  const validData = data.filter(item => typeof item.revenue === 'number' && !isNaN(item.revenue));
+                  const avg = validData.length > 0 
+                    ? validData.reduce((sum, item) => sum + (item.revenue || 0), 0) / validData.length 
+                    : 0;
+                  return `₹${Math.round(avg).toLocaleString()}`;
+                })()
+              ) : '₹0'}
             </div>
             <div className="text-sm text-palette-dark-teal">Avg Monthly</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
-              ₹{data.length > 0 ? Math.round(data.reduce((sum, item) => sum + item.revenue, 0)).toLocaleString() : '0'}
+              {data.length > 0 ? (
+                (() => {
+                  const validData = data.filter(item => typeof item.revenue === 'number' && !isNaN(item.revenue));
+                  const total = validData.reduce((sum, item) => sum + (item.revenue || 0), 0);
+                  return `₹${Math.round(total).toLocaleString()}`;
+                })()
+              ) : '₹0'}
             </div>
             <div className="text-sm text-palette-dark-teal">Total Revenue</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
               {data.length > 1 ? (
-                data[data.length - 1].revenue > data[data.length - 2].revenue ? '↗' : '↘'
+                (() => {
+                  const last = data[data.length - 1]?.revenue;
+                  const prev = data[data.length - 2]?.revenue;
+                  if (typeof last === 'number' && typeof prev === 'number' && !isNaN(last) && !isNaN(prev)) {
+                    return last > prev ? '↗' : '↘';
+                  }
+                  return '—';
+                })()
               ) : '—'}
             </div>
             <div className="text-sm text-palette-dark-teal">Trend</div>

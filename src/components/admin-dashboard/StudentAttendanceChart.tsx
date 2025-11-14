@@ -66,15 +66,37 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
   }
 
   const formatMonth = (monthStr: string) => {
-    const date = new Date(monthStr);
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    try {
+      // Handle YYYY-MM format by appending -01
+      const dateStr = monthStr.includes('T') ? monthStr : `${monthStr}-01`;
+      const date = new Date(dateStr);
+      
+      // Validate date is valid
+      if (isNaN(date.getTime())) {
+        // Fallback: try to parse as YYYY-MM
+        const parts = monthStr.split('-');
+        if (parts.length >= 2) {
+          const year = parts[0];
+          const month = parts[1];
+          return `${new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('en-US', { month: 'short' })} ${year.slice(-2)}`;
+        }
+        return monthStr; // Return original if all parsing fails
+      }
+      
+      return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+    } catch (error) {
+      // Fallback to showing the month string if parsing fails
+      return monthStr;
+    }
   };
 
-  const chartData = data.map(item => ({
-    ...item,
-    month: formatMonth(item.month),
-    attendance: Math.round(item.attendance)
-  }));
+  const chartData = data
+    .filter(item => item && item.month && typeof item.attendance === 'number' && !isNaN(item.attendance))
+    .map(item => ({
+      ...item,
+      month: formatMonth(item.month),
+      attendance: Math.round(item.attendance || 0)
+    }));
 
   return (
     <Card className="bg-card-elevated shadow-xl border-0">
@@ -179,19 +201,41 @@ export default function StudentAttendanceChart({ data, loading, trackedStudents 
         <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-palette-golden/30">
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
-              {data.length > 0 ? Math.round(data.reduce((sum, item) => sum + item.attendance, 0) / data.length) : '0'}
+              {data.length > 0 ? (
+                (() => {
+                  const validData = data.filter(item => typeof item.attendance === 'number' && !isNaN(item.attendance));
+                  const avg = validData.length > 0 
+                    ? validData.reduce((sum, item) => sum + (item.attendance || 0), 0) / validData.length 
+                    : 0;
+                  return Math.round(avg);
+                })()
+              ) : '0'}
             </div>
             <div className="text-sm text-palette-dark-teal">Avg Records/Month</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
-              {data.length > 0 ? Math.max(...data.map(item => item.attendance)) : '0'}
+              {data.length > 0 ? (
+                (() => {
+                  const validData = data
+                    .map(item => item.attendance)
+                    .filter(att => typeof att === 'number' && !isNaN(att));
+                  return validData.length > 0 ? Math.max(...validData) : '0';
+                })()
+              ) : '0'}
             </div>
             <div className="text-sm text-palette-dark-teal">Max Records</div>
           </div>
           <div className="text-center">
             <div className="text-lg font-bold text-palette-dark-red">
-              {data.length > 0 ? Math.min(...data.map(item => item.attendance)) : '0'}
+              {data.length > 0 ? (
+                (() => {
+                  const validData = data
+                    .map(item => item.attendance)
+                    .filter(att => typeof att === 'number' && !isNaN(att));
+                  return validData.length > 0 ? Math.min(...validData) : '0';
+                })()
+              ) : '0'}
             </div>
             <div className="text-sm text-palette-dark-teal">Min Records</div>
           </div>

@@ -7,7 +7,7 @@ import { useStudentFeeRecalculation } from '../hooks/useStudentFeeRecalculation'
 import logger from '@/lib/logger'
 
 interface NavigationProps {
-  onRefresh?: () => void
+  onRefresh?: () => void | Promise<void>
   refreshing?: boolean
   showRecalculate?: boolean
 }

@@ -225,7 +225,9 @@ export default function PlatformAnalyticsCard({ refreshKey }: PlatformAnalyticsC
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-600 text-sm font-medium">Current Month Revenue</p>
-                <p className="text-2xl font-bold text-orange-800">₹{analytics.currentMonthRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-orange-800">
+                  ₹{(isNaN(analytics.currentMonthRevenue) ? 0 : analytics.currentMonthRevenue).toLocaleString()}
+                </p>
               </div>
               <div className="w-10 h-10 bg-orange-200 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
