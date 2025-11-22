@@ -11,3 +11,6 @@ export { default as FlippableCard } from './FlippableCard';
 export { default as ThemeSwitcher } from './ThemeSwitcher';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { ErrorBoundary } from './ErrorBoundary';
+export { default as FeatureCard } from './FeatureCard';
+export { default as StepCard } from './StepCard';
+export { default as SecurityBadge } from './SecurityBadge';
