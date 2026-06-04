@@ -1,20 +1,21 @@
 <script lang="ts">
-  import { X, ChevronDown, ChevronUp, Check } from '@lucide/svelte';
+  import { X, ChevronDown, ChevronUp, Check, AlertCircle } from '@lucide/svelte';
   import { addTransaction, updateTransaction } from '$lib/db/queries';
   import { app } from '$lib/stores/app.svelte';
   import { today } from '$lib/utils';
+  import { validateAmount, validateRequired } from '$lib/utils/validate';
   import type { TransactionType, PaymentMode } from '$lib/db/schema';
 
-  let amount = $state('');
+  let amount      = $state('');
   let selectedCat = $state('');
-  let note = $state('');
+  let note        = $state('');
   let paymentMode = $state<PaymentMode>('upi');
-  let date = $state(today());
-  let type = $state<TransactionType>('expense');
-  let expanded = $state(false);
-  let saving = $state(false);
-  let saved = $state(false);
-  let amountInput = $state<HTMLInputElement | null>(null);
+  let date        = $state(today());
+  let type        = $state<TransactionType>('expense');
+  let expanded    = $state(false);
+  let saving      = $state(false);
+  let saved       = $state(false);
+  let attempted   = $state(false);
 
   const paymentModes: { value: PaymentMode; label: string }[] = [
     { value: 'upi',        label: 'UPI'    },
@@ -22,6 +23,12 @@
     { value: 'card',       label: 'Card'   },
     { value: 'netbanking', label: 'Net'    },
   ];
+
+  const errors = $derived({
+    amount:   validateAmount(amount, { max: 100_000, label: 'Amount' }),
+    category: validateRequired(selectedCat, 'Category'),
+  });
+  const hasErrors = $derived(Object.values(errors).some(Boolean));
 
   $effect(() => {
     if (app.showQuickAdd) {
@@ -39,26 +46,25 @@
         paymentMode = 'upi'; date = today(); type = 'expense';
         expanded = false;
       }
-      saved = false;
-      setTimeout(() => amountInput?.focus(), 80);
+      attempted = false;
+      saved     = false;
     }
   });
 
   function appendDigit(d: string) {
-    if (amount === '0') { amount = d; return; }
     if (d === '.' && amount.includes('.')) return;
     if (amount.split('.')[1]?.length >= 2) return;
+    if (amount === '0' && d !== '.') { amount = d; return; }
     amount += d;
   }
-  function backspace() {
-    amount = amount.slice(0, -1);
-  }
+  function backspace() { amount = amount.slice(0, -1); }
 
   async function save() {
-    const num = parseFloat(amount);
-    if (!num || num <= 0 || !selectedCat) return;
+    attempted = true;
+    if (hasErrors) return;
     saving = true;
-    const tx = app.editingTx;
+    const num = parseFloat(amount);
+    const tx  = app.editingTx;
     if (tx) {
       await updateTransaction(tx.id, { amount: num, categoryId: selectedCat, note, paymentMode, date, type });
     } else {
@@ -66,24 +72,21 @@
     }
     await Promise.all([app.refreshTransactions(), app.refreshBudgets()]);
     saving = false;
-    saved = true;
+    saved  = true;
     setTimeout(close, 600);
   }
 
   function close() {
     app.showQuickAdd = false;
-    app.editingTx = null;
+    app.editingTx   = null;
   }
 
   const numpad = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
-  const isValid = $derived(parseFloat(amount) > 0 && selectedCat !== '');
 </script>
 
 {#if app.showQuickAdd}
-  <!-- Backdrop -->
   <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onclick={close} role="presentation"></div>
 
-  <!-- Sheet -->
   <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50
               bg-[var(--color-surface)] rounded-t-3xl animate-slide-up"
        style="max-height: 95dvh; overflow-y: auto;">
@@ -113,18 +116,32 @@
     </div>
 
     <!-- Amount display -->
-    <div class="px-5 mb-4">
+    <div class="px-5 mb-1">
       <div class="text-center">
-        <span class="text-5xl font-bold tracking-tight text-[var(--color-text)]">
+        <span class="text-5xl font-bold tracking-tight
+                     {attempted && errors.amount ? 'text-[var(--color-expense)]' : 'text-[var(--color-text)]'}">
           ₹{amount || '0'}
         </span>
       </div>
+      {#if attempted && errors.amount}
+        <p class="text-xs text-[var(--color-expense)] text-center mt-1 flex items-center justify-center gap-1">
+          <AlertCircle size={11} /> {errors.amount}
+        </p>
+      {/if}
     </div>
 
     <!-- Category grid -->
-    <div class="px-5 mb-3">
-      <p class="text-xs text-[var(--color-text-muted)] mb-2 font-medium uppercase tracking-wide">Category</p>
-      <div class="grid grid-cols-4 gap-2">
+    <div class="px-5 mb-3 mt-3">
+      <div class="flex items-center justify-between mb-2">
+        <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">Category</p>
+        {#if attempted && errors.category}
+          <p class="text-xs text-[var(--color-expense)] flex items-center gap-1">
+            <AlertCircle size={11} /> Pick one
+          </p>
+        {/if}
+      </div>
+      <div class="grid grid-cols-4 gap-2
+                  {attempted && errors.category ? 'rounded-xl ring-1 ring-[var(--color-expense)] p-1' : ''}">
         {#each app.categories.slice(0, 8) as cat}
           <button onclick={() => selectedCat = cat.id}
                   class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100
@@ -152,7 +169,7 @@
       {/if}
     </div>
 
-    <!-- Expand toggle for details -->
+    <!-- Expand toggle -->
     <button onclick={() => expanded = !expanded}
             class="flex items-center gap-1 mx-5 mb-2 text-xs text-[var(--color-text-muted)]">
       {#if expanded}<ChevronUp size={14}/>{:else}<ChevronDown size={14}/>{/if}
@@ -161,7 +178,7 @@
 
     {#if expanded}
       <div class="px-5 mb-3 space-y-3 animate-fade-in">
-        <input bind:value={note} placeholder="Note (optional)"
+        <input bind:value={note} placeholder="Note (optional)" maxlength={100}
                class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
                       px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
                       focus:outline-none focus:border-[var(--color-primary)]" />
@@ -198,14 +215,12 @@
 
     <!-- Save button -->
     <div class="px-5 pb-6">
-      <button onclick={save} disabled={!isValid || saving}
+      <button onclick={save} disabled={saving}
               class="w-full py-4 rounded-2xl font-bold text-base transition-all duration-200
                      flex items-center justify-center gap-2
                      {saved
                        ? 'bg-[var(--color-income)] text-white'
-                       : isValid
-                         ? 'bg-[var(--color-primary)] text-white active:scale-[0.98]'
-                         : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] cursor-not-allowed'}">
+                       : 'bg-[var(--color-primary)] text-white active:scale-[0.98]'}">
         {#if saved}
           <Check size={20} class="animate-pop" /> Saved!
         {:else if saving}

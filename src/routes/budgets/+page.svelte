@@ -3,13 +3,16 @@
   import { setBudget, deleteBudget } from '$lib/db/queries';
   import BudgetRing from '$lib/components/BudgetRing.svelte';
   import { formatINR, monthLabel } from '$lib/utils';
-  import { Plus, Pencil, Check, X } from '@lucide/svelte';
+  import { validateAmount, validateRequired } from '$lib/utils/validate';
+  import { Plus, Pencil, Check, X, AlertCircle } from '@lucide/svelte';
 
-  let editingId = $state<string | null>(null);
-  let editAmount = $state('');
-  let adding = $state(false);
-  let newCatId = $state('');
-  let newAmount = $state('');
+  let editingId   = $state<string | null>(null);
+  let editAmount  = $state('');
+  let editAttempted = $state(false);
+  let adding      = $state(false);
+  let newCatId    = $state('');
+  let newAmount   = $state('');
+  let newAttempted = $state(false);
 
   function spentFor(categoryId: string) {
     return app.transactions
@@ -17,20 +20,34 @@
       .reduce((s, t) => s + t.amount, 0);
   }
 
+  // ── Add form validation ───────────────────────────────────────────────────
+  const newErrors = $derived({
+    category: validateRequired(newCatId, 'Category'),
+    amount:   validateAmount(newAmount, { max: 1_000_000, label: 'Budget' }),
+  });
+  const newHasErrors = $derived(Object.values(newErrors).some(Boolean));
+
+  // ── Edit form validation ──────────────────────────────────────────────────
+  const editErrors = $derived({
+    amount: validateAmount(editAmount, { max: 1_000_000, label: 'Budget' }),
+  });
+
   async function saveEdit(b: { id: string; categoryId: string; month: string }) {
-    const amount = parseFloat(editAmount);
-    if (!amount || amount <= 0) return;
-    await setBudget(b.categoryId, b.month, amount);
+    editAttempted = true;
+    if (editErrors.amount) return;
+    await setBudget(b.categoryId, b.month, parseFloat(editAmount));
     await app.refreshBudgets();
-    editingId = null;
+    editingId     = null;
+    editAttempted = false;
   }
 
   async function saveNew() {
-    const amount = parseFloat(newAmount);
-    if (!amount || !newCatId) return;
-    await setBudget(newCatId, app.monthStr, amount);
+    newAttempted = true;
+    if (newHasErrors) return;
+    await setBudget(newCatId, app.monthStr, parseFloat(newAmount));
     await app.refreshBudgets();
-    adding = false;
+    adding       = false;
+    newAttempted = false;
     newCatId = ''; newAmount = '';
   }
 
@@ -41,14 +58,13 @@
 
   const budgetedCatIds = $derived(new Set(app.budgets.map(b => b.categoryId)));
   const unbudgetedCats = $derived(app.categories.filter(c => !budgetedCatIds.has(c.id)));
-
-  const totalBudget = $derived(app.budgets.reduce((s, b) => s + b.amount, 0));
-  const totalSpent  = $derived(app.budgets.reduce((s, b) => s + spentFor(b.categoryId), 0));
-  const overallPct  = $derived(totalBudget > 0 ? Math.min(totalSpent / totalBudget, 1) : 0);
-  const overallColor = $derived(
-    overallPct >= 1 ? 'var(--color-expense)' :
-    overallPct >= 0.8 ? 'var(--color-warning)' :
-    'var(--color-income)'
+  const totalBudget    = $derived(app.budgets.reduce((s, b) => s + b.amount, 0));
+  const totalSpent     = $derived(app.budgets.reduce((s, b) => s + spentFor(b.categoryId), 0));
+  const overallPct     = $derived(totalBudget > 0 ? Math.min(totalSpent / totalBudget, 1) : 0);
+  const overallColor   = $derived(
+    overallPct >= 1   ? 'var(--color-expense)'  :
+    overallPct >= 0.8 ? 'var(--color-warning)'  :
+                        'var(--color-income)'
   );
 </script>
 
@@ -58,7 +74,7 @@
       <h1 class="text-xl font-bold">Budgets</h1>
       <p class="text-xs text-[var(--color-text-muted)]">{monthLabel(app.monthStr)}</p>
     </div>
-    <button onclick={() => adding = true}
+    <button onclick={() => { adding = true; newAttempted = false; }}
             class="flex items-center gap-1.5 bg-[var(--color-primary)]/20 text-[var(--color-primary)]
                    px-3 py-2 rounded-xl text-sm font-medium">
       <Plus size={16} /> Add
@@ -78,26 +94,53 @@
     </div>
   {/if}
 
+  <!-- ── Add form ──────────────────────────────────────────────────────────── -->
   {#if adding}
     <div class="bg-[var(--color-surface)] rounded-2xl p-4 mb-4 animate-fade-in space-y-3">
       <p class="text-sm font-semibold">New Budget</p>
-      <select bind:value={newCatId}
-              class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                     px-4 py-3 text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]">
-        <option value="">Select category</option>
-        {#each unbudgetedCats as cat}
-          <option value={cat.id}>{cat.icon} {cat.name}</option>
-        {/each}
-      </select>
-      <input type="number" bind:value={newAmount} placeholder="Monthly budget (₹)"
-             class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                    px-4 py-3 text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]" />
+
+      <!-- Category -->
+      <div>
+        <select bind:value={newCatId}
+                class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm text-[var(--color-text)]
+                       focus:outline-none border transition-colors
+                       {newAttempted && newErrors.category
+                         ? 'border-[var(--color-expense)]'
+                         : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}">
+          <option value="">Select category</option>
+          {#each unbudgetedCats as cat}
+            <option value={cat.id}>{cat.icon} {cat.name}</option>
+          {/each}
+        </select>
+        {#if newAttempted && newErrors.category}
+          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+            <AlertCircle size={11} /> {newErrors.category}
+          </p>
+        {/if}
+      </div>
+
+      <!-- Amount -->
+      <div>
+        <input type="number" bind:value={newAmount} placeholder="Monthly budget (₹)"
+               min="1" max="1000000"
+               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm text-[var(--color-text)]
+                      placeholder-[var(--color-text-muted)] focus:outline-none border transition-colors
+                      {newAttempted && newErrors.amount
+                        ? 'border-[var(--color-expense)]'
+                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+        {#if newAttempted && newErrors.amount}
+          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+            <AlertCircle size={11} /> {newErrors.amount}
+          </p>
+        {/if}
+      </div>
+
       <div class="flex gap-2">
         <button onclick={saveNew}
                 class="flex-1 py-3 bg-[var(--color-primary)] text-white rounded-xl text-sm font-semibold">
           Save
         </button>
-        <button onclick={() => { adding = false; newCatId = ''; newAmount = ''; }}
+        <button onclick={() => { adding = false; newAttempted = false; newCatId = ''; newAmount = ''; }}
                 class="py-3 px-4 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] rounded-xl text-sm">
           Cancel
         </button>
@@ -114,9 +157,9 @@
   {:else}
     <div class="space-y-3 pb-28">
       {#each app.budgets as b}
-        {@const cat = app.getCategoryById(b.categoryId)}
-        {@const spent = spentFor(b.categoryId)}
-        {@const pct = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0}
+        {@const cat      = app.getCategoryById(b.categoryId)}
+        {@const spent    = spentFor(b.categoryId)}
+        {@const pct      = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0}
         {@const barColor = pct >= 1 ? 'var(--color-expense)' : pct >= 0.8 ? 'var(--color-warning)' : 'var(--color-income)'}
 
         <div class="bg-[var(--color-surface)] rounded-2xl p-4">
@@ -134,12 +177,23 @@
               </div>
 
               {#if editingId === b.id}
-                <div class="flex gap-2 items-center">
-                  <input type="number" bind:value={editAmount}
-                         class="flex-1 bg-[var(--color-surface-2)] border border-[var(--color-primary)] rounded-lg
-                                px-3 py-1.5 text-sm text-[var(--color-text)] focus:outline-none" />
-                  <button onclick={() => saveEdit(b)} class="p-1.5 text-[var(--color-income)]"><Check size={16}/></button>
-                  <button onclick={() => editingId = null} class="p-1.5 text-[var(--color-text-muted)]"><X size={16}/></button>
+                <div class="space-y-1">
+                  <div class="flex gap-2 items-center">
+                    <input type="number" bind:value={editAmount} min="1" max="1000000"
+                           class="flex-1 bg-[var(--color-surface-2)] rounded-lg px-3 py-1.5 text-sm
+                                  text-[var(--color-text)] focus:outline-none border transition-colors
+                                  {editAttempted && editErrors.amount
+                                    ? 'border-[var(--color-expense)]'
+                                    : 'border-[var(--color-primary)]'}" />
+                    <button onclick={() => saveEdit(b)} class="p-1.5 text-[var(--color-income)]"><Check size={16}/></button>
+                    <button onclick={() => { editingId = null; editAttempted = false; }}
+                            class="p-1.5 text-[var(--color-text-muted)]"><X size={16}/></button>
+                  </div>
+                  {#if editAttempted && editErrors.amount}
+                    <p class="text-xs text-[var(--color-expense)] flex items-center gap-1">
+                      <AlertCircle size={11} /> {editErrors.amount}
+                    </p>
+                  {/if}
                 </div>
               {:else}
                 <p class="text-xs text-[var(--color-text-muted)]">
@@ -155,9 +209,10 @@
 
             {#if editingId !== b.id}
               <div class="flex flex-col gap-1">
-                <button onclick={() => { editingId = b.id; editAmount = String(b.amount); }}
+                <button onclick={() => { editingId = b.id; editAmount = String(b.amount); editAttempted = false; }}
                         class="p-1.5 text-[var(--color-text-muted)]"><Pencil size={14}/></button>
-                <button onclick={() => remove(b.id)} class="p-1.5 text-[var(--color-text-muted)]"><X size={14}/></button>
+                <button onclick={() => remove(b.id)}
+                        class="p-1.5 text-[var(--color-text-muted)]"><X size={14}/></button>
               </div>
             {/if}
           </div>

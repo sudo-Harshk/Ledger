@@ -1,21 +1,25 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
-  import { syncToTurso, pullFromTurso, syncStore, tursoConfigured } from '$lib/db/sync.svelte';
+  import { syncToTurso, pullFromTurso, syncStore } from '$lib/db/sync.svelte';
   import { currentMonth } from '$lib/utils';
-  import { Plus, RefreshCw, Download, Save, CloudDownload, Wifi, WifiOff, CloudOff } from '@lucide/svelte';
+  import { validateAmount, validateName, validateTursoUrl, validateTursoToken } from '$lib/utils/validate';
+  import { Plus, RefreshCw, Download, Save, CloudDownload, AlertCircle } from '@lucide/svelte';
   import type { Category } from '$lib/db/schema';
 
-  let allCats     = $state<Category[]>([]);
-  let income      = $state(String(app.monthlyIncome));
-  let tursoUrl    = $state('');
-  let tursoToken  = $state('');
+  let allCats      = $state<Category[]>([]);
+  let income       = $state(String(app.monthlyIncome));
+  let tursoUrl     = $state('');
+  let tursoToken   = $state('');
   let savingIncome = $state(false);
   let savedIncome  = $state(false);
+  let incomeAttempted = $state(false);
   let addingCat    = $state(false);
+  let catAttempted = $state(false);
   let newCat       = $state({ name: '', icon: '📌', color: '#9B99B8' });
   let savingTurso  = $state(false);
   let savedTurso   = $state(false);
+  let tursoAttempted = $state(false);
   let pulling      = $state(false);
 
   $effect(() => { loadAll(); });
@@ -26,21 +30,44 @@
     tursoToken = await getSetting('tursoToken');
   }
 
+  // ── Validation ────────────────────────────────────────────────────────────
+  const incomeError = $derived(
+    incomeAttempted ? validateAmount(income, { max: 1_000_000, label: 'Income' }) : null
+  );
+
+  const catNameError = $derived(() => {
+    if (!catAttempted) return null;
+    const base = validateName(newCat.name, { min: 2, max: 30, label: 'Category name' });
+    if (base) return base;
+    const dup = allCats.find(c => c.name.toLowerCase() === newCat.name.trim().toLowerCase());
+    if (dup) return 'A category with this name already exists';
+    return null;
+  });
+
+  const tursoErrors = $derived({
+    url:   tursoAttempted ? validateTursoUrl(tursoUrl)   : null,
+    token: tursoAttempted ? validateTursoToken(tursoToken) : null,
+  });
+  const tursoHasErrors = $derived(Object.values(tursoErrors).some(Boolean));
+
   async function saveIncome() {
-    const val = parseFloat(income);
-    if (isNaN(val)) return;
+    incomeAttempted = true;
+    const err = validateAmount(income, { max: 1_000_000, label: 'Income' });
+    if (err) return;
     savingIncome = true;
-    await setSetting('monthlyIncome', String(val));
-    app.monthlyIncome = val;
+    await setSetting('monthlyIncome', String(parseFloat(income)));
+    app.monthlyIncome = parseFloat(income);
     savingIncome = false;
-    savedIncome = true;
+    savedIncome  = true;
     setTimeout(() => savedIncome = false, 2000);
   }
 
   async function saveTurso() {
+    tursoAttempted = true;
+    if (tursoHasErrors) return;
     savingTurso = true;
-    await setSetting('tursoUrl',   tursoUrl);
-    await setSetting('tursoToken', tursoToken);
+    await setSetting('tursoUrl',   tursoUrl.trim());
+    await setSetting('tursoToken', tursoToken.trim());
     savingTurso = false;
     savedTurso  = true;
     setTimeout(() => savedTurso = false, 2000);
@@ -54,11 +81,14 @@
   }
 
   async function addCat() {
-    if (!newCat.name) return;
-    await addCategory({ ...newCat, sortOrder: allCats.length, isActive: true });
+    catAttempted = true;
+    const err = catNameError();
+    if (err) return;
+    await addCategory({ ...newCat, name: newCat.name.trim(), sortOrder: allCats.length, isActive: true });
     await loadAll();
     await app.refreshCategories();
-    addingCat = false;
+    addingCat    = false;
+    catAttempted = false;
     newCat = { name: '', icon: '📌', color: '#9B99B8' };
   }
 
@@ -113,16 +143,24 @@
     <div class="flex gap-2">
       <div class="relative flex-1">
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm">₹</span>
-        <input type="number" bind:value={income} placeholder="0"
-               class="w-full pl-7 pr-4 py-3 bg-[var(--color-surface-2)] border border-[var(--color-border)]
-                      rounded-xl text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]" />
+        <input type="number" bind:value={income} placeholder="0" min="0" max="1000000"
+               class="w-full pl-7 pr-4 py-3 bg-[var(--color-surface-2)] rounded-xl text-sm
+                      text-[var(--color-text)] focus:outline-none border transition-colors
+                      {incomeError
+                        ? 'border-[var(--color-expense)]'
+                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
       </div>
       <button onclick={saveIncome}
-              class="px-4 py-3 rounded-xl text-sm font-medium transition-colors
+              class="px-4 py-3 rounded-xl text-sm font-medium transition-colors shrink-0
                      {savedIncome ? 'bg-[var(--color-income)] text-white' : 'bg-[var(--color-primary)] text-white'}">
         {savedIncome ? '✓ Saved' : 'Save'}
       </button>
     </div>
+    {#if incomeError}
+      <p class="text-xs text-[var(--color-expense)] mt-2 flex items-center gap-1">
+        <AlertCircle size={11} /> {incomeError}
+      </p>
+    {/if}
   </section>
 
   <!-- Categories -->
@@ -137,9 +175,19 @@
 
     {#if addingCat}
       <div class="bg-[var(--color-surface-2)] rounded-xl p-3 mb-3 space-y-2 animate-fade-in">
-        <input bind:value={newCat.name} placeholder="Category name"
-               class="w-full bg-[var(--color-surface-3)] border border-[var(--color-border)] rounded-lg
-                      px-3 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-primary)]" />
+        <div>
+          <input bind:value={newCat.name} placeholder="Category name" maxlength={30}
+                 class="w-full bg-[var(--color-surface-3)] rounded-lg px-3 py-2 text-sm
+                        text-[var(--color-text)] focus:outline-none border transition-colors
+                        {catAttempted && catNameError()
+                          ? 'border-[var(--color-expense)]'
+                          : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+          {#if catAttempted && catNameError()}
+            <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+              <AlertCircle size={11} /> {catNameError()}
+            </p>
+          {/if}
+        </div>
         <div class="flex flex-wrap gap-1.5">
           {#each EMOJI_OPTIONS as e}
             <button onclick={() => newCat.icon = e}
@@ -217,14 +265,34 @@
 
     <!-- Credentials -->
     <div class="space-y-2">
-      <input bind:value={tursoUrl} placeholder="libsql://your-db-name.turso.io"
-             class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                    px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                    focus:outline-none focus:border-[var(--color-primary)]" />
-      <input type="password" bind:value={tursoToken} placeholder="Auth token (eyJ…)"
-             class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                    px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                    focus:outline-none focus:border-[var(--color-primary)]" />
+      <div>
+        <input bind:value={tursoUrl} placeholder="libsql://your-db-name.turso.io"
+               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
+                      text-[var(--color-text)] placeholder-[var(--color-text-muted)]
+                      focus:outline-none border transition-colors
+                      {tursoErrors.url
+                        ? 'border-[var(--color-expense)]'
+                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+        {#if tursoErrors.url}
+          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+            <AlertCircle size={11} /> {tursoErrors.url}
+          </p>
+        {/if}
+      </div>
+      <div>
+        <input type="password" bind:value={tursoToken} placeholder="Auth token (eyJ…)"
+               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
+                      text-[var(--color-text)] placeholder-[var(--color-text-muted)]
+                      focus:outline-none border transition-colors
+                      {tursoErrors.token
+                        ? 'border-[var(--color-expense)]'
+                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+        {#if tursoErrors.token}
+          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+            <AlertCircle size={11} /> {tursoErrors.token}
+          </p>
+        {/if}
+      </div>
     </div>
 
     <!-- Action buttons -->
