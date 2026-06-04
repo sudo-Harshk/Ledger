@@ -74,11 +74,11 @@
   // Field configs for the form loop
   type FieldKey = 'name' | 'principal' | 'monthlyAmount' | 'totalMonths';
   type InputMode = 'text' | 'decimal' | 'numeric' | 'none' | 'tel' | 'url' | 'email' | 'search';
-  const fields: { key: FieldKey; placeholder: string; type: string; inputmode?: InputMode }[] = [
+  const fields: { key: FieldKey; placeholder: string; type: string; inputmode?: InputMode; min?: number }[] = [
     { key: 'name',          placeholder: 'EMI name (e.g. Phone EMI)',   type: 'text'   },
-    { key: 'principal',     placeholder: 'Total loan amount (₹)',        type: 'number', inputmode: 'decimal' },
-    { key: 'monthlyAmount', placeholder: 'Monthly EMI (₹)',              type: 'number', inputmode: 'decimal' },
-    { key: 'totalMonths',   placeholder: 'Total months (e.g. 24)',       type: 'number', inputmode: 'numeric' },
+    { key: 'principal',     placeholder: 'Total loan amount (₹)',        type: 'number', inputmode: 'decimal',  min: 0 },
+    { key: 'monthlyAmount', placeholder: 'Monthly EMI (₹)',              type: 'number', inputmode: 'decimal',  min: 0 },
+    { key: 'totalMonths',   placeholder: 'Total months (e.g. 24)',       type: 'number', inputmode: 'numeric',  min: 1 },
   ];
 </script>
 
@@ -105,6 +105,7 @@
         <div>
           <input type={f.type}
                  inputmode={f.inputmode}
+                 min={f.min}
                  bind:value={form[f.key]}
                  placeholder={f.placeholder}
                  class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm

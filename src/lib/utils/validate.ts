@@ -7,7 +7,8 @@ export function validateAmount(
   if (!value || value === '') return `${label} is required`;
   const n = parseFloat(value);
   if (isNaN(n))   return `${label} must be a number`;
-  if (n <= 0)     return `${label} must be greater than ₹0`;
+  if (n < 0)      return `${label} cannot be negative`;
+  if (n === 0)    return `${label} must be greater than ₹0`;
   if (n > max)    return `${label} can't exceed ${formatMax(max)}`;
   const decimals = value.split('.')[1];
   if (decimals && decimals.length > 2) return `${label} can have at most 2 decimal places`;
