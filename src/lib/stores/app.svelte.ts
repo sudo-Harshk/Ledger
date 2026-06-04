@@ -1,4 +1,4 @@
-import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, getSetting } from '$lib/db/queries';
+import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, deduplicateCategories, getSetting } from '$lib/db/queries';
 import { tursoConfigured, pullFromTurso } from '$lib/db/sync.svelte';
 import type { Transaction, Category, Budget, Emi } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
@@ -45,6 +45,7 @@ class AppStore {
     if (await tursoConfigured()) {
       this.isSyncing = true;
       await pullFromTurso();
+      await deduplicateCategories(); // remove any duplicates added by the pull
       this.isSyncing = false;
     }
 

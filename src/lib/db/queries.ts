@@ -5,13 +5,33 @@ import { autoSync, autoSyncDelete } from './sync.svelte';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 
-export async function seedIfEmpty() {
-  const count = await db.categories.count();
-  if (count === 0) {
-    const cats = DEFAULT_CATEGORIES.map(c => ({ ...c, id: nanoid() }));
-    await db.categories.bulkAdd(cats);
-    cats.forEach(c => autoSync('categories', { ...c, isActive: c.isActive ? 1 : 0 }));
+export async function deduplicateCategories() {
+  const allCats = await db.categories.orderBy('sortOrder').toArray();
+  const seen = new Set<string>();
+  const dupes: string[] = [];
+  for (const cat of allCats) {
+    const key = cat.name.toLowerCase().trim();
+    if (seen.has(key)) dupes.push(cat.id);
+    else seen.add(key);
   }
+  if (dupes.length > 0) await db.categories.bulkDelete(dupes);
+}
+
+export async function seedIfEmpty() {
+  await deduplicateCategories();
+
+  // Seed only names that don't exist yet
+  const existing = new Set(
+    (await db.categories.toArray()).map(c => c.name.toLowerCase().trim())
+  );
+  const toAdd = DEFAULT_CATEGORIES
+    .filter(c => !existing.has(c.name.toLowerCase().trim()))
+    .map(c => ({ ...c, id: nanoid() }));
+  if (toAdd.length > 0) {
+    await db.categories.bulkAdd(toAdd);
+    toAdd.forEach(c => autoSync('categories', { ...c, isActive: c.isActive ? 1 : 0 }));
+  }
+
   const income = await db.settings.get('monthlyIncome');
   if (!income) {
     await db.settings.put({ key: 'monthlyIncome', value: '0' });
