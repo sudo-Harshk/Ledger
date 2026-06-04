@@ -5,20 +5,17 @@
   import { Search, Trash2, Pencil, ChevronLeft, ChevronRight } from '@lucide/svelte';
   import type { Transaction } from '$lib/db/schema';
 
-  let search = $state('');
-  let month = $state(currentMonth());
+  const APP_START_MONTH = '2026-06';
+
+  let search      = $state('');
+  let month       = $state(currentMonth());
   let allForMonth = $state<Transaction[]>([]);
-  let loading = $state(false);
+  let loading     = $state(false);
 
   $effect(() => {
-    loadMonth(month);
-  });
-
-  async function loadMonth(m: string) {
     loading = true;
-    allForMonth = await getTransactions({ month: m });
-    loading = false;
-  }
+    getTransactions({ month }).then(txs => { allForMonth = txs; loading = false; });
+  });
 
   const filtered = $derived(
     allForMonth.filter(t => {
@@ -43,7 +40,7 @@
 
   async function remove(id: string) {
     await deleteTransaction(id);
-    await loadMonth(month);
+    allForMonth = await getTransactions({ month });
     await app.refreshTransactions(month);
   }
 
@@ -57,11 +54,14 @@
 </script>
 
 <div class="px-4 pt-6 animate-fade-in">
-  <h1 class="text-xl font-bold mb-4">Transactions</h1>
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-bold">Transactions</h1>
+  </div>
 
-  <!-- Month nav -->
   <div class="flex items-center justify-between bg-[var(--color-surface)] rounded-2xl p-3 mb-4">
-    <button onclick={() => month = prevMonth(month)} class="p-2 text-[var(--color-text-muted)]">
+    <button onclick={() => month = prevMonth(month)}
+            disabled={month <= APP_START_MONTH}
+            class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
       <ChevronLeft size={20} />
     </button>
     <span class="text-sm font-semibold">{monthLabel(month)}</span>
