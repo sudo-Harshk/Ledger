@@ -1,25 +1,31 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
-  import { getAllCategories, addCategory, updateCategory, setSetting, getTransactions } from '$lib/db/queries';
+  import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
   import { Plus, Download, AlertCircle } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
 
-  let allCats      = $state<Category[]>([]);
-  let income       = $state(String(app.monthlyIncome));
-  let savingIncome = $state(false);
-  let savedIncome  = $state(false);
+  let allCats         = $state<Category[]>([]);
+  let income          = $state('');
+  let savingIncome    = $state(false);
+  let savedIncome     = $state(false);
   let incomeAttempted = $state(false);
-  let addingCat    = $state(false);
-  let catAttempted = $state(false);
-  let newCat       = $state({ name: '', icon: '📌', color: '#9B99B8' });
+  let addingCat       = $state(false);
+  let catAttempted    = $state(false);
+  let newCat          = $state({ name: '', icon: '📌', color: '#9B99B8' });
 
   $effect(() => { loadAll(); });
 
   async function loadAll() {
-    allCats = await getAllCategories();
+    const [cats, saved] = await Promise.all([
+      getAllCategories(),
+      getSetting('monthlyIncome'),
+    ]);
+    allCats = cats;
+    const n = parseFloat(saved);
+    income  = n > 0 ? String(n) : '';
   }
 
   // ── Validation ────────────────────────────────────────────────────────────

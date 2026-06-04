@@ -19,20 +19,36 @@
     inputmode = 'decimal',
   }: Props = $props();
 
+  // Local state drives the input; changes propagate out via value = local
+  let local = $state(value);
+
+  // Sync parent → local when parent resets the value (e.g. form clear, loadAll)
+  $effect(() => {
+    if (value !== local) local = value;
+  });
+
   function decrement() {
-    const n = parseFloat(value) || 0;
+    const n = parseFloat(local) || 0;
     const next = Math.max(n - step, min);
-    value = next === 0 && min === 0 ? '' : String(next);
+    local = next === 0 && min === 0 ? '' : String(next);
+    value = local;
   }
 
   function increment() {
-    const n = parseFloat(value) || 0;
+    const n = parseFloat(local) || 0;
     const next = Math.min(n + step, max);
-    value = String(next);
+    local = String(next);
+    value = local;
   }
 
-  const atMin = $derived((parseFloat(value) || 0) <= min);
-  const atMax = $derived(max < Infinity && (parseFloat(value) || 0) >= max);
+  // Filter non-numeric characters while typing; sync to parent on every keystroke
+  function onInput() {
+    local = local.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
+    value = local;
+  }
+
+  const atMin = $derived((parseFloat(local) || 0) <= min);
+  const atMax = $derived(max < Infinity && (parseFloat(local) || 0) >= max);
 </script>
 
 <div class="flex items-center bg-[var(--color-surface-2)] rounded-xl border transition-colors
@@ -47,15 +63,14 @@
     −
   </button>
 
-  <input type="number"
+  <input type="text"
          {inputmode}
-         {min}
-         {max}
+         pattern="[0-9]*"
          {placeholder}
-         bind:value
+         bind:value={local}
+         oninput={onInput}
          class="flex-1 min-w-0 bg-transparent py-3 text-sm text-center text-[var(--color-text)]
-                placeholder-[var(--color-text-muted)] focus:outline-none
-                [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                placeholder-[var(--color-text-muted)] focus:outline-none" />
 
   <button type="button" onclick={increment} disabled={atMax}
           class="w-11 h-11 flex items-center justify-center shrink-0 rounded-r-xl

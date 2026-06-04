@@ -3,6 +3,7 @@
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
   import { formatINR, getWeekDates, today, daysInMonth, monthLabel } from '$lib/utils';
   import { TrendingUp, Wallet, Settings } from '@lucide/svelte';
+  import CountUp from '$lib/components/CountUp.svelte';
 
   const todayStr = today();
   const weekDates = getWeekDates();
@@ -38,6 +39,9 @@
       .filter(t => t.date === todayStr && t.type === 'income')
       .reduce((s, t) => s + t.amount, 0)
   );
+
+  const savings      = $derived(app.monthlyIncome - app.monthExpenses);
+  const savingsPct   = $derived(app.monthlyIncome > 0 ? Math.max(0, savings / app.monthlyIncome) : 0);
 </script>
 
 <div class="px-4 pt-6 space-y-5 animate-fade-in">
@@ -62,7 +66,7 @@
   <!-- Today card -->
   <div class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-1">
     <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">Today's Spend</p>
-    <p class="text-4xl font-extrabold text-[var(--color-text)]">{formatINR(app.todayExpenses)}</p>
+    <CountUp value={app.todayExpenses} class="text-4xl font-extrabold text-[var(--color-text)]" />
     {#if todayIncome > 0}
       <p class="text-sm text-[var(--color-income)] flex items-center gap-1">
         <TrendingUp size={14} /> +{formatINR(todayIncome)} income today
@@ -77,16 +81,26 @@
   </div>
 
   <!-- Month stats -->
-  <div class="grid grid-cols-3 gap-3">
+  <div class="grid grid-cols-2 gap-3">
     <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-      <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Spent</p>
-      <p class="text-base font-bold text-[var(--color-expense)]">{formatINR(app.monthExpenses)}</p>
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Income</p>
+      {#if app.monthlyIncome > 0}
+        <CountUp value={app.monthlyIncome} class="text-base font-bold text-[var(--color-income)]" />
+      {:else}
+        <a href="/settings" class="text-xs text-[var(--color-primary)]">Set income →</a>
+      {/if}
     </div>
     <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-      <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Budget Left</p>
-      <p class="text-base font-bold" style="color: {budgetColor}">
-        {totalBudget > 0 ? formatINR(totalBudget - app.monthExpenses) : '—'}
-      </p>
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Spent</p>
+      <CountUp value={app.monthExpenses} class="text-base font-bold text-[var(--color-expense)]" />
+    </div>
+    <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Savings</p>
+      {#if app.monthlyIncome > 0}
+        <CountUp value={savings} class="text-base font-bold {savings >= 0 ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'}" />
+      {:else}
+        <p class="text-base font-bold text-[var(--color-text-muted)]">—</p>
+      {/if}
     </div>
     <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
       <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Days Left</p>

@@ -15,11 +15,19 @@
   let newAmount   = $state('');
   let newAttempted = $state(false);
 
-  function spentFor(categoryId: string) {
-    return app.transactions
-      .filter(t => t.categoryId === categoryId && t.type === 'expense' && t.date.startsWith(app.monthStr))
-      .reduce((s, t) => s + t.amount, 0);
-  }
+  // ── Budgets merged with live spent amounts ────────────────────────────────
+  // Single $derived that tracks both app.budgets AND app.transactions so any
+  // change to either immediately re-computes everything on this page.
+  const enriched = $derived(
+    app.budgets.map(b => {
+      const spent = app.transactions
+        .filter(t => t.categoryId === b.categoryId && t.type === 'expense' && t.date.startsWith(app.monthStr))
+        .reduce((s, t) => s + t.amount, 0);
+      const pct      = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0;
+      const barColor = pct >= 1 ? 'var(--color-expense)' : pct >= 0.8 ? 'var(--color-warning)' : 'var(--color-income)';
+      return { ...b, spent, pct, barColor };
+    })
+  );
 
   // ── Add form validation ───────────────────────────────────────────────────
   const newErrors = $derived({
@@ -59,8 +67,8 @@
 
   const budgetedCatIds = $derived(new Set(app.budgets.map(b => b.categoryId)));
   const unbudgetedCats = $derived(app.categories.filter(c => !budgetedCatIds.has(c.id)));
-  const totalBudget    = $derived(app.budgets.reduce((s, b) => s + b.amount, 0));
-  const totalSpent     = $derived(app.budgets.reduce((s, b) => s + spentFor(b.categoryId), 0));
+  const totalBudget    = $derived(enriched.reduce((s, b) => s + b.amount, 0));
+  const totalSpent     = $derived(enriched.reduce((s, b) => s + b.spent, 0));
   const overallPct     = $derived(totalBudget > 0 ? Math.min(totalSpent / totalBudget, 1) : 0);
   const overallColor   = $derived(
     overallPct >= 1   ? 'var(--color-expense)'  :
@@ -82,7 +90,7 @@
     </button>
   </div>
 
-  {#if app.budgets.length > 0}
+  {#if enriched.length > 0}
     <div class="bg-[var(--color-surface)] rounded-2xl p-4 mb-5">
       <div class="flex justify-between text-xs text-[var(--color-text-muted)] mb-2">
         <span>Total budget</span>
@@ -145,7 +153,7 @@
     </div>
   {/if}
 
-  {#if app.budgets.length === 0 && !adding}
+  {#if enriched.length === 0 && !adding}
     <div class="text-center py-16">
       <p class="text-4xl mb-3">🎯</p>
       <p class="text-[var(--color-text-muted)] text-sm">No budgets set</p>
@@ -153,22 +161,19 @@
     </div>
   {:else}
     <div class="space-y-3 pb-28">
-      {#each app.budgets as b}
-        {@const cat      = app.getCategoryById(b.categoryId)}
-        {@const spent    = spentFor(b.categoryId)}
-        {@const pct      = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0}
-        {@const barColor = pct >= 1 ? 'var(--color-expense)' : pct >= 0.8 ? 'var(--color-warning)' : 'var(--color-income)'}
+      {#each enriched as b}
+        {@const cat = app.getCategoryById(b.categoryId)}
 
         <div class="bg-[var(--color-surface)] rounded-2xl p-4">
           <div class="flex items-center gap-3">
-            <BudgetRing {spent} budget={b.amount} size={64} />
+            <BudgetRing spent={b.spent} budget={b.amount} size={64} />
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-lg">{cat?.icon ?? '📌'}</span>
                 <span class="text-sm font-semibold truncate">{cat?.name ?? 'Unknown'}</span>
-                {#if pct >= 1}
+                {#if b.pct >= 1}
                   <span class="text-[10px] bg-[var(--color-expense)]/20 text-[var(--color-expense)] px-1.5 py-0.5 rounded-full">Over!</span>
-                {:else if pct >= 0.9}
+                {:else if b.pct >= 0.9}
                   <span class="text-[10px] bg-[var(--color-warning)]/20 text-[var(--color-warning)] px-1.5 py-0.5 rounded-full">Almost</span>
                 {/if}
               </div>
@@ -193,12 +198,12 @@
                 </div>
               {:else}
                 <p class="text-xs text-[var(--color-text-muted)]">
-                  {formatINR(spent)}
-                  <span style="color:{barColor}"> / {formatINR(b.amount)}</span>
+                  {formatINR(b.spent)}
+                  <span style="color:{b.barColor}"> / {formatINR(b.amount)}</span>
                 </p>
                 <div class="h-1.5 bg-[var(--color-border)] rounded-full mt-2">
                   <div class="h-full rounded-full transition-all duration-500"
-                       style="width:{pct*100}%; background:{barColor}"></div>
+                       style="width:{b.pct*100}%; background:{b.barColor}"></div>
                 </div>
               {/if}
             </div>
