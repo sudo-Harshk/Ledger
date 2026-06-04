@@ -1,0 +1,83 @@
+import Dexie, { type Table } from 'dexie';
+
+export type TransactionType = 'income' | 'expense';
+export type PaymentMode = 'cash' | 'upi' | 'card' | 'netbanking';
+
+export interface Transaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  categoryId: string;
+  note?: string;
+  paymentMode: PaymentMode;
+  date: string; // YYYY-MM-DD
+  createdAt: string; // ISO string
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface Budget {
+  id: string;
+  categoryId: string;
+  amount: number;
+  month: string; // YYYY-MM
+}
+
+export interface Emi {
+  id: string;
+  name: string;
+  principal: number;
+  monthlyAmount: number;
+  startDate: string; // YYYY-MM-DD
+  totalMonths: number;
+  paidMonths: number;
+  nextDueDate: string; // YYYY-MM-DD
+  notes?: string;
+}
+
+export interface Setting {
+  key: string;
+  value: string;
+}
+
+class LedgerDB extends Dexie {
+  transactions!: Table<Transaction>;
+  categories!: Table<Category>;
+  budgets!: Table<Budget>;
+  emis!: Table<Emi>;
+  settings!: Table<Setting>;
+
+  constructor() {
+    super('ledger');
+    this.version(1).stores({
+      transactions: 'id, type, categoryId, date, createdAt',
+      categories:   'id, sortOrder',
+      budgets:      'id, [categoryId+month], month',
+      emis:         'id, nextDueDate',
+      settings:     'key'
+    });
+  }
+}
+
+export const db = new LedgerDB();
+
+export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
+  { name: 'PG Rent',       icon: '🏠', color: '#6C63FF', sortOrder: 0,  isActive: true },
+  { name: 'Food & Dining', icon: '🍽️', color: '#F97316', sortOrder: 1,  isActive: true },
+  { name: 'Groceries',     icon: '🛒', color: '#22C55E', sortOrder: 2,  isActive: true },
+  { name: 'Transport',     icon: '🚗', color: '#3B82F6', sortOrder: 3,  isActive: true },
+  { name: 'Phone & Net',   icon: '📱', color: '#8B5CF6', sortOrder: 4,  isActive: true },
+  { name: 'Personal Care', icon: '💆', color: '#EC4899', sortOrder: 5,  isActive: true },
+  { name: 'Entertainment', icon: '🎬', color: '#EF4444', sortOrder: 6,  isActive: true },
+  { name: 'Shopping',      icon: '🛍️', color: '#F59E0B', sortOrder: 7,  isActive: true },
+  { name: 'Moving/Setup',  icon: '📦', color: '#06B6D4', sortOrder: 8,  isActive: true },
+  { name: 'Salary',        icon: '💰', color: '#22C55E', sortOrder: 9,  isActive: true },
+  { name: 'Miscellaneous', icon: '📌', color: '#9B99B8', sortOrder: 10, isActive: true },
+];
