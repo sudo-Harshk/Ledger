@@ -29,9 +29,13 @@
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
-  const incomeError = $derived(
-    incomeAttempted ? validateAmount(income, { max: 1_000_000, label: 'Income' }) : null
-  );
+  const incomeError = $derived((): string | null => {
+    if (!incomeAttempted || income === '') return null; // empty = clearing income, that's fine
+    const n = parseFloat(income);
+    if (isNaN(n) || n < 0) return 'Income must be a positive number';
+    if (n > 1_000_000)     return "Income can't exceed ₹10L";
+    return null;
+  });
 
   const catNameError = $derived(() => {
     if (!catAttempted) return null;
@@ -44,11 +48,12 @@
 
   async function saveIncome() {
     incomeAttempted = true;
-    const err = validateAmount(income, { max: 1_000_000, label: 'Income' });
-    if (err) return;
+    if (incomeError()) return;
     savingIncome = true;
-    await setSetting('monthlyIncome', String(parseFloat(income)));
-    app.monthlyIncome = parseFloat(income);
+    const val = income === '' ? 0 : parseFloat(income);
+    await setSetting('monthlyIncome', String(val));
+    app.monthlyIncome = val;
+    income = val > 0 ? String(val) : '';
     savingIncome = false;
     savedIncome  = true;
     setTimeout(() => savedIncome = false, 2000);
@@ -104,7 +109,7 @@
     <div class="flex gap-2">
       <div class="flex-1">
         <NumberInput bind:value={income} min={0} max={1000000} step={1000}
-                     placeholder="0" inputmode="numeric" invalid={!!incomeError} />
+                     placeholder="Not set" inputmode="numeric" invalid={!!incomeError()} />
       </div>
       <button onclick={saveIncome}
               class="px-4 py-3 rounded-xl text-sm font-medium transition-colors shrink-0
@@ -112,9 +117,9 @@
         {savedIncome ? '✓ Saved' : 'Save'}
       </button>
     </div>
-    {#if incomeError}
+    {#if incomeError()}
       <p class="text-xs text-[var(--color-expense)] mt-2 flex items-center gap-1">
-        <AlertCircle size={11} /> {incomeError}
+        <AlertCircle size={11} /> {incomeError()}
       </p>
     {/if}
   </section>
