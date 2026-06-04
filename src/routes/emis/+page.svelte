@@ -4,6 +4,7 @@
   import { formatINR, formatShortDate, daysUntil, today } from '$lib/utils';
   import { validateAmount, validatePositiveInt, validateName } from '$lib/utils/validate';
   import { Plus, Check, Trash2, CalendarClock, X, AlertCircle } from '@lucide/svelte';
+  import NumberInput from '$lib/components/NumberInput.svelte';
 
   let showForm  = $state(false);
   let attempted = $state(false);
@@ -73,12 +74,12 @@
 
   // Field configs for the form loop
   type FieldKey = 'name' | 'principal' | 'monthlyAmount' | 'totalMonths';
-  type InputMode = 'text' | 'decimal' | 'numeric' | 'none' | 'tel' | 'url' | 'email' | 'search';
-  const fields: { key: FieldKey; placeholder: string; type: string; inputmode?: InputMode; min?: number }[] = [
+  type InputMode = 'decimal' | 'numeric';
+  const fields: { key: FieldKey; placeholder: string; type: string; inputmode?: InputMode; min?: number; step?: number }[] = [
     { key: 'name',          placeholder: 'EMI name (e.g. Phone EMI)',   type: 'text'   },
-    { key: 'principal',     placeholder: 'Total loan amount (₹)',        type: 'number', inputmode: 'decimal',  min: 0 },
-    { key: 'monthlyAmount', placeholder: 'Monthly EMI (₹)',              type: 'number', inputmode: 'decimal',  min: 0 },
-    { key: 'totalMonths',   placeholder: 'Total months (e.g. 24)',       type: 'number', inputmode: 'numeric',  min: 1 },
+    { key: 'principal',     placeholder: 'Total loan amount (₹)',        type: 'number', inputmode: 'decimal',  min: 0,  step: 1000 },
+    { key: 'monthlyAmount', placeholder: 'Monthly EMI (₹)',              type: 'number', inputmode: 'decimal',  min: 0,  step: 100  },
+    { key: 'totalMonths',   placeholder: 'Total months (e.g. 24)',       type: 'number', inputmode: 'numeric',  min: 1,  step: 1    },
   ];
 </script>
 
@@ -103,17 +104,21 @@
 
       {#each fields as f}
         <div>
-          <input type={f.type}
-                 inputmode={f.inputmode}
-                 min={f.min}
-                 bind:value={form[f.key]}
-                 placeholder={f.placeholder}
-                 class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
-                        text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                        focus:outline-none border transition-colors
-                        {attempted && errors[f.key]
-                          ? 'border-[var(--color-expense)]'
-                          : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+          {#if f.type === 'number'}
+            <NumberInput bind:value={form[f.key]} min={f.min ?? 0} step={f.step ?? 1}
+                         inputmode={f.inputmode ?? 'decimal'} placeholder={f.placeholder}
+                         invalid={!!(attempted && errors[f.key])} />
+          {:else}
+            <input type="text"
+                   bind:value={form[f.key]}
+                   placeholder={f.placeholder}
+                   class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
+                          text-[var(--color-text)] placeholder-[var(--color-text-muted)]
+                          focus:outline-none border transition-colors
+                          {attempted && errors[f.key]
+                            ? 'border-[var(--color-expense)]'
+                            : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+          {/if}
           {#if attempted && errors[f.key]}
             <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
               <AlertCircle size={11} /> {errors[f.key]}

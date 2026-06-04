@@ -4,6 +4,7 @@
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
   import { Plus, Download, AlertCircle } from '@lucide/svelte';
+  import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
 
   let allCats      = $state<Category[]>([]);
@@ -95,14 +96,9 @@
   <section class="bg-[var(--color-surface)] rounded-2xl p-5">
     <h2 class="text-sm font-semibold mb-3">Monthly Income</h2>
     <div class="flex gap-2">
-      <div class="relative flex-1">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] text-sm">₹</span>
-        <input type="number" bind:value={income} placeholder="0" min="0" max="1000000"
-               class="w-full pl-7 pr-4 py-3 bg-[var(--color-surface-2)] rounded-xl text-sm
-                      text-[var(--color-text)] focus:outline-none border transition-colors
-                      {incomeError
-                        ? 'border-[var(--color-expense)]'
-                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+      <div class="flex-1">
+        <NumberInput bind:value={income} min={0} max={1000000} step={1000}
+                     placeholder="0" inputmode="numeric" invalid={!!incomeError} />
       </div>
       <button onclick={saveIncome}
               class="px-4 py-3 rounded-xl text-sm font-medium transition-colors shrink-0

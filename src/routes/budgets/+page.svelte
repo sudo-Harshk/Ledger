@@ -5,6 +5,7 @@
   import { formatINR, monthLabel } from '$lib/utils';
   import { validateAmount, validateRequired } from '$lib/utils/validate';
   import { Plus, Pencil, Check, X, AlertCircle } from '@lucide/svelte';
+  import NumberInput from '$lib/components/NumberInput.svelte';
 
   let editingId   = $state<string | null>(null);
   let editAmount  = $state('');
@@ -121,13 +122,9 @@
 
       <!-- Amount -->
       <div>
-        <input type="number" bind:value={newAmount} placeholder="Monthly budget (₹)"
-               min="1" max="1000000"
-               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm text-[var(--color-text)]
-                      placeholder-[var(--color-text-muted)] focus:outline-none border transition-colors
-                      {newAttempted && newErrors.amount
-                        ? 'border-[var(--color-expense)]'
-                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+        <NumberInput bind:value={newAmount} min={0} max={1000000} step={500}
+                     placeholder="Monthly budget (₹)" inputmode="numeric"
+                     invalid={!!(newAttempted && newErrors.amount)} />
         {#if newAttempted && newErrors.amount}
           <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
             <AlertCircle size={11} /> {newErrors.amount}
@@ -179,12 +176,11 @@
               {#if editingId === b.id}
                 <div class="space-y-1">
                   <div class="flex gap-2 items-center">
-                    <input type="number" bind:value={editAmount} min="1" max="1000000"
-                           class="flex-1 bg-[var(--color-surface-2)] rounded-lg px-3 py-1.5 text-sm
-                                  text-[var(--color-text)] focus:outline-none border transition-colors
-                                  {editAttempted && editErrors.amount
-                                    ? 'border-[var(--color-expense)]'
-                                    : 'border-[var(--color-primary)]'}" />
+                    <div class="flex-1">
+                      <NumberInput bind:value={editAmount} min={0} max={1000000} step={500}
+                                   inputmode="numeric"
+                                   invalid={!!(editAttempted && editErrors.amount)} />
+                    </div>
                     <button onclick={() => saveEdit(b)} class="p-1.5 text-[var(--color-income)]"><Check size={16}/></button>
                     <button onclick={() => { editingId = null; editAttempted = false; }}
                             class="p-1.5 text-[var(--color-text-muted)]"><X size={16}/></button>
