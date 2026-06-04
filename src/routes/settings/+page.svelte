@@ -1,33 +1,24 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
-  import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
-  import { syncToTurso, pullFromTurso, syncStore } from '$lib/db/sync.svelte';
+  import { getAllCategories, addCategory, updateCategory, setSetting, getTransactions } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
-  import { validateAmount, validateName, validateTursoUrl, validateTursoToken } from '$lib/utils/validate';
-  import { Plus, RefreshCw, Download, Save, CloudDownload, AlertCircle } from '@lucide/svelte';
+  import { validateAmount, validateName } from '$lib/utils/validate';
+  import { Plus, Download, AlertCircle } from '@lucide/svelte';
   import type { Category } from '$lib/db/schema';
 
   let allCats      = $state<Category[]>([]);
   let income       = $state(String(app.monthlyIncome));
-  let tursoUrl     = $state('');
-  let tursoToken   = $state('');
   let savingIncome = $state(false);
   let savedIncome  = $state(false);
   let incomeAttempted = $state(false);
   let addingCat    = $state(false);
   let catAttempted = $state(false);
   let newCat       = $state({ name: '', icon: '📌', color: '#9B99B8' });
-  let savingTurso  = $state(false);
-  let savedTurso   = $state(false);
-  let tursoAttempted = $state(false);
-  let pulling      = $state(false);
 
   $effect(() => { loadAll(); });
 
   async function loadAll() {
-    allCats    = await getAllCategories();
-    tursoUrl   = await getSetting('tursoUrl');
-    tursoToken = await getSetting('tursoToken');
+    allCats = await getAllCategories();
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -44,12 +35,6 @@
     return null;
   });
 
-  const tursoErrors = $derived({
-    url:   tursoAttempted ? validateTursoUrl(tursoUrl)   : null,
-    token: tursoAttempted ? validateTursoToken(tursoToken) : null,
-  });
-  const tursoHasErrors = $derived(Object.values(tursoErrors).some(Boolean));
-
   async function saveIncome() {
     incomeAttempted = true;
     const err = validateAmount(income, { max: 1_000_000, label: 'Income' });
@@ -60,24 +45,6 @@
     savingIncome = false;
     savedIncome  = true;
     setTimeout(() => savedIncome = false, 2000);
-  }
-
-  async function saveTurso() {
-    tursoAttempted = true;
-    if (tursoHasErrors) return;
-    savingTurso = true;
-    await setSetting('tursoUrl',   tursoUrl.trim());
-    await setSetting('tursoToken', tursoToken.trim());
-    savingTurso = false;
-    savedTurso  = true;
-    setTimeout(() => savedTurso = false, 2000);
-  }
-
-  async function pullCloud() {
-    pulling = true;
-    await pullFromTurso();
-    await app.refreshAll();
-    pulling = false;
   }
 
   async function addCat() {
@@ -114,21 +81,6 @@
     a.click();
     URL.revokeObjectURL(url);
   }
-
-  const isConfigured = $derived(!!(tursoUrl && tursoToken));
-  const statusColor  = $derived(
-    syncStore.status === 'success'      ? 'var(--color-income)'   :
-    syncStore.status === 'error'        ? 'var(--color-expense)'  :
-    syncStore.status === 'syncing'      ? 'var(--color-primary)'  :
-                                          'var(--color-text-muted)'
-  );
-  const statusLabel = $derived(
-    syncStore.status === 'success'      ? 'Connected & synced'   :
-    syncStore.status === 'syncing'      ? 'Syncing…'              :
-    syncStore.status === 'error'        ? 'Error'                 :
-    isConfigured                        ? 'Credentials saved'     :
-                                          'Not configured'
-  );
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
   const COLOR_OPTIONS = ['#6C63FF','#F97316','#22C55E','#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#06B6D4','#9B99B8'];
@@ -235,129 +187,6 @@
     </div>
   </section>
 
-  <!-- ── Turso Cloud Sync ──────────────────────────────────────────────────── -->
-  <section class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-4">
-
-    <!-- Header + status pill -->
-    <div class="flex items-center justify-between">
-      <h2 class="text-sm font-semibold">Turso Cloud Sync</h2>
-      <span class="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-[var(--color-surface-2)]"
-            style="color:{statusColor}">
-        {#if syncStore.status === 'syncing'}
-          <RefreshCw size={10} class="animate-spin" />
-        {:else if syncStore.status === 'success'}
-          <span class="w-2 h-2 rounded-full bg-[var(--color-income)]"></span>
-        {:else if syncStore.status === 'error'}
-          <span class="w-2 h-2 rounded-full bg-[var(--color-expense)]"></span>
-        {:else}
-          <span class="w-2 h-2 rounded-full bg-[var(--color-border)]"></span>
-        {/if}
-        {statusLabel}
-      </span>
-    </div>
-
-    <p class="text-xs text-[var(--color-text-muted)] leading-relaxed">
-      Connect to <a href="https://turso.tech" target="_blank" rel="noopener"
-                    class="text-[var(--color-primary)]">Turso Cloud</a> (free tier available)
-      to sync your data across all your devices. Every transaction you add is automatically
-      pushed to the cloud in the background.
-    </p>
-
-    <!-- Credentials -->
-    <div class="space-y-2">
-      <div>
-        <input bind:value={tursoUrl} placeholder="libsql://your-db-name.turso.io"
-               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
-                      text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                      focus:outline-none border transition-colors
-                      {tursoErrors.url
-                        ? 'border-[var(--color-expense)]'
-                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
-        {#if tursoErrors.url}
-          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
-            <AlertCircle size={11} /> {tursoErrors.url}
-          </p>
-        {/if}
-      </div>
-      <div>
-        <input type="password" bind:value={tursoToken} placeholder="Auth token (eyJ…)"
-               class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm
-                      text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                      focus:outline-none border transition-colors
-                      {tursoErrors.token
-                        ? 'border-[var(--color-expense)]'
-                        : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
-        {#if tursoErrors.token}
-          <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
-            <AlertCircle size={11} /> {tursoErrors.token}
-          </p>
-        {/if}
-      </div>
-    </div>
-
-    <!-- Action buttons -->
-    <div class="grid grid-cols-3 gap-2">
-      <!-- Save credentials -->
-      <button onclick={saveTurso}
-              class="flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-medium transition-colors
-                     {savedTurso
-                       ? 'bg-[var(--color-income)]/20 text-[var(--color-income)]'
-                       : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
-        <Save size={13} />
-        {savedTurso ? 'Saved!' : 'Save'}
-      </button>
-
-      <!-- Push local → cloud -->
-      <button onclick={syncToTurso} disabled={!isConfigured || syncStore.status === 'syncing'}
-              class="flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-medium transition-colors
-                     {isConfigured
-                       ? 'bg-[var(--color-primary)] text-white'
-                       : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] opacity-50 cursor-not-allowed'}">
-        <RefreshCw size={13} class={syncStore.status === 'syncing' ? 'animate-spin' : ''} />
-        Push
-      </button>
-
-      <!-- Pull cloud → local -->
-      <button onclick={pullCloud} disabled={!isConfigured || pulling}
-              class="flex items-center justify-center gap-1.5 py-3 rounded-xl text-xs font-medium transition-colors
-                     {isConfigured
-                       ? 'bg-[var(--color-surface-2)] text-[var(--color-text)]'
-                       : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] opacity-50 cursor-not-allowed'}">
-        <CloudDownload size={13} class={pulling ? 'animate-bounce' : ''} />
-        Pull
-      </button>
-    </div>
-
-    <!-- Status messages -->
-    {#if syncStore.status === 'success' && syncStore.lastSyncAt}
-      <p class="text-xs text-[var(--color-income)]">
-        ✓ Synced at {new Date(syncStore.lastSyncAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-      </p>
-    {:else if syncStore.status === 'error'}
-      <div class="bg-[var(--color-expense)]/10 rounded-xl px-3 py-2">
-        <p class="text-xs text-[var(--color-expense)]">⚠ {syncStore.error}</p>
-        <p class="text-[10px] text-[var(--color-text-muted)] mt-1">Check your URL and token, then try again.</p>
-      </div>
-    {:else if !isConfigured}
-      <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2 space-y-1">
-        <p class="text-xs text-[var(--color-text-muted)] font-medium">How to get your credentials:</p>
-        <p class="text-[10px] text-[var(--color-text-muted)] font-mono leading-relaxed">
-          turso db create ledger<br/>
-          turso db show ledger --url<br/>
-          turso db tokens create ledger
-        </p>
-      </div>
-    {/if}
-
-    <!-- New device tip -->
-    {#if isConfigured}
-      <p class="text-[10px] text-[var(--color-text-muted)] leading-relaxed">
-        💡 On a new device? Tap <strong>Pull</strong> to restore all your data from the cloud.
-        New transactions are pushed automatically.
-      </p>
-    {/if}
-  </section>
-
   <!-- Export -->
   <section class="bg-[var(--color-surface)] rounded-2xl p-5">
     <h2 class="text-sm font-semibold mb-3">Export Data</h2>
@@ -369,7 +198,4 @@
     </button>
   </section>
 
-  <div class="text-center">
-    <p class="text-xs text-[var(--color-text-muted)]">Ledger v1.0 · Built for PG life in Hyderabad 🌊</p>
-  </div>
 </div>

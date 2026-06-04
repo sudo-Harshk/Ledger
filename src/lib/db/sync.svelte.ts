@@ -2,6 +2,7 @@ import { createClient, type Client } from '@libsql/client/web';
 import { db } from './schema';
 import { getSetting } from './queries';
 import type { Transaction, Category, Budget, Emi } from './schema';
+import { PUBLIC_TURSO_URL, PUBLIC_TURSO_TOKEN } from '$env/static/public';
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'unconfigured';
 
@@ -13,8 +14,8 @@ let _clientToken = '';
 let _tablesReady = false;
 
 async function getClient(): Promise<Client | null> {
-  const url   = await getSetting('tursoUrl');
-  const token = await getSetting('tursoToken');
+  const url   = (await getSetting('tursoUrl'))   || PUBLIC_TURSO_URL   || '';
+  const token = (await getSetting('tursoToken')) || PUBLIC_TURSO_TOKEN || '';
   if (!url || !token) return null;
   if (_client && _clientUrl === url && _clientToken === token) return _client;
   _client       = createClient({ url, authToken: token });
@@ -114,8 +115,8 @@ export const syncStore = new SyncStore();
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export async function tursoConfigured(): Promise<boolean> {
-  const url   = await getSetting('tursoUrl');
-  const token = await getSetting('tursoToken');
+  const url   = (await getSetting('tursoUrl'))   || PUBLIC_TURSO_URL   || '';
+  const token = (await getSetting('tursoToken')) || PUBLIC_TURSO_TOKEN || '';
   return !!(url && token);
 }
 
