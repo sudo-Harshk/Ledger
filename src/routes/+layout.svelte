@@ -3,8 +3,10 @@
   import { onMount } from 'svelte';
   import { dev } from '$app/environment';
   import { injectAnalytics } from '@vercel/analytics/sveltekit';
+  import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
 
   injectAnalytics({ mode: dev ? 'development' : 'production' });
+  injectSpeedInsights();
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import { app } from '$lib/stores/app.svelte';
