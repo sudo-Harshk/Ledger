@@ -97,15 +97,31 @@
     URL.revokeObjectURL(url);
   }
 
-  let isSyncing = $state(false);
-  let syncDone  = $state(false);
+  let isPushing = $state(false);
+  let isPulling = $state(false);
+  let pushDone  = $state(false);
+  let pullDone  = $state(false);
 
   async function syncNow() {
-    isSyncing = true;
+    isPushing = true;
     await syncStore.pushAll();
-    isSyncing = false;
-    syncDone  = true;
-    setTimeout(() => syncDone = false, 3000);
+    isPushing = false;
+    if (syncStore.status === 'success') {
+      pushDone = true;
+      setTimeout(() => pushDone = false, 3000);
+    }
+  }
+
+  async function pullNow() {
+    isPulling = true;
+    const { pullFromTurso } = await import('$lib/db/sync.svelte');
+    await pullFromTurso();
+    isPulling = false;
+    if (syncStore.status === 'success') {
+      await app.refreshAll();
+      pullDone = true;
+      setTimeout(() => pullDone = false, 3000);
+    }
   }
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
@@ -220,29 +236,33 @@
   </section>
 
   <!-- Cloud Sync -->
-  <section class="bg-[var(--color-surface)] rounded-2xl p-5">
+  <section class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-2">
     <h2 class="text-sm font-semibold mb-1">Cloud Sync</h2>
-    <p class="text-xs text-[var(--color-text-muted)] mb-3">Push all local data to Turso so other devices can see it.</p>
-    <button onclick={syncNow} disabled={isSyncing}
+
+    <!-- Push -->
+    <button onclick={syncNow} disabled={isPushing || isPulling}
             class="flex items-center gap-2 w-full py-3 px-4 rounded-xl text-sm font-medium transition-colors
-                   {syncDone
+                   {pushDone
                      ? 'bg-[var(--color-income)]/15 text-[var(--color-income)]'
                      : syncStore.status === 'error'
                        ? 'bg-[var(--color-expense)]/10 text-[var(--color-expense)]'
                        : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
-      <RefreshCw size={16} class="{isSyncing ? 'animate-spin' : ''} text-[var(--color-primary)]" />
-      {#if isSyncing}
-        Syncing…
-      {:else if syncDone}
-        Synced!
-      {:else if syncStore.status === 'error'}
-        Sync failed — tap to retry
-      {:else}
-        Sync to Cloud
-      {/if}
+      <RefreshCw size={16} class="{isPushing ? 'animate-spin' : ''} text-[var(--color-primary)]" />
+      {#if isPushing}Syncing…{:else if pushDone}Pushed!{:else if !pushDone && syncStore.status === 'error'}Push failed — tap to retry{:else}Push to Cloud{/if}
     </button>
+
+    <!-- Pull -->
+    <button onclick={pullNow} disabled={isPushing || isPulling}
+            class="flex items-center gap-2 w-full py-3 px-4 rounded-xl text-sm font-medium transition-colors
+                   {pullDone
+                     ? 'bg-[var(--color-income)]/15 text-[var(--color-income)]'
+                     : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
+      <RefreshCw size={16} class="{isPulling ? 'animate-spin' : ''} text-[var(--color-primary)] scale-x-[-1]" />
+      {#if isPulling}Pulling…{:else if pullDone}Pulled!{:else}Pull from Cloud{/if}
+    </button>
+
     {#if syncStore.error}
-      <p class="text-xs text-[var(--color-expense)] mt-2">{syncStore.error}</p>
+      <p class="text-xs text-[var(--color-expense)] mt-1">{syncStore.error}</p>
     {/if}
   </section>
 
