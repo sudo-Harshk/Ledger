@@ -1,6 +1,10 @@
 <script lang="ts">
   import './layout.css';
   import { onMount } from 'svelte';
+  import { dev } from '$app/environment';
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+
+  injectAnalytics({ mode: dev ? 'development' : 'production' });
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import { app } from '$lib/stores/app.svelte';

@@ -26,6 +26,7 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^1.17.0",
+		"@vercel/analytics": "^2.0.1",
 		"dexie": "^4.4.3",
 		"layerchart": "^1.0.13"
 	}
