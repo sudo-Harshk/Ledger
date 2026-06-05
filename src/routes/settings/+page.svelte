@@ -27,6 +27,8 @@
     allCats = cats;
     const n = parseFloat(saved);
     income  = n > 0 ? String(n) : '';
+    const { db } = await import('$lib/db/schema');
+    syncStore.localCount = await db.transactions.count();
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -272,7 +274,9 @@
       Check what's in Turso
     </button>
     <div class="text-xs text-[var(--color-text-muted)] space-y-0.5">
-      <p>Local: <strong>{syncStore.localCount}</strong> transaction{syncStore.localCount === 1 ? '' : 's'}</p>
+      {#if syncStore.localCount !== null}
+        <p>Local: <strong>{syncStore.localCount}</strong> transaction{syncStore.localCount === 1 ? '' : 's'}</p>
+      {/if}
       {#if cloudCount !== null}
         <p>Cloud: <strong>{cloudCount}</strong> transaction{cloudCount === 1 ? '' : 's'}</p>
       {/if}

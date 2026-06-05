@@ -57,7 +57,7 @@ class SyncStore {
   lastSyncAt = $state<string | null>(null);
   error      = $state<string | null>(null);
 
-  localCount = $state(0);
+  localCount = $state<number | null>(null);
 
   // Full push: all local data → Turso
   async pushAll(): Promise<void> {
@@ -201,7 +201,7 @@ type TableName = 'transactions' | 'categories' | 'budgets' | 'emis' | 'settings'
 export function autoSync(table: TableName, row: Record<string, any>): void {
   getClient().then(client => {
     if (!client) return;
-    ensureTables(client).then(() => {
+    return ensureTables(client).then(() => {
       const keys   = Object.keys(row);
       const values = Object.values(row).map(v =>
         typeof v === 'boolean' ? (v ? 1 : 0) : (v ?? null)
@@ -212,7 +212,7 @@ export function autoSync(table: TableName, row: Record<string, any>): void {
         args: values as any[]
       });
     });
-  }).catch(() => {});
+  }).catch(err => console.error('[autoSync]', table, err));
 }
 
 /** Fire-and-forget: delete one row from Turso by id. Never throws. */

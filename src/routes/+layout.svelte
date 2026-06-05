@@ -8,7 +8,23 @@
 
   let { children } = $props();
 
-  onMount(() => { app.init(); });
+  onMount(() => {
+    app.init();
+
+    // Re-pull from Turso whenever the tab becomes visible again
+    // so data added on another device shows up automatically
+    async function onVisible() {
+      if (document.visibilityState === 'visible' && !app.isLoading) {
+        const { tursoConfigured, pullFromTurso } = await import('$lib/db/sync.svelte');
+        if (await tursoConfigured()) {
+          await pullFromTurso();
+          await app.refreshAll();
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  });
 </script>
 
 <svelte:head>
