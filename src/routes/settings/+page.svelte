@@ -3,9 +3,10 @@
   import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
-  import { Plus, Download, AlertCircle } from '@lucide/svelte';
+  import { Plus, Download, AlertCircle, RefreshCw } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
+  import { syncStore, tursoConfigured } from '$lib/db/sync.svelte';
 
   let allCats         = $state<Category[]>([]);
   let income          = $state('');
@@ -94,6 +95,17 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  let isSyncing = $state(false);
+  let syncDone  = $state(false);
+
+  async function syncNow() {
+    isSyncing = true;
+    await syncStore.pushAll();
+    isSyncing = false;
+    syncDone  = true;
+    setTimeout(() => syncDone = false, 3000);
   }
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
@@ -205,6 +217,33 @@
       <Download size={16} class="text-[var(--color-primary)]" />
       Export all transactions as CSV
     </button>
+  </section>
+
+  <!-- Cloud Sync -->
+  <section class="bg-[var(--color-surface)] rounded-2xl p-5">
+    <h2 class="text-sm font-semibold mb-1">Cloud Sync</h2>
+    <p class="text-xs text-[var(--color-text-muted)] mb-3">Push all local data to Turso so other devices can see it.</p>
+    <button onclick={syncNow} disabled={isSyncing}
+            class="flex items-center gap-2 w-full py-3 px-4 rounded-xl text-sm font-medium transition-colors
+                   {syncDone
+                     ? 'bg-[var(--color-income)]/15 text-[var(--color-income)]'
+                     : syncStore.status === 'error'
+                       ? 'bg-[var(--color-expense)]/10 text-[var(--color-expense)]'
+                       : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
+      <RefreshCw size={16} class="{isSyncing ? 'animate-spin' : ''} text-[var(--color-primary)]" />
+      {#if isSyncing}
+        Syncing…
+      {:else if syncDone}
+        Synced!
+      {:else if syncStore.status === 'error'}
+        Sync failed — tap to retry
+      {:else}
+        Sync to Cloud
+      {/if}
+    </button>
+    {#if syncStore.error}
+      <p class="text-xs text-[var(--color-expense)] mt-2">{syncStore.error}</p>
+    {/if}
   </section>
 
 </div>
