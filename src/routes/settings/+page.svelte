@@ -271,11 +271,12 @@
             class="text-xs text-[var(--color-primary)] py-1">
       Check what's in Turso
     </button>
-    {#if cloudCount !== null}
-      <p class="text-xs text-[var(--color-text-muted)]">
-        Turso has <strong>{cloudCount}</strong> transaction{cloudCount === 1 ? '' : 's'}
-      </p>
-    {/if}
+    <div class="text-xs text-[var(--color-text-muted)] space-y-0.5">
+      <p>Local: <strong>{syncStore.localCount}</strong> transaction{syncStore.localCount === 1 ? '' : 's'}</p>
+      {#if cloudCount !== null}
+        <p>Cloud: <strong>{cloudCount}</strong> transaction{cloudCount === 1 ? '' : 's'}</p>
+      {/if}
+    </div>
     {#if syncStore.error}
       <p class="text-xs text-[var(--color-expense)] mt-1">{syncStore.error}</p>
     {/if}

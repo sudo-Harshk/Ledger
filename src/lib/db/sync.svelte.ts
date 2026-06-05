@@ -57,10 +57,12 @@ class SyncStore {
   lastSyncAt = $state<string | null>(null);
   error      = $state<string | null>(null);
 
+  localCount = $state(0);
+
   // Full push: all local data → Turso
   async pushAll(): Promise<void> {
     const client = await getClient();
-    if (!client) { this.status = 'unconfigured'; return; }
+    if (!client) { this.status = 'unconfigured'; this.error = 'Turso not configured — check env vars'; return; }
 
     this.status = 'syncing';
     this.error  = null;
@@ -76,36 +78,46 @@ class SyncStore {
         db.settings.toArray()
       ]);
 
-      const stmts = [
-        ...txs.map(t => ({
-          sql: `INSERT OR REPLACE INTO transactions VALUES (?,?,?,?,?,?,?,?)`,
-          args: [t.id, t.type, t.amount, t.categoryId, t.note ?? null, t.paymentMode, t.date, t.createdAt] as any[]
-        })),
-        ...cats.map(c => ({
-          sql: `INSERT OR REPLACE INTO categories VALUES (?,?,?,?,?,?)`,
-          args: [c.id, c.name, c.icon, c.color, c.sortOrder, c.isActive ? 1 : 0] as any[]
-        })),
-        ...budgets.map(b => ({
-          sql: `INSERT OR REPLACE INTO budgets VALUES (?,?,?,?)`,
-          args: [b.id, b.categoryId, b.amount, b.month] as any[]
-        })),
-        ...emis.map(e => ({
-          sql: `INSERT OR REPLACE INTO emis VALUES (?,?,?,?,?,?,?,?,?)`,
-          args: [e.id, e.name, e.principal, e.monthlyAmount, e.startDate, e.totalMonths, e.paidMonths, e.nextDueDate, e.notes ?? null] as any[]
-        })),
-        ...settings.map(s => ({
-          sql: `INSERT OR REPLACE INTO settings VALUES (?,?)`,
-          args: [s.key, s.value] as any[]
-        }))
-      ];
+      this.localCount = txs.length;
 
-      if (stmts.length > 0) await client.batch(stmts, 'write');
+      // Push each table separately so errors are attributable
+      for (const t of txs) {
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO transactions VALUES (?,?,?,?,?,?,?,?)`,
+          args: [t.id, t.type, t.amount, t.categoryId, t.note ?? null, t.paymentMode, t.date, t.createdAt]
+        });
+      }
+      for (const c of cats) {
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO categories VALUES (?,?,?,?,?,?)`,
+          args: [c.id, c.name, c.icon, c.color, c.sortOrder, c.isActive ? 1 : 0]
+        });
+      }
+      for (const b of budgets) {
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO budgets VALUES (?,?,?,?)`,
+          args: [b.id, b.categoryId, b.amount, b.month]
+        });
+      }
+      for (const e of emis) {
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO emis VALUES (?,?,?,?,?,?,?,?,?)`,
+          args: [e.id, e.name, e.principal, e.monthlyAmount, e.startDate, e.totalMonths, e.paidMonths, e.nextDueDate, e.notes ?? null]
+        });
+      }
+      for (const s of settings) {
+        await client.execute({
+          sql: `INSERT OR REPLACE INTO settings VALUES (?,?)`,
+          args: [s.key, s.value]
+        });
+      }
 
       this.status    = 'success';
       this.lastSyncAt = new Date().toISOString();
     } catch (err) {
       this.status = 'error';
-      this.error  = err instanceof Error ? err.message : 'Push failed';
+      this.error  = err instanceof Error ? err.message : String(err);
+      console.error('[sync] pushAll failed:', err);
     }
   }
 }
