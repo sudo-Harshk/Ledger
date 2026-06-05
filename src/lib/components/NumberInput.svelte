@@ -41,10 +41,13 @@
     value = local;
   }
 
-  // Filter non-numeric characters while typing; sync to parent on every keystroke
-  function onInput() {
-    local = local.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
-    value = local;
+  function onInput(e: Event) {
+    const raw = (e.currentTarget as HTMLInputElement).value;
+    const filtered = raw.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
+    local = filtered;
+    value = filtered;
+    // If filtering removed characters, reset the DOM value too
+    if (raw !== filtered) (e.currentTarget as HTMLInputElement).value = filtered;
   }
 
   const atMin = $derived((parseFloat(local) || 0) <= min);
@@ -67,6 +70,10 @@
          {inputmode}
          pattern="[0-9]*"
          {placeholder}
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"
          bind:value={local}
          oninput={onInput}
          class="flex-1 min-w-0 bg-transparent py-3 text-sm text-center text-[var(--color-text)]
