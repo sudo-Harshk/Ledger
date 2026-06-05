@@ -224,3 +224,16 @@ export function autoSyncDeleteSetting(key: string): void {
 }
 
 export function syncToTurso() { return syncStore.pushAll(); }
+
+/** Returns total transaction count in Turso, or null if not reachable. */
+export async function getCloudCount(): Promise<number | null> {
+  const client = await getClient();
+  if (!client) return null;
+  try {
+    await ensureTables(client);
+    const result = await client.execute('SELECT COUNT(*) as cnt FROM transactions');
+    return result.rows[0].cnt as number;
+  } catch {
+    return null;
+  }
+}

@@ -6,7 +6,7 @@
   import { Plus, Download, AlertCircle, RefreshCw } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
-  import { syncStore, tursoConfigured } from '$lib/db/sync.svelte';
+  import { syncStore, tursoConfigured, pullFromTurso } from '$lib/db/sync.svelte';
 
   let allCats         = $state<Category[]>([]);
   let income          = $state('');
@@ -112,9 +112,10 @@
     }
   }
 
+  let cloudCount = $state<number | null>(null);
+
   async function pullNow() {
     isPulling = true;
-    const { pullFromTurso } = await import('$lib/db/sync.svelte');
     await pullFromTurso();
     isPulling = false;
     if (syncStore.status === 'success') {
@@ -122,6 +123,11 @@
       pullDone = true;
       setTimeout(() => pullDone = false, 3000);
     }
+  }
+
+  async function checkCloud() {
+    const { getCloudCount } = await import('$lib/db/sync.svelte');
+    cloudCount = await getCloudCount();
   }
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
@@ -261,6 +267,15 @@
       {#if isPulling}Pulling…{:else if pullDone}Pulled!{:else}Pull from Cloud{/if}
     </button>
 
+    <button onclick={checkCloud}
+            class="text-xs text-[var(--color-primary)] py-1">
+      Check what's in Turso
+    </button>
+    {#if cloudCount !== null}
+      <p class="text-xs text-[var(--color-text-muted)]">
+        Turso has <strong>{cloudCount}</strong> transaction{cloudCount === 1 ? '' : 's'}
+      </p>
+    {/if}
     {#if syncStore.error}
       <p class="text-xs text-[var(--color-expense)] mt-1">{syncStore.error}</p>
     {/if}
