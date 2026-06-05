@@ -1,5 +1,4 @@
-import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, deduplicateCategories, getSetting } from '$lib/db/queries';
-import { tursoConfigured, pullFromTurso } from '$lib/db/sync.svelte';
+import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, getSetting } from '$lib/db/queries';
 import type { Transaction, Category, Budget, Emi } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
 
@@ -10,7 +9,6 @@ class AppStore {
   emis          = $state<Emi[]>([]);
   monthlyIncome = $state(0);
   isLoading     = $state(true);
-  isSyncing     = $state(false);
   showQuickAdd  = $state(false);
   editingTx     = $state<Transaction | null>(null);
 
@@ -40,15 +38,6 @@ class AppStore {
   async init() {
     this.isLoading = true;
     await seedIfEmpty();
-
-    // Pull latest from Turso Cloud before loading into reactive state
-    if (await tursoConfigured()) {
-      this.isSyncing = true;
-      await pullFromTurso();
-      await deduplicateCategories(); // remove any duplicates added by the pull
-      this.isSyncing = false;
-    }
-
     await this.refreshAll();
     this.isLoading = false;
   }

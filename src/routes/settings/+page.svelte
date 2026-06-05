@@ -3,10 +3,9 @@
   import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
-  import { Plus, Download, AlertCircle, RefreshCw } from '@lucide/svelte';
+  import { Plus, Download, AlertCircle } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
-  import { syncStore, tursoConfigured, pullFromTurso } from '$lib/db/sync.svelte';
 
   let allCats         = $state<Category[]>([]);
   let income          = $state('');
@@ -27,8 +26,6 @@
     allCats = cats;
     const n = parseFloat(saved);
     income  = n > 0 ? String(n) : '';
-    const { db } = await import('$lib/db/schema');
-    syncStore.localCount = await db.transactions.count();
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -97,39 +94,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  let isPushing = $state(false);
-  let isPulling = $state(false);
-  let pushDone  = $state(false);
-  let pullDone  = $state(false);
-
-  async function syncNow() {
-    isPushing = true;
-    await syncStore.pushAll();
-    isPushing = false;
-    if (syncStore.status === 'success') {
-      pushDone = true;
-      setTimeout(() => pushDone = false, 3000);
-    }
-  }
-
-  let cloudCount = $state<number | null>(null);
-
-  async function pullNow() {
-    isPulling = true;
-    await pullFromTurso();
-    isPulling = false;
-    if (syncStore.status === 'success') {
-      await app.refreshAll();
-      pullDone = true;
-      setTimeout(() => pullDone = false, 3000);
-    }
-  }
-
-  async function checkCloud() {
-    const { getCloudCount } = await import('$lib/db/sync.svelte');
-    cloudCount = await getCloudCount();
   }
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
@@ -243,47 +207,5 @@
     </button>
   </section>
 
-  <!-- Cloud Sync -->
-  <section class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-2">
-    <h2 class="text-sm font-semibold mb-1">Cloud Sync</h2>
-
-    <!-- Push -->
-    <button onclick={syncNow} disabled={isPushing || isPulling}
-            class="flex items-center gap-2 w-full py-3 px-4 rounded-xl text-sm font-medium transition-colors
-                   {pushDone
-                     ? 'bg-[var(--color-income)]/15 text-[var(--color-income)]'
-                     : syncStore.status === 'error'
-                       ? 'bg-[var(--color-expense)]/10 text-[var(--color-expense)]'
-                       : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
-      <RefreshCw size={16} class="{isPushing ? 'animate-spin' : ''} text-[var(--color-primary)]" />
-      {#if isPushing}Syncing…{:else if pushDone}Pushed!{:else if !pushDone && syncStore.status === 'error'}Push failed — tap to retry{:else}Push to Cloud{/if}
-    </button>
-
-    <!-- Pull -->
-    <button onclick={pullNow} disabled={isPushing || isPulling}
-            class="flex items-center gap-2 w-full py-3 px-4 rounded-xl text-sm font-medium transition-colors
-                   {pullDone
-                     ? 'bg-[var(--color-income)]/15 text-[var(--color-income)]'
-                     : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
-      <RefreshCw size={16} class="{isPulling ? 'animate-spin' : ''} text-[var(--color-primary)] scale-x-[-1]" />
-      {#if isPulling}Pulling…{:else if pullDone}Pulled!{:else}Pull from Cloud{/if}
-    </button>
-
-    <button onclick={checkCloud}
-            class="text-xs text-[var(--color-primary)] py-1">
-      Check what's in Turso
-    </button>
-    <div class="text-xs text-[var(--color-text-muted)] space-y-0.5">
-      {#if syncStore.localCount !== null}
-        <p>Local: <strong>{syncStore.localCount}</strong> transaction{syncStore.localCount === 1 ? '' : 's'}</p>
-      {/if}
-      {#if cloudCount !== null}
-        <p>Cloud: <strong>{cloudCount}</strong> transaction{cloudCount === 1 ? '' : 's'}</p>
-      {/if}
-    </div>
-    {#if syncStore.error}
-      <p class="text-xs text-[var(--color-expense)] mt-1">{syncStore.error}</p>
-    {/if}
-  </section>
 
 </div>

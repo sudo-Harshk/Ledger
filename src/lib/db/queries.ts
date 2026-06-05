@@ -1,7 +1,6 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
 import type { Transaction, Category, Budget, Emi, TransactionType } from './schema';
 import { nanoid } from '$lib/utils';
-import { autoSync, autoSyncDelete } from './sync.svelte';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 
@@ -20,7 +19,6 @@ export async function deduplicateCategories() {
 export async function seedIfEmpty() {
   await deduplicateCategories();
 
-  // Seed only names that don't exist yet
   const existing = new Set(
     (await db.categories.toArray()).map(c => c.name.toLowerCase().trim())
   );
@@ -29,14 +27,11 @@ export async function seedIfEmpty() {
     .map(c => ({ ...c, id: nanoid() }));
   if (toAdd.length > 0) {
     await db.categories.bulkAdd(toAdd);
-    toAdd.forEach(c => autoSync('categories', { ...c, isActive: c.isActive ? 1 : 0 }));
   }
 
   const income = await db.settings.get('monthlyIncome');
   if (!income) {
     await db.settings.put({ key: 'monthlyIncome', value: '0' });
-    await db.settings.put({ key: 'tursoUrl',      value: '' });
-    await db.settings.put({ key: 'tursoToken',    value: '' });
   }
 }
 
@@ -45,19 +40,15 @@ export async function seedIfEmpty() {
 export async function addTransaction(data: Omit<Transaction, 'id' | 'createdAt'>) {
   const tx: Transaction = { ...data, id: nanoid(), createdAt: new Date().toISOString() };
   await db.transactions.add(tx);
-  autoSync('transactions', tx);
   return tx;
 }
 
 export async function updateTransaction(id: string, data: Partial<Omit<Transaction, 'id' | 'createdAt'>>) {
   await db.transactions.update(id, data);
-  const updated = await db.transactions.get(id);
-  if (updated) autoSync('transactions', updated);
 }
 
 export async function deleteTransaction(id: string) {
   await db.transactions.delete(id);
-  autoSyncDelete('transactions', id);
 }
 
 export async function getTransactions(opts?: { month?: string; type?: TransactionType; categoryId?: string }) {
@@ -91,20 +82,15 @@ export async function getAllCategories() {
 export async function addCategory(data: Omit<Category, 'id'>) {
   const cat: Category = { ...data, id: nanoid() };
   await db.categories.add(cat);
-  autoSync('categories', { ...cat, isActive: cat.isActive ? 1 : 0 });
   return cat;
 }
 
 export async function updateCategory(id: string, data: Partial<Omit<Category, 'id'>>) {
   await db.categories.update(id, data);
-  const updated = await db.categories.get(id);
-  if (updated) autoSync('categories', { ...updated, isActive: updated.isActive ? 1 : 0 });
 }
 
 export async function deleteCategory(id: string) {
   await db.categories.update(id, { isActive: false });
-  const updated = await db.categories.get(id);
-  if (updated) autoSync('categories', { ...updated, isActive: 0 });
 }
 
 // ── Budgets ───────────────────────────────────────────────────────────────────
@@ -117,17 +103,14 @@ export async function setBudget(categoryId: string, month: string, amount: numbe
   const existing = await db.budgets.where('[categoryId+month]').equals([categoryId, month]).first();
   if (existing) {
     await db.budgets.update(existing.id, { amount });
-    autoSync('budgets', { ...existing, amount });
   } else {
     const budget: Budget = { id: nanoid(), categoryId, month, amount };
     await db.budgets.add(budget);
-    autoSync('budgets', budget);
   }
 }
 
 export async function deleteBudget(id: string) {
   await db.budgets.delete(id);
-  autoSyncDelete('budgets', id);
 }
 
 // ── EMIs ──────────────────────────────────────────────────────────────────────
@@ -139,7 +122,6 @@ export async function getEmis() {
 export async function addEmi(data: Omit<Emi, 'id'>) {
   const emi: Emi = { ...data, id: nanoid() };
   await db.emis.add(emi);
-  autoSync('emis', emi);
   return emi;
 }
 
@@ -149,14 +131,11 @@ export async function markEmiPaid(id: string) {
   const paidMonths = emi.paidMonths + 1;
   const next = new Date(emi.nextDueDate);
   next.setMonth(next.getMonth() + 1);
-  const updates = { paidMonths, nextDueDate: next.toISOString().slice(0, 10) };
-  await db.emis.update(id, updates);
-  autoSync('emis', { ...emi, ...updates });
+  await db.emis.update(id, { paidMonths, nextDueDate: next.toISOString().slice(0, 10) });
 }
 
 export async function deleteEmi(id: string) {
   await db.emis.delete(id);
-  autoSyncDelete('emis', id);
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
@@ -168,10 +147,6 @@ export async function getSetting(key: string): Promise<string> {
 
 export async function setSetting(key: string, value: string) {
   await db.settings.put({ key, value });
-  // Don't auto-sync credentials — user controls sync explicitly
-  if (key !== 'tursoUrl' && key !== 'tursoToken') {
-    autoSync('settings', { key, value });
-  }
 }
 
 // ── Reports helpers ───────────────────────────────────────────────────────────
