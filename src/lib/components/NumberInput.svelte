@@ -19,10 +19,8 @@
     inputmode = 'decimal',
   }: Props = $props();
 
-  // Local state drives the input; changes propagate out via value = local
   let local = $state(value);
 
-  // Sync parent → local when parent resets the value (e.g. form clear, loadAll)
   $effect(() => {
     if (value !== local) local = value;
   });
@@ -41,15 +39,6 @@
     value = local;
   }
 
-  function onInput(e: Event) {
-    const raw = (e.currentTarget as HTMLInputElement).value;
-    const filtered = raw.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
-    local = filtered;
-    value = filtered;
-    // If filtering removed characters, reset the DOM value too
-    if (raw !== filtered) (e.currentTarget as HTMLInputElement).value = filtered;
-  }
-
   const atMin = $derived((parseFloat(local) || 0) <= min);
   const atMax = $derived(max < Infinity && (parseFloat(local) || 0) >= max);
 </script>
@@ -66,16 +55,15 @@
     −
   </button>
 
-  <input type="text"
-         {inputmode}
-         pattern="[0-9]*"
+  <input type="tel"
          {placeholder}
          autocomplete="off"
-         autocorrect="off"
-         autocapitalize="off"
-         spellcheck="false"
          bind:value={local}
-         oninput={onInput}
+         onchange={() => {
+           local = local.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
+           value = local;
+         }}
+         oninput={() => { value = local; }}
          class="flex-1 min-w-0 bg-transparent py-3 text-sm text-center text-[var(--color-text)]
                 placeholder-[var(--color-text-muted)] focus:outline-none" />
 
