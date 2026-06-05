@@ -19,10 +19,12 @@
     inputmode = 'decimal',
   }: Props = $props();
 
-  let local = $state(value);
+  let local   = $state(value);
+  let focused = $state(false);
 
+  // Only sync parent → local when the field is not being edited
   $effect(() => {
-    if (value !== local) local = value;
+    if (!focused && value !== local) local = value;
   });
 
   function decrement() {
@@ -59,7 +61,9 @@
          {placeholder}
          autocomplete="off"
          bind:value={local}
-         onchange={() => {
+         onfocus={() => focused = true}
+         onblur={() => {
+           focused = false;
            local = local.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
            value = local;
          }}
