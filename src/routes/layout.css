@@ -6,6 +6,7 @@
   --color-income: #22C55E;
   --color-expense: #EF4444;
   --color-warning: #F59E0B;
+  /* dark theme defaults */
   --color-surface: #1A1A27;
   --color-surface-2: #22222F;
   --color-surface-3: #2A2A3A;
@@ -17,6 +18,17 @@
   --font-family-sans: 'Inter', system-ui, sans-serif;
   --radius-card: 1rem;
   --radius-pill: 9999px;
+}
+
+/* Light theme overrides */
+:root.light {
+  --color-surface:     #FFFFFF;
+  --color-surface-2:   #F1F0FF;
+  --color-surface-3:   #E4E3F8;
+  --color-bg:          #F5F5FF;
+  --color-text:        #1A1A27;
+  --color-text-muted:  #6B6890;
+  --color-border:      #D8D6F0;
 }
 
 * {

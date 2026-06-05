@@ -3,7 +3,8 @@
   import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
-  import { Plus, Download, AlertCircle } from '@lucide/svelte';
+  import { Plus, Download, AlertCircle, Sun, Moon } from '@lucide/svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
 
@@ -101,7 +102,17 @@
 </script>
 
 <div class="px-4 pt-6 pb-28 animate-fade-in space-y-6">
-  <h1 class="text-xl font-bold">Settings</h1>
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">Settings</h1>
+    <button onclick={() => themeStore.toggle()}
+            class="w-9 h-9 rounded-full bg-[var(--color-surface)] flex items-center justify-center transition-colors">
+      {#if themeStore.current === 'dark'}
+        <Sun size={18} class="text-[var(--color-text-muted)]" />
+      {:else}
+        <Moon size={18} class="text-[var(--color-text-muted)]" />
+      {/if}
+    </button>
+  </div>
 
   <!-- Monthly income -->
   <section class="bg-[var(--color-surface)] rounded-2xl p-5">

@@ -10,11 +10,15 @@
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import { app } from '$lib/stores/app.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
   import { Plus } from '@lucide/svelte';
 
   let { children } = $props();
 
-  onMount(() => { app.init(); });
+  onMount(() => {
+    app.init();
+    themeStore.init();
+  });
 </script>
 
 <svelte:head>
