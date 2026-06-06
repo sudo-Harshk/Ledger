@@ -1,9 +1,9 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
-  import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions } from '$lib/db/queries';
+  import { getAllCategories, addCategory, updateCategory, setSetting, getSetting, getTransactions, clearAllData } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount, validateName } from '$lib/utils/validate';
-  import { Plus, Download, AlertCircle, Sun, Moon } from '@lucide/svelte';
+  import { Plus, Download, AlertCircle, Sun, Moon, Trash2 } from '@lucide/svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
   import type { Category } from '$lib/db/schema';
@@ -16,6 +16,8 @@
   let addingCat       = $state(false);
   let catAttempted    = $state(false);
   let newCat          = $state({ name: '', icon: '📌', color: '#9B99B8' });
+  let resetConfirm    = $state(false);
+  let resetting       = $state(false);
 
   $effect(() => { loadAll(); });
 
@@ -95,6 +97,15 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  async function resetAll() {
+    resetting = true;
+    await clearAllData();
+    await app.refreshAll();
+    resetting    = false;
+    resetConfirm = false;
+    income       = '';
   }
 
   const EMOJI_OPTIONS = ['🏠','🍽️','🛒','🚗','📱','💆','🎬','🛍️','📦','💰','📌','💊','✈️','🎓','⚡','🏋️','🐾','🎮'];
@@ -218,5 +229,34 @@
     </button>
   </section>
 
+  <!-- Reset -->
+  <section class="bg-[var(--color-surface)] rounded-2xl p-5">
+    <h2 class="text-sm font-semibold mb-1">Reset All Data</h2>
+    <p class="text-xs text-[var(--color-text-muted)] mb-3">
+      Permanently deletes all transactions, budgets, EMIs, and settings from this device and cloud. Default categories will be restored.
+    </p>
+    {#if !resetConfirm}
+      <button onclick={() => resetConfirm = true}
+              class="flex items-center gap-2 w-full py-3 px-4 bg-[var(--color-expense)]/10
+                     text-[var(--color-expense)] rounded-xl text-sm font-medium">
+        <Trash2 size={16} />
+        Reset All Data
+      </button>
+    {:else}
+      <p class="text-xs text-[var(--color-expense)] font-medium mb-3">
+        This cannot be undone. Are you sure?
+      </p>
+      <div class="flex gap-2">
+        <button onclick={resetAll} disabled={resetting}
+                class="flex-1 py-3 bg-[var(--color-expense)] text-white rounded-xl text-sm font-medium disabled:opacity-50">
+          {resetting ? 'Clearing...' : 'Yes, delete everything'}
+        </button>
+        <button onclick={() => resetConfirm = false}
+                class="px-4 py-3 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] rounded-xl text-sm">
+          Cancel
+        </button>
+      </div>
+    {/if}
+  </section>
 
 </div>

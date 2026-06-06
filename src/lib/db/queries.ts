@@ -1,7 +1,7 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
 import type { Transaction, Category, Budget, Emi, TransactionType } from './schema';
 import { nanoid } from '$lib/utils';
-import { pushDoc, removeDoc } from './firestore';
+import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
 
@@ -169,6 +169,29 @@ export async function setSetting(key: string, value: string) {
   const setting = { key, value };
   await db.settings.put(setting);
   pushDoc('settings', setting).catch(() => {});
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+
+export async function clearAllData() {
+  // Wipe IndexedDB
+  await Promise.all([
+    db.transactions.clear(),
+    db.budgets.clear(),
+    db.emis.clear(),
+    db.settings.clear(),
+    db.categories.clear(),
+  ]);
+  // Wipe Firestore
+  await Promise.all([
+    clearFirestoreCollection('transactions'),
+    clearFirestoreCollection('budgets'),
+    clearFirestoreCollection('emis'),
+    clearFirestoreCollection('settings'),
+    clearFirestoreCollection('categories'),
+  ]);
+  // Re-seed defaults
+  await seedIfEmpty();
 }
 
 // ── Reports helpers ───────────────────────────────────────────────────────────

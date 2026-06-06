@@ -36,6 +36,16 @@ export async function removeDoc(col: CollectionName, id: string) {
   }
 }
 
+export async function clearFirestoreCollection(col: CollectionName): Promise<void> {
+  if (!configured()) return;
+  try {
+    const snap = await getDocs(collection(firestore, col));
+    await Promise.all(snap.docs.map(d => fsDeleteDoc(d.ref)));
+  } catch {
+    // silent
+  }
+}
+
 export async function pullFromFirestore(): Promise<void> {
   if (!configured()) return;
   try {
