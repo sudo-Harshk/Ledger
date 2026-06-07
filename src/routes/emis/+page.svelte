@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import { addEmi, markEmiPaid, deleteEmi } from '$lib/db/queries';
-  import { formatINR, formatShortDate, daysUntil, today } from '$lib/utils';
+  import { formatINR, formatShortDate, daysUntil, today, currentMonth } from '$lib/utils';
   import { validateAmount, validatePositiveInt, validateName } from '$lib/utils/validate';
   import { Plus, Check, Trash2, CalendarClock, X, AlertCircle, RefreshCw } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
@@ -81,6 +81,10 @@
     if (days === 0) return 'Due today!';
     if (days === 1) return 'Due tomorrow';
     return `${days} days left`;
+  }
+
+  function paidThisMonth(nextDueDate: string): boolean {
+    return nextDueDate.slice(0, 7) > currentMonth();
   }
 
   const emis          = $derived(app.emis.filter(e => e.type === 'emi' || !e.type));
@@ -284,20 +288,30 @@
                 </div>
 
                 <div class="flex items-center justify-between mt-3">
-                  <div class="flex items-center gap-1.5">
-                    <CalendarClock size={14} style="color:{urgencyColor(days)}" />
-                    <span class="text-xs font-medium" style="color:{urgencyColor(days)}">
-                      {urgencyLabel(days)}
-                    </span>
-                    <span class="text-xs text-[var(--color-text-muted)]">
-                      · {formatShortDate(sub.nextDueDate)}
-                    </span>
-                  </div>
-                  <button onclick={() => paid(sub.id)}
-                          class="flex items-center gap-1 bg-[var(--color-income)]/20 text-[var(--color-income)]
-                                 px-3 py-1.5 rounded-xl text-xs font-medium">
-                    <Check size={12} /> Mark Paid
-                  </button>
+                  {#if paidThisMonth(sub.nextDueDate)}
+                    <div class="flex items-center gap-1.5">
+                      <Check size={14} class="text-[var(--color-income)]" />
+                      <span class="text-xs font-medium text-[var(--color-income)]">Paid this month</span>
+                      <span class="text-xs text-[var(--color-text-muted)]">
+                        · renews {formatShortDate(sub.nextDueDate)}
+                      </span>
+                    </div>
+                  {:else}
+                    <div class="flex items-center gap-1.5">
+                      <CalendarClock size={14} style="color:{urgencyColor(days)}" />
+                      <span class="text-xs font-medium" style="color:{urgencyColor(days)}">
+                        {urgencyLabel(days)}
+                      </span>
+                      <span class="text-xs text-[var(--color-text-muted)]">
+                        · {formatShortDate(sub.nextDueDate)}
+                      </span>
+                    </div>
+                    <button onclick={() => paid(sub.id)}
+                            class="flex items-center gap-1 bg-[var(--color-income)]/20 text-[var(--color-income)]
+                                   px-3 py-1.5 rounded-xl text-xs font-medium">
+                      <Check size={12} /> Mark Paid
+                    </button>
+                  {/if}
                 </div>
 
                 {#if sub.notes}
