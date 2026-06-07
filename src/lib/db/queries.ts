@@ -1,5 +1,5 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Budget, Emi, TransactionType } from './schema';
+import type { Transaction, Category, Budget, Emi, EmiType, TransactionType } from './schema';
 import { nanoid } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
@@ -145,7 +145,8 @@ export async function addEmi(data: Omit<Emi, 'id'>) {
 export async function markEmiPaid(id: string) {
   const emi = await db.emis.get(id);
   if (!emi) return;
-  const paidMonths = emi.paidMonths + 1;
+  const isSubscription = emi.type === 'subscription';
+  const paidMonths = isSubscription ? emi.paidMonths : emi.paidMonths + 1;
   const next = new Date(emi.nextDueDate);
   next.setMonth(next.getMonth() + 1);
   const updated = { ...emi, paidMonths, nextDueDate: next.toISOString().slice(0, 10) };

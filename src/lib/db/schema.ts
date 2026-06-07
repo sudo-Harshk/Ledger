@@ -30,13 +30,16 @@ export interface Budget {
   month: string; // YYYY-MM
 }
 
+export type EmiType = 'emi' | 'subscription';
+
 export interface Emi {
   id: string;
+  type: EmiType;
   name: string;
-  principal: number;
+  principal?: number;
   monthlyAmount: number;
   startDate: string; // YYYY-MM-DD
-  totalMonths: number;
+  totalMonths?: number;
   paidMonths: number;
   nextDueDate: string; // YYYY-MM-DD
   notes?: string;
