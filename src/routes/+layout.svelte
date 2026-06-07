@@ -1,6 +1,7 @@
 <script lang="ts">
   import './layout.css';
   import { onMount } from 'svelte';
+  import { onNavigate } from '$app/navigation';
   import { dev } from '$app/environment';
   import { injectAnalytics } from '@vercel/analytics/sveltekit';
   import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
@@ -10,6 +11,7 @@
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
+  import Toast from '$lib/components/Toast.svelte';
   import { app } from '$lib/stores/app.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { Plus } from '@lucide/svelte';
@@ -19,6 +21,17 @@
   onMount(() => {
     app.init();
     themeStore.init();
+  });
+
+  // View Transitions API — smooth cross-fade on every route change
+  onNavigate((navigation) => {
+    if (!document.startViewTransition) return;
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        await navigation.complete;
+      });
+    });
   });
 </script>
 
@@ -56,6 +69,7 @@
 
       <BottomNav />
       <QuickAdd />
+      <Toast />
     {/if}
   </div>
 </div>

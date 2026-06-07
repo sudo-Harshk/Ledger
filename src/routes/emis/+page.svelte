@@ -2,6 +2,7 @@
   import { app } from '$lib/stores/app.svelte';
   import { addEmi, markEmiPaid, deleteEmi } from '$lib/db/queries';
   import { formatINR, formatShortDate, daysUntil, today, currentMonth } from '$lib/utils';
+  import { toast } from '$lib/stores/toast.svelte';
   import { validateAmount, validatePositiveInt, validateName } from '$lib/utils/validate';
   import { Plus, Check, Trash2, CalendarClock, X, AlertCircle, RefreshCw } from '@lucide/svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
@@ -60,9 +61,12 @@
   }
 
   async function paid(id: string) {
+    const emi = app.emis.find(e => e.id === id);
     const txId = await markEmiPaid(id);
     await app.refreshEmis();
     if (txId) await app.refreshTransactions();
+    const label = emi?.type === 'subscription' ? `${emi.name} marked paid` : 'EMI payment recorded';
+    toast.show(label);
   }
 
   async function remove(id: string) {
