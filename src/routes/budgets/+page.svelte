@@ -77,7 +77,7 @@
   );
 </script>
 
-<div class="px-4 pt-6 animate-fade-in">
+<div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
   <div class="flex items-center justify-between mb-5">
     <div>
       <h1 class="text-xl font-bold">Budgets</h1>
@@ -160,7 +160,7 @@
       <p class="text-xs text-[var(--color-text-muted)] mt-1">Set limits to track your spending</p>
     </div>
   {:else}
-    <div class="space-y-3 pb-28">
+    <div class="grid md:grid-cols-2 gap-3 pb-28">
       {#each enriched as b}
         {@const cat = app.getCategoryById(b.categoryId)}
 

@@ -83,7 +83,7 @@
   ];
 </script>
 
-<div class="px-4 pt-6 animate-fade-in">
+<div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
   <div class="flex items-center justify-between mb-5">
     <h1 class="text-xl font-bold">EMI Tracker</h1>
     <button onclick={() => { showForm = true; attempted = false; }}

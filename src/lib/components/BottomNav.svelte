@@ -11,7 +11,7 @@
   ];
 </script>
 
-<nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40
+<nav class="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40
             flex items-center justify-around
             bg-[var(--color-surface)] border-t border-[var(--color-border)]
             pb-[env(safe-area-inset-bottom)]">
