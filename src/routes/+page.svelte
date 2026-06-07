@@ -42,6 +42,11 @@
 
   const savings      = $derived(app.monthlyIncome - app.monthExpenses);
   const savingsPct   = $derived(app.monthlyIncome > 0 ? Math.max(0, savings / app.monthlyIncome) : 0);
+
+  const dailyBudget  = $derived(totalBudget > 0 ? totalBudget / daysInMonth(app.monthStr) : 0);
+  const weekTotal    = $derived(weekData.reduce((s, d) => s + d.total, 0));
+  const weekDaysSpent = $derived(weekData.filter(d => d.total > 0).length);
+  const weekAvg      = $derived(weekDaysSpent > 0 ? Math.round(weekTotal / weekDaysSpent) : 0);
 </script>
 
 <div class="px-4 pt-6 space-y-5 animate-fade-in">
@@ -76,8 +81,19 @@
 
   <!-- This week chart -->
   <div class="bg-[var(--color-surface)] rounded-2xl p-5">
-    <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide mb-3">This Week</p>
-    <WeekBarChart data={weekData} />
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">This Week</p>
+      {#if weekTotal > 0}
+        <div class="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
+          <span>Total <span class="text-[var(--color-text)] font-semibold">{formatINR(weekTotal)}</span></span>
+          {#if weekAvg > 0}
+            <span class="opacity-40">·</span>
+            <span>Avg/day <span class="text-[var(--color-text)] font-semibold">{formatINR(weekAvg)}</span></span>
+          {/if}
+        </div>
+      {/if}
+    </div>
+    <WeekBarChart data={weekData} dailyBudget={dailyBudget} />
   </div>
 
   <!-- Month stats -->
