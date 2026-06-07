@@ -8,23 +8,51 @@
 
   const APP_START_MONTH = '2026-06';
 
-  let month     = $state(currentMonth());
-  let summary   = $state({ income: 0, expense: 0, net: 0, transactions: [] as any[] });
-  let catSpend  = $state<{ categoryId: string; total: number }[]>([]);
-  let dailyData = $state<{ date: string; total: number }[]>([]);
+  let month        = $state(currentMonth());
+  let histSummary  = $state({ income: 0, expense: 0, net: 0, transactions: [] as any[] });
+  let histCatSpend = $state<{ categoryId: string; total: number }[]>([]);
+  let histDaily    = $state<{ date: string; total: number }[]>([]);
 
+  const isCurrentMonth = $derived(month === currentMonth());
+
+  // ── Current month: derive directly from store (always reactive) ───────────
+  const liveSummary = $derived((() => {
+    const txs     = app.transactions;
+    const income  = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return { income, expense, net: income - expense, transactions: txs };
+  })());
+
+  const liveCatSpend = $derived((() => {
+    const map = new Map<string, number>();
+    for (const t of app.transactions.filter(t => t.type === 'expense'))
+      map.set(t.categoryId, (map.get(t.categoryId) ?? 0) + t.amount);
+    return Array.from(map.entries()).map(([categoryId, total]) => ({ categoryId, total }));
+  })());
+
+  const liveDaily = $derived((() => {
+    const map = new Map<string, number>();
+    for (const t of app.transactions.filter(t => t.type === 'expense'))
+      map.set(t.date, (map.get(t.date) ?? 0) + t.amount);
+    return Array.from(map.entries())
+      .map(([date, total]) => ({ date, total }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  })());
+
+  // ── Historical months: query DB when month changes ────────────────────────
   $effect(() => {
-    // track app loading and transaction changes so reports refresh after Firestore pull
-    // and after any new transaction is added
-    void app.isLoading;
-    void app.transactions.length;
-    const _month = month;
+    const m = month;
+    if (m === currentMonth()) return;
     Promise.all([
-      getMonthSummary(_month),
-      getCategorySpend(_month),
-      getDailySpend(_month),
-    ]).then(([s, c, d]) => { summary = s; catSpend = c; dailyData = d; });
+      getMonthSummary(m),
+      getCategorySpend(m),
+      getDailySpend(m),
+    ]).then(([s, c, d]) => { histSummary = s; histCatSpend = c; histDaily = d; });
   });
+
+  const summary  = $derived(isCurrentMonth ? liveSummary  : histSummary);
+  const catSpend = $derived(isCurrentMonth ? liveCatSpend : histCatSpend);
+  const dailyData = $derived(isCurrentMonth ? liveDaily   : histDaily);
 </script>
 
 <div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
