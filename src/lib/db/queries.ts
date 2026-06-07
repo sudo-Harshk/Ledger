@@ -142,9 +142,9 @@ export async function addEmi(data: Omit<Emi, 'id'>) {
   return emi;
 }
 
-export async function markEmiPaid(id: string) {
+export async function markEmiPaid(id: string): Promise<string | null> {
   const emi = await db.emis.get(id);
-  if (!emi) return;
+  if (!emi) return null;
   const isSubscription = emi.type === 'subscription';
   const paidMonths = isSubscription ? emi.paidMonths : emi.paidMonths + 1;
   const next = new Date(emi.nextDueDate);
@@ -152,6 +152,21 @@ export async function markEmiPaid(id: string) {
   const updated = { ...emi, paidMonths, nextDueDate: next.toISOString().slice(0, 10) };
   await db.emis.update(id, { paidMonths, nextDueDate: updated.nextDueDate });
   pushDoc('emis', updated).catch(() => {});
+
+  // Auto-create expense transaction if a category is linked
+  if (emi.categoryId) {
+    const today = new Date().toISOString().slice(0, 10);
+    const tx = await addTransaction({
+      type: 'expense',
+      amount: emi.monthlyAmount,
+      categoryId: emi.categoryId,
+      paymentMode: 'upi',
+      date: today,
+      note: emi.name,
+    });
+    return tx.id;
+  }
+  return null;
 }
 
 export async function deleteEmi(id: string) {

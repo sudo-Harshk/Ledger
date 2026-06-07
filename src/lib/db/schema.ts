@@ -42,6 +42,7 @@ export interface Emi {
   totalMonths?: number;
   paidMonths: number;
   nextDueDate: string; // YYYY-MM-DD
+  categoryId?: string;
   notes?: string;
 }
 
