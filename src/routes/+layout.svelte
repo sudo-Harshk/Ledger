@@ -9,6 +9,7 @@
   injectSpeedInsights();
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
+  import Sidebar from '$lib/components/Sidebar.svelte';
   import { app } from '$lib/stores/app.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { Plus } from '@lucide/svelte';
@@ -29,26 +30,32 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 </svelte:head>
 
-{#if app.isLoading}
-  <div class="flex items-center justify-center h-dvh">
-    <div class="flex flex-col items-center gap-3">
-      <div class="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin"></div>
-      <p class="text-sm text-[var(--color-text-muted)]">Loading Ledger…</p>
-    </div>
+<div class="md:flex md:min-h-screen">
+  <Sidebar />
+
+  <div class="flex-1 min-w-0">
+    {#if app.isLoading}
+      <div class="flex items-center justify-center h-dvh">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-10 h-10 rounded-full border-2 border-[var(--color-primary)] border-t-transparent animate-spin"></div>
+          <p class="text-sm text-[var(--color-text-muted)]">Loading Ledger…</p>
+        </div>
+      </div>
+    {:else}
+      <main class="min-h-dvh pb-safe md:min-h-0 md:pb-8">
+        {@render children()}
+      </main>
+
+      <!-- FAB: mobile only -->
+      <button onclick={() => app.showQuickAdd = true}
+              class="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full
+                     bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/40
+                     flex items-center justify-center transition-transform active:scale-90">
+        <Plus size={28} strokeWidth={2.5} />
+      </button>
+
+      <BottomNav />
+      <QuickAdd />
+    {/if}
   </div>
-{:else}
-  <main class="min-h-dvh pb-safe">
-    {@render children()}
-  </main>
-
-  <!-- FAB -->
-  <button onclick={() => app.showQuickAdd = true}
-          class="fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full
-                 bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/40
-                 flex items-center justify-center transition-transform active:scale-90">
-    <Plus size={28} strokeWidth={2.5} />
-  </button>
-
-  <BottomNav />
-  <QuickAdd />
-{/if}
+</div>

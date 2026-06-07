@@ -53,7 +53,7 @@
   const totalIncome   = $derived(allForMonth.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
 </script>
 
-<div class="px-4 pt-6 animate-fade-in">
+<div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
   <div class="flex items-center justify-between mb-4">
     <h1 class="text-xl font-bold">Transactions</h1>
   </div>

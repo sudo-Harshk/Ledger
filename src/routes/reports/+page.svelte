@@ -22,25 +22,25 @@
   });
 </script>
 
-<div class="px-4 pt-6 animate-fade-in">
+<div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
   <div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">Reports</h1>
+    <h1 class="text-xl md:text-2xl font-bold">Reports</h1>
+    <div class="flex items-center gap-2 bg-[var(--color-surface)] rounded-2xl px-2">
+      <button onclick={() => month = prevMonth(month)}
+              disabled={month <= APP_START_MONTH}
+              class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
+        <ChevronLeft size={18} />
+      </button>
+      <span class="text-sm font-semibold">{monthLabel(month)}</span>
+      <button onclick={() => month = nextMonth(month)}
+              disabled={month >= currentMonth()}
+              class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
+        <ChevronRight size={18} />
+      </button>
+    </div>
   </div>
 
-  <div class="flex items-center justify-between bg-[var(--color-surface)] rounded-2xl p-3 mb-5">
-    <button onclick={() => month = prevMonth(month)}
-            disabled={month <= APP_START_MONTH}
-            class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
-      <ChevronLeft size={20} />
-    </button>
-    <span class="text-sm font-semibold">{monthLabel(month)}</span>
-    <button onclick={() => month = nextMonth(month)}
-            disabled={month >= currentMonth()}
-            class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
-      <ChevronRight size={20} />
-    </button>
-  </div>
-
+  <!-- Summary stats -->
   <div class="grid grid-cols-3 gap-3 mb-5">
     <div class="bg-[var(--color-surface)] rounded-2xl p-4">
       <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Income</p>
@@ -58,42 +58,52 @@
     </div>
   </div>
 
+  <!-- Desktop: two-column split / Mobile: single column -->
+  <div class="md:grid md:grid-cols-2 md:gap-6 md:items-start space-y-5 md:space-y-0">
 
-<div class="bg-[var(--color-surface)] rounded-2xl p-5 mb-5">
-    <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Spend by Category</p>
-    <MonthDonut slices={catSpend} categories={app.categories} />
-  </div>
+    <!-- Left: donut + category breakdown -->
+    <div class="space-y-5">
+      <div class="bg-[var(--color-surface)] rounded-2xl p-5">
+        <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Spend by Category</p>
+        <MonthDonut slices={catSpend} categories={app.categories} />
+      </div>
 
-  <div class="bg-[var(--color-surface)] rounded-2xl p-5 mb-5">
-    <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Daily Spend</p>
-    <DailyTrend data={dailyData} />
-  </div>
-
-  {#if catSpend.length > 0}
-    {@const breakdownTotal = catSpend.reduce((s, c) => s + c.total, 0)}
-    <div class="bg-[var(--color-surface)] rounded-2xl p-5 mb-5">
-      <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Breakdown</p>
-      <div class="space-y-3">
-        {#each catSpend.sort((a,b) => b.total - a.total) as cs}
-          {@const cat = app.categories.find(c => c.id === cs.categoryId)}
-          {@const pct = breakdownTotal > 0 ? cs.total / breakdownTotal : 0}
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs">
-              <span class="flex items-center gap-1.5">
-                <span>{cat?.icon ?? '📌'}</span>
-                <span class="text-[var(--color-text-muted)]">{cat?.name ?? 'Unknown'}</span>
-              </span>
-              <span class="font-medium">{formatINR(cs.total)}</span>
-            </div>
-            <div class="h-1.5 bg-[var(--color-border)] rounded-full">
-              <div class="h-full rounded-full transition-all duration-500"
-                   style="width:{pct*100}%; background:{cat?.color ?? '#9B99B8'}"></div>
-            </div>
+      {#if catSpend.length > 0}
+        {@const breakdownTotal = catSpend.reduce((s, c) => s + c.total, 0)}
+        <div class="bg-[var(--color-surface)] rounded-2xl p-5">
+          <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Breakdown</p>
+          <div class="space-y-3">
+            {#each catSpend.sort((a,b) => b.total - a.total) as cs}
+              {@const cat = app.categories.find(c => c.id === cs.categoryId)}
+              {@const pct = breakdownTotal > 0 ? cs.total / breakdownTotal : 0}
+              <div class="space-y-1">
+                <div class="flex justify-between text-xs">
+                  <span class="flex items-center gap-1.5">
+                    <span>{cat?.icon ?? '📌'}</span>
+                    <span class="text-[var(--color-text-muted)]">{cat?.name ?? 'Unknown'}</span>
+                  </span>
+                  <span class="font-medium">{formatINR(cs.total)}</span>
+                </div>
+                <div class="h-1.5 bg-[var(--color-border)] rounded-full">
+                  <div class="h-full rounded-full transition-all duration-500"
+                       style="width:{pct*100}%; background:{cat?.color ?? '#9B99B8'}"></div>
+                </div>
+              </div>
+            {/each}
           </div>
-        {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Right: daily trend -->
+    <div class="space-y-5">
+      <div class="bg-[var(--color-surface)] rounded-2xl p-5">
+        <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Daily Spend</p>
+        <DailyTrend data={dailyData} />
       </div>
     </div>
-  {/if}
+
+  </div>
 
   <div class="h-4"></div>
 </div>
