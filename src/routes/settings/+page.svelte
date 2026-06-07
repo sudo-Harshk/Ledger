@@ -112,7 +112,7 @@
   const COLOR_OPTIONS = ['#6C63FF','#F97316','#22C55E','#3B82F6','#8B5CF6','#EC4899','#EF4444','#F59E0B','#06B6D4','#9B99B8'];
 </script>
 
-<div class="px-4 pt-6 pb-28 md:px-8 md:pt-8 md:max-w-2xl animate-fade-in space-y-6">
+<div class="px-4 pt-6 pb-28 md:px-8 md:pt-8 md:max-w-2xl md:mx-auto animate-fade-in space-y-6">
   <div class="flex items-center justify-between">
     <h1 class="text-xl font-bold">Settings</h1>
     <button onclick={() => themeStore.toggle()}
