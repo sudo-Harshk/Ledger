@@ -145,12 +145,6 @@ Last-write-wins. Since this is a single-user app, conflicts do not occur in prac
 
 ---
 
-## Privacy
-
-Your data is tied to your Firebase project. Anyone who opens this app from GitHub or Vercel gets their own empty app — they cannot see your data. The Firebase API key is a client-side identifier, not a secret; access is controlled by Firestore security rules.
-
----
-
 ## Deployment
 
 Connect the GitHub repo to Vercel. Add the three `PUBLIC_FIREBASE_*` environment variables in Vercel project settings. Every push to main deploys automatically.
