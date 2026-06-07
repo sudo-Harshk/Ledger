@@ -2,7 +2,11 @@
   import { app } from '$lib/stores/app.svelte';
   import { deleteTransaction, getTransactions } from '$lib/db/queries';
   import { formatINR, formatDate, currentMonth, prevMonth, nextMonth, monthLabel } from '$lib/utils';
+  import { toast } from '$lib/stores/toast.svelte';
   import { Search, Trash2, Pencil, ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
+  import { flip } from 'svelte/animate';
   import type { Transaction } from '$lib/db/schema';
 
   const APP_START_MONTH = '2026-06';
@@ -42,6 +46,7 @@
     await deleteTransaction(id);
     allForMonth = await getTransactions({ month });
     await app.refreshTransactions(month);
+    toast.show('Transaction deleted', 'info');
   }
 
   function edit(tx: Transaction) {
@@ -115,9 +120,12 @@
             </p>
           </div>
           <div class="space-y-2">
-            {#each txs.sort((a,b) => b.createdAt.localeCompare(a.createdAt)) as tx}
+            {#each txs.sort((a,b) => b.createdAt.localeCompare(a.createdAt)) as tx (tx.id)}
               {@const cat = app.getCategoryById(tx.categoryId)}
-              <div class="flex items-center gap-3 bg-[var(--color-surface)] rounded-xl px-4 py-3">
+              <div in:fly={{ y: -8, duration: 200, easing: cubicOut }}
+                   out:fly={{ x: 40, duration: 180 }}
+                   animate:flip={{ duration: 200 }}
+                   class="flex items-center gap-3 bg-[var(--color-surface)] rounded-xl px-4 py-3">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
                      style="background:{cat?.color ?? '#9B99B8'}22">
                   {cat?.icon ?? '📌'}

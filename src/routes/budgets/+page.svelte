@@ -161,10 +161,11 @@
     </div>
   {:else}
     <div class="grid md:grid-cols-2 gap-3 pb-28">
-      {#each enriched as b}
+      {#each enriched as b, i}
         {@const cat = app.getCategoryById(b.categoryId)}
 
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4">
+        <div class="bg-[var(--color-surface)] rounded-2xl p-4 animate-fade-in"
+             style="animation-delay: {i * 40}ms; animation-fill-mode: both;">
           <div class="flex items-center gap-3">
             <BudgetRing spent={b.spent} budget={b.amount} size={64} />
             <div class="flex-1 min-w-0">

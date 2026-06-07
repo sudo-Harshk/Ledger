@@ -2,8 +2,11 @@
   import { X, ChevronDown, ChevronUp, Check, AlertCircle } from '@lucide/svelte';
   import { addTransaction, updateTransaction } from '$lib/db/queries';
   import { app } from '$lib/stores/app.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   import { today } from '$lib/utils';
   import { validateAmount, validateRequired } from '$lib/utils/validate';
+  import { fly, fade } from 'svelte/transition';
+  import { cubicOut, cubicIn } from 'svelte/easing';
   import type { TransactionType, PaymentMode } from '$lib/db/schema';
 
   let amount      = $state('');
@@ -73,7 +76,11 @@
     await Promise.all([app.refreshTransactions(), app.refreshBudgets()]);
     saving = false;
     saved  = true;
-    setTimeout(close, 600);
+    const label = app.editingTx ? 'Transaction updated' : `${type === 'income' ? 'Income' : 'Expense'} saved`;
+    setTimeout(() => {
+      close();
+      toast.show(label);
+    }, 500);
   }
 
   function close() {
@@ -85,10 +92,13 @@
 </script>
 
 {#if app.showQuickAdd}
-  <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onclick={close} role="presentation"></div>
+  <div transition:fade={{ duration: 180 }}
+       class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onclick={close} role="presentation"></div>
 
-  <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50
-              bg-[var(--color-surface)] rounded-t-3xl animate-slide-up"
+  <div in:fly={{ y: 420, duration: 280, easing: cubicOut }}
+       out:fly={{ y: 420, duration: 220, easing: cubicIn }}
+       class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50
+              bg-[var(--color-surface)] rounded-t-3xl"
        style="max-height: 95dvh; overflow-y: auto;">
 
     <!-- Handle + Header -->
@@ -144,7 +154,7 @@
                   {attempted && errors.category ? 'rounded-xl ring-1 ring-[var(--color-expense)] p-1' : ''}">
         {#each app.categories.slice(0, 8) as cat}
           <button onclick={() => selectedCat = cat.id}
-                  class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100
+                  class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100 active:scale-95
                          {selectedCat === cat.id
                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
                            : 'border-[var(--color-border)] bg-[var(--color-surface-2)]'}">
@@ -157,7 +167,7 @@
         <div class="grid grid-cols-4 gap-2 mt-2">
           {#each app.categories.slice(8) as cat}
             <button onclick={() => selectedCat = cat.id}
-                    class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100
+                    class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100 active:scale-95
                            {selectedCat === cat.id
                              ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
                              : 'border-[var(--color-border)] bg-[var(--color-surface-2)]'}">
