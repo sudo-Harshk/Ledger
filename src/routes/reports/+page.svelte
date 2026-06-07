@@ -14,10 +14,15 @@
   let dailyData = $state<{ date: string; total: number }[]>([]);
 
   $effect(() => {
+    // track app loading and transaction changes so reports refresh after Firestore pull
+    // and after any new transaction is added
+    void app.isLoading;
+    void app.transactions.length;
+    const _month = month;
     Promise.all([
-      getMonthSummary(month),
-      getCategorySpend(month),
-      getDailySpend(month),
+      getMonthSummary(_month),
+      getCategorySpend(_month),
+      getDailySpend(_month),
     ]).then(([s, c, d]) => { summary = s; catSpend = c; dailyData = d; });
   });
 </script>
