@@ -12,13 +12,13 @@
   let formType  = $state<EmiType>('emi');
   let form = $state({
     name: '', principal: '', monthlyAmount: '',
-    startDate: today(), totalMonths: '', notes: ''
+    startDate: today(), totalMonths: '', categoryId: '', notes: ''
   });
 
   function resetForm() {
     showForm  = false;
     attempted = false;
-    form = { name: '', principal: '', monthlyAmount: '', startDate: today(), totalMonths: '', notes: '' };
+    form = { name: '', principal: '', monthlyAmount: '', startDate: today(), totalMonths: '', categoryId: '', notes: '' };
   }
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -52,6 +52,7 @@
       startDate:     form.startDate,
       paidMonths:    0,
       nextDueDate:   form.startDate,
+      categoryId:    form.categoryId || undefined,
       notes:         form.notes.trim()
     });
     await app.refreshEmis();
@@ -59,8 +60,9 @@
   }
 
   async function paid(id: string) {
-    await markEmiPaid(id);
+    const txId = await markEmiPaid(id);
     await app.refreshEmis();
+    if (txId) await app.refreshTransactions();
   }
 
   async function remove(id: string) {
@@ -195,6 +197,21 @@
             <AlertCircle size={11} /> {errors.startDate}
           </p>
         {/if}
+      </div>
+
+      <!-- Category (for auto-logging payment as expense) -->
+      <div>
+        <p class="text-xs text-[var(--color-text-muted)] mb-1">
+          Category <span class="opacity-60">(optional — logs an expense when you mark paid)</span>
+        </p>
+        <select bind:value={form.categoryId}
+                class="w-full bg-[var(--color-surface-2)] rounded-xl px-4 py-3 text-sm text-[var(--color-text)]
+                       focus:outline-none border border-[var(--color-border)] focus:border-[var(--color-primary)]">
+          <option value="">Don't log as expense</option>
+          {#each app.categories as cat}
+            <option value={cat.id}>{cat.icon} {cat.name}</option>
+          {/each}
+        </select>
       </div>
 
       <!-- Notes -->
