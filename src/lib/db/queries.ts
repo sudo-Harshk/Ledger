@@ -17,15 +17,52 @@ export async function deduplicateCategories() {
   if (dupes.length > 0) await db.categories.bulkDelete(dupes);
 }
 
+// Migrates existing categories that have random IDs to their canonical stable IDs,
+// and cascades the ID change to all transactions, budgets, and EMIs that reference them.
+// This fixes cross-device "Unknown" category names caused by independent re-seeding.
+export async function migrateCategoryIds() {
+  const nameToStable = new Map(
+    DEFAULT_CATEGORIES.map(c => [c.name.toLowerCase().trim(), c.id])
+  );
+  const allCats = await db.categories.toArray();
+
+  for (const cat of allCats) {
+    const stableId = nameToStable.get(cat.name.toLowerCase().trim());
+    if (!stableId || cat.id === stableId) continue;
+
+    const oldId = cat.id;
+
+    // Collect affected records before modifying
+    const affectedTxs      = await db.transactions.where('categoryId').equals(oldId).toArray();
+    const affectedBudgets  = (await db.budgets.toArray()).filter(b => b.categoryId === oldId);
+    const affectedEmis     = (await db.emis.toArray()).filter(e => e.categoryId === oldId);
+
+    // Update references in local DB
+    await db.transactions.where('categoryId').equals(oldId).modify({ categoryId: stableId });
+    await Promise.all(affectedBudgets.map(b => db.budgets.update(b.id, { categoryId: stableId })));
+    await Promise.all(affectedEmis.map(e => db.emis.update(e.id, { categoryId: stableId })));
+
+    // Replace category record (Dexie can't update primary key, so delete + put)
+    await db.categories.delete(oldId);
+    await db.categories.put({ ...cat, id: stableId });
+
+    // Sync all changed records to Firestore
+    pushDoc('categories', { ...cat, id: stableId }).catch(() => {});
+    removeDoc('categories', oldId).catch(() => {});
+    for (const tx of affectedTxs) pushDoc('transactions', { ...tx, categoryId: stableId }).catch(() => {});
+    for (const b of affectedBudgets) pushDoc('budgets', { ...b, categoryId: stableId }).catch(() => {});
+    for (const emi of affectedEmis) pushDoc('emis', { ...emi, categoryId: stableId }).catch(() => {});
+  }
+}
+
 export async function seedIfEmpty() {
   await deduplicateCategories();
+  await migrateCategoryIds();
 
   const existing = new Set(
     (await db.categories.toArray()).map(c => c.name.toLowerCase().trim())
   );
-  const toAdd = DEFAULT_CATEGORIES
-    .filter(c => !existing.has(c.name.toLowerCase().trim()))
-    .map(c => ({ ...c, id: nanoid() }));
+  const toAdd = DEFAULT_CATEGORIES.filter(c => !existing.has(c.name.toLowerCase().trim()));
   if (toAdd.length > 0) {
     await db.categories.bulkAdd(toAdd);
     for (const cat of toAdd) pushDoc('categories', cat).catch(() => {});

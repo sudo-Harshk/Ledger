@@ -72,16 +72,16 @@ class LedgerDB extends Dexie {
 
 export const db = new LedgerDB();
 
-export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
-  { name: 'PG Rent',       icon: '🏠', color: '#6C63FF', sortOrder: 0,  isActive: true },
-  { name: 'Food & Dining', icon: '🍽️', color: '#F97316', sortOrder: 1,  isActive: true },
-  { name: 'Groceries',     icon: '🛒', color: '#22C55E', sortOrder: 2,  isActive: true },
-  { name: 'Transport',     icon: '🚗', color: '#3B82F6', sortOrder: 3,  isActive: true },
-  { name: 'Phone & Net',   icon: '📱', color: '#8B5CF6', sortOrder: 4,  isActive: true },
-  { name: 'Personal Care', icon: '💆', color: '#EC4899', sortOrder: 5,  isActive: true },
-  { name: 'Entertainment', icon: '🎬', color: '#EF4444', sortOrder: 6,  isActive: true },
-  { name: 'Shopping',      icon: '🛍️', color: '#F59E0B', sortOrder: 7,  isActive: true },
-  { name: 'Moving/Setup',  icon: '📦', color: '#06B6D4', sortOrder: 8,  isActive: true },
-  { name: 'Salary',        icon: '💰', color: '#22C55E', sortOrder: 9,  isActive: true },
-  { name: 'Miscellaneous', icon: '📌', color: '#9B99B8', sortOrder: 10, isActive: true },
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'cat-pg-rent',       name: 'PG Rent',       icon: '🏠', color: '#6C63FF', sortOrder: 0,  isActive: true },
+  { id: 'cat-food-dining',   name: 'Food & Dining',  icon: '🍽️', color: '#F97316', sortOrder: 1,  isActive: true },
+  { id: 'cat-groceries',     name: 'Groceries',      icon: '🛒', color: '#22C55E', sortOrder: 2,  isActive: true },
+  { id: 'cat-transport',     name: 'Transport',      icon: '🚗', color: '#3B82F6', sortOrder: 3,  isActive: true },
+  { id: 'cat-phone-net',     name: 'Phone & Net',    icon: '📱', color: '#8B5CF6', sortOrder: 4,  isActive: true },
+  { id: 'cat-personal-care', name: 'Personal Care',  icon: '💆', color: '#EC4899', sortOrder: 5,  isActive: true },
+  { id: 'cat-entertainment', name: 'Entertainment',  icon: '🎬', color: '#EF4444', sortOrder: 6,  isActive: true },
+  { id: 'cat-shopping',      name: 'Shopping',       icon: '🛍️', color: '#F59E0B', sortOrder: 7,  isActive: true },
+  { id: 'cat-moving-setup',  name: 'Moving/Setup',   icon: '📦', color: '#06B6D4', sortOrder: 8,  isActive: true },
+  { id: 'cat-salary',        name: 'Salary',         icon: '💰', color: '#22C55E', sortOrder: 9,  isActive: true },
+  { id: 'cat-misc',          name: 'Miscellaneous',  icon: '📌', color: '#9B99B8', sortOrder: 10, isActive: true },
 ];
