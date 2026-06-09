@@ -56,8 +56,8 @@ export async function migrateCategoryIds() {
 }
 
 export async function seedIfEmpty() {
-  await deduplicateCategories();
   await migrateCategoryIds();
+  await deduplicateCategories();
 
   const existing = new Set(
     (await db.categories.toArray()).map(c => c.name.toLowerCase().trim())

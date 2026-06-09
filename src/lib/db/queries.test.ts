@@ -139,6 +139,40 @@ describe('migrateCategoryIds', () => {
     expect(updated?.categoryId).toBe(def.id);
   });
 
+  it('fixes transactions when Firestore re-pulls both old-ID and stable-ID category on reload', async () => {
+    // Scenario: migration ran once (stable cat + transaction pushed to Firestore),
+    // but removeDoc for the old category failed — so Firestore still has the old-ID
+    // category. On next load, pullFromFirestore re-pulls BOTH old-ID and stable-ID
+    // categories AND the transaction that already has the stable categoryId.
+    // deduplicateCategories must NOT run before migrateCategoryIds or it could remove
+    // the stable-ID category and leave the transaction un-resolvable.
+    const def = DEFAULT_CATEGORIES.find(c => c.name === 'Entertainment')!;
+    const oldId = 'old-ent-firestore';
+
+    // Simulate state after a failed removeDoc: both old and stable exist in local DB
+    await db.categories.bulkPut([
+      { ...def, id: oldId },        // old (from Firestore re-pull)
+      { ...def, id: def.id },       // stable (from previous migration)
+    ]);
+    // Transaction already has the stable ID from previous migration run
+    const tx = await addTransaction({
+      type: 'expense', amount: 199, categoryId: def.id,
+      paymentMode: 'upi', date: '2026-06-07', note: 'Netflix',
+    });
+
+    // seedIfEmpty must resolve cleanly: migrateCategoryIds runs BEFORE deduplicateCategories
+    await seedIfEmpty();
+
+    // Stable category must still exist and be findable
+    const cat = await db.categories.get(def.id);
+    expect(cat).toBeTruthy();
+
+    // Transaction must still resolve
+    const updatedTx = await db.transactions.get(tx.id);
+    const resolved = await db.categories.get(updatedTx!.categoryId);
+    expect(resolved?.name).toBe('Entertainment');
+  });
+
   it('is a no-op for categories that already have stable IDs', async () => {
     await seedIfEmpty();
     const before = await db.categories.orderBy('sortOrder').toArray();
