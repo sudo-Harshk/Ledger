@@ -20,15 +20,15 @@
   --radius-pill: 9999px;
 }
 
-/* Light theme overrides */
+/* Light theme — warm oatmeal/cream palette (2026 elevated neutral trend) */
 :root.light {
-  --color-surface:     #FFFFFF;
-  --color-surface-2:   #F1F0FF;
-  --color-surface-3:   #E4E3F8;
-  --color-bg:          #F5F5FF;
-  --color-text:        #1A1A27;
-  --color-text-muted:  #6B6890;
-  --color-border:      #D8D6F0;
+  --color-bg:          #F2EEE8;   /* warm oatmeal canvas          */
+  --color-surface:     #FDFAF5;   /* warm cream white cards        */
+  --color-surface-2:   #EDE8DF;   /* warm sand input/chip bg       */
+  --color-surface-3:   #E3DDD3;   /* slightly deeper sand hover    */
+  --color-text:        #1C1917;   /* stone-900 warm near-black     */
+  --color-text-muted:  #78716C;   /* stone-500 warm mid-gray       */
+  --color-border:      #D4CEC4;   /* warm sand divider             */
 }
 
 * {
