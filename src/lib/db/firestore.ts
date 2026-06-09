@@ -16,12 +16,13 @@ function configured() {
   return !!PUBLIC_FIREBASE_PROJECT_ID;
 }
 
-export async function pushDoc(col: CollectionName, data: Record<string, unknown>) {
+export async function pushDoc(col: CollectionName, data: object) {
   if (!configured()) return;
-  const id = String((data.id ?? data.key) ?? '');
+  const d = data as Record<string, unknown>;
+  const id = String((d.id ?? d.key) ?? '');
   if (!id) return;
   try {
-    await setDoc(doc(firestore, col, id), data, { merge: true });
+    await setDoc(doc(firestore, col, id), d, { merge: true });
   } catch {
     // silent — IndexedDB already has the data
   }
