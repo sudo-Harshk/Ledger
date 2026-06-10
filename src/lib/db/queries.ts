@@ -166,6 +166,16 @@ export async function deleteBudget(id: string) {
   removeDoc('budgets', id).catch(() => {});
 }
 
+export async function carryOverBudgets(month: string): Promise<void> {
+  const existing = await getBudgetsForMonth(month);
+  if (existing.length > 0) return;
+  const [y, m] = month.split('-').map(Number);
+  const prevDate = new Date(y, m - 2, 1);
+  const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  const prev = await getBudgetsForMonth(prevMonth);
+  await Promise.all(prev.map(b => setBudget(b.categoryId, month, b.amount)));
+}
+
 // ── EMIs ──────────────────────────────────────────────────────────────────────
 
 export async function getEmis() {

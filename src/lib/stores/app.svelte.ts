@@ -1,4 +1,4 @@
-import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, getSetting } from '$lib/db/queries';
+import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, getSetting, carryOverBudgets } from '$lib/db/queries';
 import { pullFromFirestore } from '$lib/db/firestore';
 import type { Transaction, Category, Budget, Emi } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
@@ -38,11 +38,10 @@ class AppStore {
 
   async init() {
     this.isLoading = true;
-    // Load local IndexedDB first — renders the UI immediately
     await seedIfEmpty();
+    await carryOverBudgets(currentMonth());
     await this.refreshAll();
     this.isLoading = false;
-    // Sync Firestore in the background; refresh UI when done
     pullFromFirestore()
       .then(() => this.refreshAll())
       .catch(() => {});
