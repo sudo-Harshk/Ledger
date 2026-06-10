@@ -95,7 +95,7 @@
   );
 </script>
 
-<div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
+<div class="px-4 pt-6 pb-32 md:px-8 md:pt-8 md:pb-0 animate-fade-in">
 
   <!-- Mobile header -->
   <div class="flex items-center justify-between mb-5 md:hidden">
@@ -216,22 +216,31 @@
           </div>
         </div>
 
-        <!-- Today strip — secondary info, shown only when relevant -->
+        <!-- Today strip — labelled clearly so meaning is never ambiguous -->
         {#if app.todayExpenses > 0 || todayIncome > 0}
-          <div class="flex items-center justify-between mt-4 pt-3
-                      border-t border-[var(--color-border)]/50"
+          <div class="mt-4 pt-3 border-t border-[var(--color-border)]/50"
                in:fly={{ y: 6, duration: 200, delay: 260, easing: cubicOut }}>
-            <p class="text-xs text-[var(--color-text-muted)]">Today</p>
-            <div class="flex items-center gap-3">
+            <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Today</p>
+            <div class="flex items-center gap-2">
               {#if app.todayExpenses > 0}
-                <span class="text-xs font-semibold text-[var(--color-expense)] flex items-center gap-0.5">
-                  <TrendingDown size={12} /> {formatINR(app.todayExpenses)}
-                </span>
+                <div class="flex items-center gap-1.5 bg-[var(--color-expense)]/10
+                            px-2.5 py-1.5 rounded-lg">
+                  <TrendingDown size={12} class="text-[var(--color-expense)] shrink-0" />
+                  <span class="text-xs text-[var(--color-text-muted)]">Spent</span>
+                  <span class="text-xs font-bold text-[var(--color-expense)]">
+                    {formatINR(app.todayExpenses)}
+                  </span>
+                </div>
               {/if}
               {#if todayIncome > 0}
-                <span class="text-xs font-semibold text-[var(--color-income)] flex items-center gap-0.5">
-                  <TrendingUp size={12} /> {formatINR(todayIncome)}
-                </span>
+                <div class="flex items-center gap-1.5 bg-[var(--color-income)]/10
+                            px-2.5 py-1.5 rounded-lg">
+                  <TrendingUp size={12} class="text-[var(--color-income)] shrink-0" />
+                  <span class="text-xs text-[var(--color-text-muted)]">Earned</span>
+                  <span class="text-xs font-bold text-[var(--color-income)]">
+                    {formatINR(todayIncome)}
+                  </span>
+                </div>
               {/if}
             </div>
           </div>
@@ -326,7 +335,6 @@
         {/if}
       </div>
 
-      <div class="h-2 md:hidden"></div>
     </div>
 
     <!-- ── Right panel (desktop only) ────────────────────────────────────── -->
