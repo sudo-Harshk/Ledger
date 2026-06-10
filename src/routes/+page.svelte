@@ -2,10 +2,12 @@
   import { app } from '$lib/stores/app.svelte';
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
   import { formatINR, getWeekDates, today, daysInMonth, monthLabel } from '$lib/utils';
-  import { TrendingUp, Wallet, Settings } from '@lucide/svelte';
+  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
-  const todayStr = today();
+  const todayStr  = today();
   const weekDates = getWeekDates();
 
   const weekData = $derived(weekDates.map(date => ({
@@ -20,7 +22,6 @@
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 5)
   );
-
   const recentAll = $derived(
     [...app.transactions]
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -28,17 +29,7 @@
   );
 
   const totalBudget = $derived(app.budgets.reduce((s, b) => s + b.amount, 0));
-
-  const daysLeft = $derived(() => {
-    return daysInMonth(app.monthStr) - new Date().getDate();
-  });
-
-  const budgetPct   = $derived(totalBudget > 0 ? Math.min(app.monthExpenses / totalBudget, 1) : 0);
-  const budgetColor = $derived(
-    budgetPct >= 1   ? 'var(--color-expense)'  :
-    budgetPct >= 0.8 ? 'var(--color-warning)'  :
-                       'var(--color-income)'
-  );
+  const daysLeft    = $derived(daysInMonth(app.monthStr) - new Date().getDate());
 
   const todayIncome = $derived(
     app.transactions
@@ -46,18 +37,67 @@
       .reduce((s, t) => s + t.amount, 0)
   );
 
-  const savings      = $derived(app.monthlyIncome - app.monthExpenses);
-  const savingsPct   = $derived(app.monthlyIncome > 0 ? Math.max(0, savings / app.monthlyIncome) : 0);
+  // ── Month Health Card ──────────────────────────────────────────────────────
+  // Reference = income if set, else total budget, else 0 (bar hidden)
+  const reference = $derived(
+    app.monthlyIncome > 0 ? app.monthlyIncome :
+    totalBudget > 0       ? totalBudget        : 0
+  );
+  const refLabel = $derived(
+    app.monthlyIncome > 0 ? `${formatINR(app.monthlyIncome)} income` :
+    totalBudget > 0       ? `${formatINR(totalBudget)} budget`        : ''
+  );
 
+  const spendPct  = $derived(reference > 0 ? app.monthExpenses / reference : 0);
+  const barColor  = $derived(
+    spendPct >= 1   ? 'var(--color-expense)'  :
+    spendPct >= 0.8 ? 'var(--color-warning)'  :
+                      'var(--color-income)'
+  );
+
+  const left      = $derived(reference - app.monthExpenses);
+  const leftColor = $derived(
+    left <= 0              ? 'var(--color-expense)' :
+    left < reference * 0.2 ? 'var(--color-warning)' :
+                              'var(--color-income)'
+  );
+
+  // Pace: project end-of-month spend based on current daily burn rate
+  const daysGone    = $derived(new Date().getDate());
+  const dailyRate   = $derived(daysGone > 0 && app.monthExpenses > 0 ? app.monthExpenses / daysGone : 0);
+  const pace        = $derived(Math.round(dailyRate * daysInMonth(app.monthStr)));
+  const paceWarning = $derived(reference > 0 && pace > reference);
+  const paceColor   = $derived(
+    !paceWarning             ? 'var(--color-income)'  :
+    pace > reference * 1.2   ? 'var(--color-expense)' :
+                               'var(--color-warning)'
+  );
+
+  // Bar animates from 0 on mount → feels alive
+  let barMounted = $state(false);
+  $effect(() => {
+    const id = requestAnimationFrame(() => { barMounted = true; });
+    return () => cancelAnimationFrame(id);
+  });
+
+  // ── Weekly stats ─────────────────────────────────────────────────────────
   const dailyBudget   = $derived(totalBudget > 0 ? totalBudget / daysInMonth(app.monthStr) : 0);
   const weekTotal     = $derived(weekData.reduce((s, d) => s + d.total, 0));
   const weekDaysSpent = $derived(weekData.filter(d => d.total > 0).length);
   const weekAvg       = $derived(weekDaysSpent > 0 ? Math.round(weekTotal / weekDaysSpent) : 0);
+
+  // ── Budget overview (separate from per-category Budgets page) ────────────
+  const budgetPct   = $derived(totalBudget > 0 ? Math.min(app.monthExpenses / totalBudget, 1) : 0);
+  const budgetColor = $derived(
+    budgetPct >= 1   ? 'var(--color-expense)'  :
+    budgetPct >= 0.8 ? 'var(--color-warning)'  :
+                       'var(--color-income)'
+  );
 </script>
 
 <div class="px-4 pt-6 md:px-8 md:pt-8 animate-fade-in">
 
-  <!-- Mobile header (hidden on desktop — sidebar handles this) -->
+  <!-- Mobile header -->
   <div class="flex items-center justify-between mb-5 md:hidden">
     <div>
       <p class="text-xs text-[var(--color-text-muted)] font-medium">
@@ -84,46 +124,118 @@
   <!-- Desktop split layout -->
   <div class="md:grid md:grid-cols-[1fr_340px] md:gap-6 md:items-start">
 
-    <!-- ── Left panel ── -->
-    <div class="space-y-5">
+    <!-- ── Left panel ─────────────────────────────────────────────────────── -->
+    <div class="space-y-4">
 
-      <!-- Today card -->
-      <div class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-1">
-        <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">Today's Spend</p>
-        <CountUp value={app.todayExpenses} class="text-4xl font-extrabold text-[var(--color-text)]" />
-        {#if todayIncome > 0}
-          <p class="text-sm text-[var(--color-income)] flex items-center gap-1">
-            <TrendingUp size={14} /> +{formatINR(todayIncome)} income today
+      <!-- ═══════════════════════════════════════════════════════════════════
+           MONTH HEALTH CARD — the single answer to "how much am I spending?"
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="bg-[var(--color-surface)] rounded-2xl p-5">
+
+        <!-- Month + days left pill -->
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            {monthLabel(app.monthStr)}
           </p>
-        {/if}
-      </div>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full
+                       bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
+            {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+          </span>
+        </div>
 
-      <!-- Monthly stats grid -->
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-          <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Income</p>
-          {#if app.monthlyIncome > 0}
-            <CountUp value={app.monthlyIncome} class="text-base font-bold text-[var(--color-income)]" />
-          {:else}
-            <a href="/settings" class="text-xs text-[var(--color-primary)]">Set income →</a>
-          {/if}
+        <!-- Hero spend number — biggest element on the page (Fitts's Law) -->
+        <div class="mb-5">
+          <CountUp
+            value={app.monthExpenses}
+            class="text-5xl font-extrabold tracking-tight text-[var(--color-text)]"
+          />
+          <p class="text-sm text-[var(--color-text-muted)] mt-1 leading-tight">
+            spent in {new Date().toLocaleDateString('en-IN', { month: 'long' })}
+          </p>
         </div>
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-          <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Spent</p>
-          <CountUp value={app.monthExpenses} class="text-base font-bold text-[var(--color-expense)]" />
+
+        <!-- Progress bar — animates from 0 on mount so it feels alive -->
+        {#if reference > 0}
+          <div class="mb-4">
+            <div class="h-3 bg-[var(--color-border)] rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700 ease-out"
+                   style="width:{barMounted ? Math.min(spendPct, 1) * 100 : 0}%;
+                          background:{barColor}">
+              </div>
+            </div>
+            <div class="flex justify-between mt-1.5 text-[10px]">
+              <span class="text-[var(--color-text-muted)]">₹0</span>
+              <span class="font-semibold" style="color:{barColor}">{Math.round(spendPct * 100)}%</span>
+              <span class="text-[var(--color-text-muted)]">{refLabel}</span>
+            </div>
+          </div>
+        {:else}
+          <!-- No income/budget set — nudge toward setting one -->
+          <div class="mb-4">
+            <a href="/settings"
+               class="text-xs text-[var(--color-primary)] underline underline-offset-2">
+              Set monthly income to see how you're tracking →
+            </a>
+          </div>
+        {/if}
+
+        <!-- Two-stat row: Left to spend + On-pace projection -->
+        <!-- Staggered fly-in (Progressive Disclosure — context after the hero) -->
+        <div class="grid grid-cols-2 gap-3"
+             in:fly={{ y: 10, duration: 240, delay: 180, easing: cubicOut }}>
+
+          <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
+            <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
+              Left to spend
+            </p>
+            {#if reference > 0}
+              <p class="text-sm font-bold leading-none" style="color:{leftColor}">
+                {left > 0 ? formatINR(left) : 'Over budget'}
+              </p>
+            {:else}
+              <p class="text-sm font-bold text-[var(--color-text-muted)]">—</p>
+            {/if}
+          </div>
+
+          <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
+            <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
+              Month-end pace
+            </p>
+            {#if dailyRate > 0}
+              <div class="flex items-center gap-1">
+                <p class="text-sm font-bold leading-none" style="color:{paceColor}">
+                  {formatINR(pace)}
+                </p>
+                {#if paceWarning}
+                  <AlertTriangle size={11} style="color:{paceColor}" />
+                {/if}
+              </div>
+            {:else}
+              <p class="text-sm font-bold text-[var(--color-text-muted)]">—</p>
+            {/if}
+          </div>
         </div>
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-          <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Savings</p>
-          {#if app.monthlyIncome > 0}
-            <CountUp value={savings} class="text-base font-bold {savings >= 0 ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'}" />
-          {:else}
-            <p class="text-base font-bold text-[var(--color-text-muted)]">—</p>
-          {/if}
-        </div>
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-1">
-          <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">Days Left</p>
-          <p class="text-base font-bold text-[var(--color-text)]">{daysLeft()}</p>
-        </div>
+
+        <!-- Today strip — secondary info, shown only when relevant -->
+        {#if app.todayExpenses > 0 || todayIncome > 0}
+          <div class="flex items-center justify-between mt-4 pt-3
+                      border-t border-[var(--color-border)]/50"
+               in:fly={{ y: 6, duration: 200, delay: 260, easing: cubicOut }}>
+            <p class="text-xs text-[var(--color-text-muted)]">Today</p>
+            <div class="flex items-center gap-3">
+              {#if app.todayExpenses > 0}
+                <span class="text-xs font-semibold text-[var(--color-expense)] flex items-center gap-0.5">
+                  <TrendingDown size={12} /> {formatINR(app.todayExpenses)}
+                </span>
+              {/if}
+              {#if todayIncome > 0}
+                <span class="text-xs font-semibold text-[var(--color-income)] flex items-center gap-0.5">
+                  <TrendingUp size={12} /> {formatINR(todayIncome)}
+                </span>
+              {/if}
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Weekly chart -->
@@ -143,19 +255,19 @@
         <WeekBarChart data={weekData} dailyBudget={dailyBudget} />
       </div>
 
-      <!-- Budget progress bar -->
+      <!-- Budget category breakdown (distinct from health card's overall bar) -->
       {#if totalBudget > 0}
         <div class="bg-[var(--color-surface)] rounded-2xl p-5">
-          <div class="flex justify-between text-xs mb-2">
-            <span class="text-[var(--color-text-muted)]">{monthLabel(app.monthStr)} budget</span>
-            <span style="color: {budgetColor}">{Math.round(budgetPct * 100)}%</span>
+          <div class="flex justify-between items-center text-xs mb-3">
+            <span class="font-medium">Budget overview</span>
+            <a href="/budgets" class="text-[var(--color-primary)]">Manage →</a>
           </div>
           <div class="h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-700"
-                 style="width: {budgetPct * 100}%; background: {budgetColor}"></div>
+                 style="width:{budgetPct * 100}%; background:{budgetColor}"></div>
           </div>
           <p class="text-xs text-[var(--color-text-muted)] mt-2">
-            {formatINR(app.monthExpenses)} of {formatINR(totalBudget)} used
+            {formatINR(app.monthExpenses)} of {formatINR(totalBudget)} budget used
           </p>
         </div>
       {/if}
@@ -165,7 +277,7 @@
         {@const upcoming = app.emis.slice(0, 2)}
         <div class="bg-[var(--color-surface)] rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-semibold">Upcoming EMIs</p>
+            <p class="text-sm font-semibold">Upcoming</p>
             <a href="/emis" class="text-xs text-[var(--color-primary)]">See all</a>
           </div>
           <div class="space-y-2">
@@ -179,7 +291,7 @@
         </div>
       {/if}
 
-      <!-- Recent transactions (mobile only — desktop uses right panel) -->
+      <!-- Recent transactions (mobile only) -->
       <div class="md:hidden bg-[var(--color-surface)] rounded-2xl p-5">
         <div class="flex items-center justify-between mb-4">
           <p class="text-sm font-semibold">Recent</p>
@@ -197,7 +309,7 @@
               {@const cat = app.getCategoryById(tx.categoryId)}
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-                     style="background: {cat?.color ?? '#9B99B8'}22">
+                     style="background:{cat?.color ?? '#9B99B8'}22">
                   {cat?.icon ?? '📌'}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -217,7 +329,7 @@
       <div class="h-2 md:hidden"></div>
     </div>
 
-    <!-- ── Right panel (desktop only) ── -->
+    <!-- ── Right panel (desktop only) ────────────────────────────────────── -->
     <div class="hidden md:flex flex-col gap-4">
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <div class="flex items-center justify-between mb-4">
@@ -236,7 +348,7 @@
               {@const cat = app.getCategoryById(tx.categoryId)}
               <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-                     style="background: {cat?.color ?? '#9B99B8'}22">
+                     style="background:{cat?.color ?? '#9B99B8'}22">
                   {cat?.icon ?? '📌'}
                 </div>
                 <div class="flex-1 min-w-0">
