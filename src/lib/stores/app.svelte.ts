@@ -38,10 +38,14 @@ class AppStore {
 
   async init() {
     this.isLoading = true;
-    await pullFromFirestore();
+    // Load local IndexedDB first — renders the UI immediately
     await seedIfEmpty();
     await this.refreshAll();
     this.isLoading = false;
+    // Sync Firestore in the background; refresh UI when done
+    pullFromFirestore()
+      .then(() => this.refreshAll())
+      .catch(() => {});
   }
 
   async refreshAll() {
