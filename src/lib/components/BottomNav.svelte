@@ -1,14 +1,14 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { LayoutDashboard, ArrowLeftRight, PieChart, CreditCard, RefreshCw, BarChart3, Sparkles } from '@lucide/svelte';
+  import { LayoutDashboard, ArrowLeftRight, PieChart, CreditCard, BarChart3, Sparkles } from '@lucide/svelte';
 
   const nav = [
-    { href: '/',              label: 'Home',    Icon: LayoutDashboard },
-    { href: '/transactions',  label: 'Spends',  Icon: ArrowLeftRight  },
-    { href: '/emis',          label: 'EMIs',    Icon: CreditCard      },
-    { href: '/subscriptions', label: 'Subs',    Icon: RefreshCw       },
-    { href: '/reports',       label: 'Reports', Icon: BarChart3       },
-    { href: '/wrapped',       label: 'DNA',     Icon: Sparkles        },
+    { href: '/',             label: 'Home',    Icon: LayoutDashboard },
+    { href: '/transactions', label: 'Spends',  Icon: ArrowLeftRight  },
+    { href: '/budgets',      label: 'Budgets', Icon: PieChart        },
+    { href: '/emis',         label: 'EMIs',    Icon: CreditCard      },
+    { href: '/reports',      label: 'Reports', Icon: BarChart3       },
+    { href: '/wrapped',      label: 'DNA',     Icon: Sparkles        },
   ];
 </script>
 
@@ -17,7 +17,8 @@
             bg-[var(--color-surface)] border-t border-[var(--color-border)]
             pb-[env(safe-area-inset-bottom)]">
   {#each nav as item}
-    {@const active = $page.url.pathname === item.href}
+    {@const active = $page.url.pathname === item.href ||
+                     (item.href === '/emis' && $page.url.pathname === '/subscriptions')}
     <a href={item.href}
        class="flex flex-col items-center gap-1 py-3 px-2 min-w-0 flex-1 transition-colors duration-150
               {active ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}">
