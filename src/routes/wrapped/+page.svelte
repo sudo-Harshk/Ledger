@@ -130,10 +130,10 @@
   }
 </script>
 
-<div class="px-4 pt-6 pb-28 md:px-8 md:pt-8 animate-fade-in max-w-lg mx-auto">
+<div class="px-4 pt-6 pb-28 md:px-8 md:pt-8 md:pb-8 animate-fade-in">
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-5">
+  <div class="flex items-center justify-between mb-5 md:mb-6">
     <div class="flex items-center gap-2">
       <Sparkles size={20} class="text-[var(--color-primary)]" />
       <h1 class="text-xl font-bold">Spending DNA</h1>
@@ -172,140 +172,160 @@
     </div>
 
   {:else}
-    <!-- Hero card — gradient personality reveal -->
-    <div class="rounded-3xl overflow-hidden mb-4
-                bg-gradient-to-br from-[var(--color-primary)] to-[#4B44CC]
-                text-white p-6 relative">
-      <p class="text-xs font-semibold uppercase tracking-widest opacity-70 mb-1">{periodLabel}</p>
-      <p class="text-sm font-medium opacity-80 mb-4">Your Spending DNA</p>
+    <!-- Desktop: two-column grid. Mobile: single column (space-y-4 stacks both divs) -->
+    <div class="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 md:items-start">
 
-      <!-- Personality -->
-      <div class="animate-pop" style="animation-delay: 0ms; animation-fill-mode: both;">
-        <p class="text-6xl mb-2">{personality.emoji}</p>
-        <p class="text-2xl font-black leading-tight">{personality.label}</p>
-      </div>
+      <!-- Left column: hero card + stats grid -->
+      <div class="space-y-4">
 
-      <!-- Top category callout -->
-      {#if topCat}
-        <div class="mt-4 inline-flex items-center gap-2 bg-white/15 rounded-full px-3 py-1.5
-                    animate-pop" style="animation-delay: 80ms; animation-fill-mode: both;">
-          <span class="text-base">{topCat.icon}</span>
-          <span class="text-xs font-semibold">{topCat.name} is your #1 spend</span>
-        </div>
-      {/if}
+        <!-- Hero card — gradient personality reveal -->
+        <div class="rounded-3xl overflow-hidden
+                    bg-gradient-to-br from-[var(--color-primary)] to-[#4B44CC]
+                    text-white p-6 relative">
+          <p class="text-xs font-semibold uppercase tracking-widest opacity-70 mb-1">{periodLabel}</p>
+          <p class="text-sm font-medium opacity-80 mb-4">Your Spending DNA</p>
 
-      <!-- Decorative sparkle dots -->
-      <div class="absolute top-4 right-4 opacity-20 text-3xl select-none">✦</div>
-      <div class="absolute bottom-6 right-8 opacity-15 text-xl select-none">✦</div>
-    </div>
-
-    <!-- Stats grid -->
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4
-                  animate-pop" style="animation-delay: 120ms; animation-fill-mode: both;">
-        <p class="text-xs text-[var(--color-text-muted)] mb-1">Total Spent</p>
-        {#if revealed}
-          <CountUp value={totalExpense} class="text-xl font-bold text-[var(--color-expense)]" />
-        {:else}
-          <p class="text-xl font-bold text-[var(--color-expense)]">₹0</p>
-        {/if}
-      </div>
-
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4
-                  animate-pop" style="animation-delay: 180ms; animation-fill-mode: both;">
-        <p class="text-xs text-[var(--color-text-muted)] mb-1">Total Saved</p>
-        {#if revealed}
-          <CountUp value={totalSaved} class="text-xl font-bold text-[var(--color-income)]" />
-        {:else}
-          <p class="text-xl font-bold text-[var(--color-income)]">₹0</p>
-        {/if}
-      </div>
-
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4
-                  animate-pop" style="animation-delay: 240ms; animation-fill-mode: both;">
-        <p class="text-xs text-[var(--color-text-muted)] mb-1">Savings Rate</p>
-        <p class="text-xl font-bold
-                  {savingsRate >= 20 ? 'text-[var(--color-income)]' : 'text-[var(--color-warning)]'}">
-          {savingsRate}%
-        </p>
-      </div>
-
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4
-                  animate-pop" style="animation-delay: 300ms; animation-fill-mode: both;">
-        <p class="text-xs text-[var(--color-text-muted)] mb-1">Transactions</p>
-        <p class="text-xl font-bold">{txCount}</p>
-      </div>
-    </div>
-
-    <!-- DNA Bars -->
-    {#if breakdown.length > 0}
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4 mb-4
-                  animate-fade-in" style="animation-delay: 360ms; animation-fill-mode: both;">
-        <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">
-          Spending DNA
-        </p>
-        <div class="space-y-3">
-          {#each breakdown.slice(0, 7) as cs, i}
-            {@const cat = app.getCategoryById(cs.categoryId)}
-            {@const width = Math.round((cs.total / topTotal) * 100)}
-            <div class="animate-fade-in" style="animation-delay: {380 + i * 40}ms; animation-fill-mode: both;">
-              <div class="flex items-center justify-between text-xs mb-1">
-                <span class="flex items-center gap-1.5 font-medium">
-                  <span>{cat?.icon ?? '📌'}</span>
-                  <span class="text-[var(--color-text)]">{cat?.name ?? 'Other'}</span>
-                </span>
-                <span class="text-[var(--color-text-muted)] font-medium">{formatINR(cs.total)}</span>
-              </div>
-              <div class="h-2 bg-[var(--color-surface-2)] rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all duration-700"
-                     style="width: {width}%; background: {cat?.color ?? 'var(--color-primary)'}; transition-delay: {400 + i * 40}ms;"></div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-
-    <!-- Fun callouts -->
-    <div class="bg-[var(--color-surface)] rounded-2xl p-4 mb-4 space-y-3
-                animate-fade-in" style="animation-delay: 560ms; animation-fill-mode: both;">
-      <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Highlights</p>
-
-      {#if biggestTx}
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-lg">{biggestTx.icon}</span>
-            <div>
-              <p class="text-xs text-[var(--color-text-muted)]">Biggest splurge</p>
-              <p class="text-sm font-semibold truncate max-w-[180px]">{biggestTx.note}</p>
-            </div>
+          <!-- Personality -->
+          <div class="animate-pop" style="animation-delay: 0ms; animation-fill-mode: both;">
+            <p class="text-6xl mb-2">{personality.emoji}</p>
+            <p class="text-2xl font-black leading-tight">{personality.label}</p>
           </div>
-          <p class="text-sm font-bold text-[var(--color-expense)] shrink-0">{formatINR(biggestTx.amount)}</p>
-        </div>
-      {/if}
 
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-lg">💳</span>
-          <div>
-            <p class="text-xs text-[var(--color-text-muted)]">Favourite payment</p>
-            <p class="text-sm font-semibold">{favPayment}</p>
+          <!-- Top category callout -->
+          {#if topCat}
+            <div class="mt-4 inline-flex items-center gap-2 bg-white/15 rounded-full px-3 py-1.5
+                        animate-pop" style="animation-delay: 80ms; animation-fill-mode: both;">
+              <span class="text-base">{topCat.icon}</span>
+              <span class="text-xs font-semibold">{topCat.name} is your #1 spend</span>
+            </div>
+          {/if}
+
+          <!-- Share CTA — within the hero at the peak moment -->
+          <div class="mt-5 pt-4 border-t border-white/20">
+            <button onclick={share}
+                    class="w-full flex items-center justify-center gap-2
+                           bg-white/15 hover:bg-white/25 active:scale-[0.98]
+                           transition-all py-2.5 rounded-xl text-sm font-semibold">
+              <Share2 size={15} />
+              Share my Spending DNA
+            </button>
+          </div>
+
+          <!-- Decorative sparkle dots -->
+          <div class="absolute top-4 right-4 opacity-20 text-3xl select-none">✦</div>
+        </div>
+
+        <!-- Stats grid -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-[var(--color-surface)] rounded-2xl p-4
+                      animate-pop" style="animation-delay: 120ms; animation-fill-mode: both;">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">Total Spent</p>
+            {#if revealed}
+              <CountUp value={totalExpense} class="text-xl font-bold text-[var(--color-expense)]" />
+            {:else}
+              <p class="text-xl font-bold text-[var(--color-expense)]">₹0</p>
+            {/if}
+          </div>
+
+          <div class="bg-[var(--color-surface)] rounded-2xl p-4
+                      animate-pop" style="animation-delay: 180ms; animation-fill-mode: both;">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">Total Saved</p>
+            {#if revealed}
+              <CountUp value={totalSaved} class="text-xl font-bold text-[var(--color-income)]" />
+            {:else}
+              <p class="text-xl font-bold text-[var(--color-income)]">₹0</p>
+            {/if}
+          </div>
+
+          <div class="bg-[var(--color-surface)] rounded-2xl p-4
+                      animate-pop" style="animation-delay: 240ms; animation-fill-mode: both;">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">Savings Rate</p>
+            <p class="text-xl font-bold
+                      {savingsRate >= 20 ? 'text-[var(--color-income)]' : 'text-[var(--color-warning)]'}">
+              {savingsRate}%
+            </p>
+          </div>
+
+          <div class="bg-[var(--color-surface)] rounded-2xl p-4
+                      animate-pop" style="animation-delay: 300ms; animation-fill-mode: both;">
+            <p class="text-xs text-[var(--color-text-muted)] mb-1">Transactions</p>
+            <p class="text-xl font-bold">{txCount}</p>
           </div>
         </div>
-        <p class="text-xs text-[var(--color-text-muted)]">{txCount} transactions</p>
-      </div>
-    </div>
 
-    <!-- Share button -->
-    <button onclick={share}
-            class="w-full flex items-center justify-center gap-2
-                   bg-[var(--color-primary)] text-white
-                   py-4 rounded-2xl font-semibold text-sm
-                   active:scale-[0.98] transition-all
-                   animate-fade-in" style="animation-delay: 620ms; animation-fill-mode: both;">
-      <Share2 size={16} />
-      Share my Spending DNA
-    </button>
+      </div>
+
+      <!-- Right column: DNA bars + highlights + share -->
+      <div class="space-y-4">
+
+        <!-- Spend Leaderboard — ranked rows with category colour accents -->
+        {#if breakdown.length > 0}
+          <div class="bg-[var(--color-surface)] rounded-2xl p-4
+                      animate-fade-in" style="animation-delay: 360ms; animation-fill-mode: both;">
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+              Top Spends
+            </p>
+            <div class="space-y-1.5">
+              {#each breakdown.slice(0, 6) as cs, i}
+                {@const cat = app.getCategoryById(cs.categoryId)}
+                {@const pct = totalExpense > 0 ? Math.round((cs.total / totalExpense) * 100) : 0}
+                <div class="flex items-center gap-3 rounded-xl px-3 py-2.5 animate-fade-in"
+                     style="background:{cat?.color ?? '#9B99B8'}12;
+                            animation-delay:{380 + i * 50}ms; animation-fill-mode:both;">
+                  <span class="text-xl font-black tabular-nums leading-none w-7 shrink-0 text-right"
+                        style="color:{cat?.color ?? '#9B99B8'}">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <div class="w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0"
+                       style="background:{cat?.color ?? '#9B99B8'}22">
+                    {cat?.icon ?? '📌'}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold leading-none truncate">{cat?.name ?? 'Other'}</p>
+                    <p class="text-[10px] text-[var(--color-text-muted)] mt-0.5">{pct}% of spending</p>
+                  </div>
+                  <p class="text-sm font-bold shrink-0" style="color:{cat?.color ?? '#9B99B8'}">
+                    {formatINR(cs.total)}
+                  </p>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Fun callouts -->
+        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-3
+                    animate-fade-in" style="animation-delay: 560ms; animation-fill-mode: both;">
+          <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Highlights</p>
+
+          {#if biggestTx}
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">{biggestTx.icon}</span>
+                <div>
+                  <p class="text-xs text-[var(--color-text-muted)]">Biggest splurge</p>
+                  <p class="text-sm font-semibold truncate max-w-[180px]">{biggestTx.note}</p>
+                </div>
+              </div>
+              <p class="text-sm font-bold text-[var(--color-expense)] shrink-0">{formatINR(biggestTx.amount)}</p>
+            </div>
+          {/if}
+
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">💳</span>
+              <div>
+                <p class="text-xs text-[var(--color-text-muted)]">Favourite payment</p>
+                <p class="text-sm font-semibold">{favPayment}</p>
+              </div>
+            </div>
+            <p class="text-xs text-[var(--color-text-muted)]">{txCount} transactions</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
   {/if}
 
 </div>

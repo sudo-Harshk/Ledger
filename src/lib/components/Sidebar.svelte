@@ -9,11 +9,11 @@
 
   const nav = [
     { href: '/',             label: 'Home',         Icon: LayoutDashboard },
-    { href: '/transactions', label: 'Transactions',  Icon: ArrowLeftRight  },
+    { href: '/transactions', label: 'Transactions', Icon: ArrowLeftRight  },
     { href: '/budgets',      label: 'Budgets',       Icon: PieChart        },
-    { href: '/emis',         label: 'EMIs',          Icon: CreditCard      },
+    { href: '/emis',         label: 'EMI & Loans',  Icon: CreditCard      },
     { href: '/reports',      label: 'Reports',       Icon: BarChart3       },
-    { href: '/wrapped',      label: 'Spending DNA',  Icon: Sparkles        },
+    { href: '/wrapped',      label: 'Spending DNA', Icon: Sparkles        },
   ];
 </script>
 
@@ -48,7 +48,8 @@
   <!-- Nav -->
   <nav class="flex-1 px-3 py-4 space-y-0.5">
     {#each nav as item}
-      {@const active = $page.url.pathname === item.href}
+      {@const active = $page.url.pathname === item.href ||
+                       (item.href === '/emis' && $page.url.pathname === '/subscriptions')}
       <a href={item.href}
          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
                 {active
