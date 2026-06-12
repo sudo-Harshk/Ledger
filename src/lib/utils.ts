@@ -10,12 +10,19 @@ export function formatINR(amount: number): string {
   }).format(amount);
 }
 
+function localDateStr(d: Date): string {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateStr(new Date());
 }
 
 export function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  return localDateStr(new Date()).slice(0, 7);
 }
 
 export function getWeekDates(): string[] {
@@ -26,7 +33,7 @@ export function getWeekDates(): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return d.toISOString().slice(0, 10);
+    return localDateStr(d);
   });
 }
 
@@ -35,7 +42,7 @@ export function formatDate(dateStr: string): string {
   const t = today();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().slice(0, 10);
+  const yStr = localDateStr(yesterday);
   if (dateStr === t) return 'Today';
   if (dateStr === yStr) return 'Yesterday';
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -66,13 +73,13 @@ export function monthLabel(month: string): string {
 export function prevMonth(month: string): string {
   const [y, m] = month.split('-').map(Number);
   const d = new Date(y, m - 2, 1);
-  return d.toISOString().slice(0, 7);
+  return localDateStr(d).slice(0, 7);
 }
 
 export function nextMonth(month: string): string {
   const [y, m] = month.split('-').map(Number);
   const d = new Date(y, m, 1);
-  return d.toISOString().slice(0, 7);
+  return localDateStr(d).slice(0, 7);
 }
 
 export function weekDayLabel(dateStr: string): string {
