@@ -132,7 +132,7 @@
     <div class="space-y-5">
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Daily Spend</p>
-        <DailyTrend data={dailyData} />
+        <DailyTrend data={dailyData} month={month} />
       </div>
     </div>
 
