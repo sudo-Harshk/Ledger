@@ -83,5 +83,6 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-shopping',      name: 'Shopping',       icon: '🛍️', color: '#F59E0B', sortOrder: 7,  isActive: true },
   { id: 'cat-moving-setup',  name: 'Moving/Setup',   icon: '📦', color: '#06B6D4', sortOrder: 8,  isActive: true },
   { id: 'cat-salary',        name: 'Salary',         icon: '💰', color: '#22C55E', sortOrder: 9,  isActive: true },
-  { id: 'cat-misc',          name: 'Miscellaneous',  icon: '📌', color: '#9B99B8', sortOrder: 10, isActive: true },
+  { id: 'cat-juice',         name: 'Juice',          icon: '🧃', color: '#F59E0B', sortOrder: 10, isActive: true },
+  { id: 'cat-misc',          name: 'Miscellaneous',  icon: '📌', color: '#9B99B8', sortOrder: 11, isActive: true },
 ];
