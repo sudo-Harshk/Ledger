@@ -98,7 +98,7 @@
     <div class="space-y-5">
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Spend by Category</p>
-        <MonthDonut slices={catSpend} categories={app.categories} />
+        <MonthDonut slices={catSpend} categories={app.categories} transactions={summary.transactions} />
       </div>
 
       {#if catSpend.length > 0}

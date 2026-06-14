@@ -4,6 +4,7 @@
   import { formatINR, getWeekDates, today, daysInMonth, monthLabel } from '$lib/utils';
   import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
+  import InsightsStrip from '$lib/components/InsightsStrip.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -246,6 +247,14 @@
           </div>
         {/if}
       </div>
+
+      <!-- Insights -->
+      <InsightsStrip
+        transactions={app.transactions}
+        categories={app.categories}
+        budgets={app.budgets}
+        monthStr={app.monthStr}
+      />
 
       <!-- Weekly chart -->
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
