@@ -1,9 +1,15 @@
 <script lang="ts">
-  import type { Category } from '$lib/db/schema';
+  import type { Category, Transaction } from '$lib/db/schema';
   import { formatINR } from '$lib/utils';
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
 
   interface Slice { categoryId: string; total: number; }
-  let { slices, categories }: { slices: Slice[]; categories: Category[] } = $props();
+  let { slices, categories, transactions = [] }: {
+    slices:        Slice[];
+    categories:    Category[];
+    transactions?: Transaction[];
+  } = $props();
 
   const total = $derived(slices.reduce((s, x) => s + x.total, 0));
 
@@ -50,8 +56,22 @@
   const activeCatId = $derived(hoverCatId ?? pinnedCatId);
   const activeSeg   = $derived(activeCatId ? (arcs().find(a => a.categoryId === activeCatId) ?? null) : null);
 
+  // Drill-down: transactions for the pinned category, newest first
+  const drillTxs = $derived(
+    pinnedCatId
+      ? [...transactions]
+          .filter(t => t.categoryId === pinnedCatId && t.type === 'expense')
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .slice(0, 8)
+      : []
+  );
+
   function toggle(catId: string) {
     pinnedCatId = pinnedCatId === catId ? null : catId;
+  }
+
+  function fmtDate(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   }
 </script>
 
@@ -127,4 +147,31 @@
     </div>
 
   </div>
+
+  <!-- Drill-down: transaction list for pinned category -->
+  {#if drillTxs.length > 0 && activeSeg}
+    <div in:fly={{ y: 8, duration: 180, easing: cubicOut }}
+         class="mt-4 pt-4 border-t border-[var(--color-border)]/50">
+      <p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+        {activeSeg.icon} {activeSeg.name} — recent transactions
+      </p>
+      <div class="space-y-2">
+        {#each drillTxs as tx}
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[10px] text-[var(--color-text-muted)] shrink-0 w-12">
+                {fmtDate(tx.date)}
+              </span>
+              <span class="text-xs text-[var(--color-text)] truncate">
+                {tx.note || tx.paymentMode.toUpperCase()}
+              </span>
+            </div>
+            <span class="text-xs font-semibold text-[var(--color-expense)] shrink-0">
+              {formatINR(tx.amount)}
+            </span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 {/if}

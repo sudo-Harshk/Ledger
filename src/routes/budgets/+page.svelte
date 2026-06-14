@@ -20,12 +20,26 @@
   // change to either immediately re-computes everything on this page.
   const enriched = $derived(
     app.budgets.map(b => {
-      const spent = app.transactions
+      const spent     = app.transactions
         .filter(t => t.categoryId === b.categoryId && t.type === 'expense' && t.date.startsWith(app.monthStr))
         .reduce((s, t) => s + t.amount, 0);
-      const pct      = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0;
-      const barColor = pct >= 1 ? 'var(--color-expense)' : pct >= 0.8 ? 'var(--color-warning)' : 'var(--color-income)';
-      return { ...b, spent, pct, barColor };
+      const pct       = b.amount > 0 ? Math.min(spent / b.amount, 1) : 0;
+      const barColor  = pct >= 1 ? 'var(--color-expense)' : pct >= 0.8 ? 'var(--color-warning)' : 'var(--color-income)';
+      const daysGone  = new Date().getDate();
+      const daysTotal = new Date(parseInt(app.monthStr.slice(0,4)), parseInt(app.monthStr.slice(5,7)), 0).getDate();
+      const daysLeft  = daysTotal - daysGone;
+      const dailyRate = daysGone > 0 ? spent / daysGone : 0;
+      const daysToExceed = dailyRate > 0 && b.amount > spent
+        ? Math.floor((b.amount - spent) / dailyRate)
+        : null;
+      const paceNote  = pct >= 1
+        ? `Over by ${(((spent - b.amount) / b.amount) * 100).toFixed(0)}%`
+        : daysToExceed !== null && daysToExceed <= daysLeft
+          ? `Runs out in ~${daysToExceed} day${daysToExceed !== 1 ? 's' : ''}`
+          : daysLeft > 0 && dailyRate > 0
+            ? `On track · ₹${Math.round(dailyRate)}/day`
+            : null;
+      return { ...b, spent, pct, barColor, paceNote };
     })
   );
 
@@ -206,6 +220,12 @@
                   <div class="h-full rounded-full transition-all duration-500"
                        style="width:{b.pct*100}%; background:{b.barColor}"></div>
                 </div>
+                {#if b.paceNote}
+                  <p class="text-[10px] mt-1.5 font-medium"
+                     style="color:{b.pct >= 1 ? 'var(--color-expense)' : b.paceNote.startsWith('Runs') ? 'var(--color-warning)' : 'var(--color-text-muted)'}">
+                    {b.paceNote}
+                  </p>
+                {/if}
               {/if}
             </div>
 
