@@ -25,16 +25,26 @@ export function currentMonth(): string {
   return localDateStr(new Date()).slice(0, 7);
 }
 
-export function getWeekDates(): string[] {
+export function getWeekDates(weekOffset = 0): string[] {
   const now = new Date();
   const day = now.getDay(); // 0 = Sun
   const monday = new Date(now);
-  monday.setDate(now.getDate() - ((day + 6) % 7));
+  monday.setDate(now.getDate() - ((day + 6) % 7) + weekOffset * 7);
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     return localDateStr(d);
   });
+}
+
+export function weekRangeLabel(weekOffset: number): string {
+  const dates = getWeekDates(weekOffset);
+  if (weekOffset === 0) return 'This Week';
+  if (weekOffset === -1) return 'Last Week';
+  const start = new Date(dates[0] + 'T00:00:00');
+  const end   = new Date(dates[6] + 'T00:00:00');
+  const fmt   = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 export function formatDate(dateStr: string): string {

@@ -1,15 +1,18 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
-  import { formatINR, getWeekDates, today, daysInMonth, monthLabel } from '$lib/utils';
-  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle } from '@lucide/svelte';
+  import { formatINR, getWeekDates, weekRangeLabel, today, daysInMonth, monthLabel } from '$lib/utils';
+  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
   import InsightsStrip from '$lib/components/InsightsStrip.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
   const todayStr  = today();
-  const weekDates = getWeekDates();
+
+  let weekOffset = $state(0);
+  const weekDates = $derived(getWeekDates(weekOffset));
+  const weekLabel = $derived(weekRangeLabel(weekOffset));
 
   const weekData = $derived(weekDates.map(date => ({
     date,
@@ -259,13 +262,29 @@
       <!-- Weekly chart -->
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <div class="flex items-center justify-between mb-3">
-          <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">This Week</p>
+          <div class="flex items-center gap-1">
+            <button onclick={() => weekOffset -= 1}
+                    disabled={weekOffset <= -8}
+                    class="p-1 rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]
+                           disabled:opacity-20 transition-colors">
+              <ChevronLeft size={14} />
+            </button>
+            <p class="text-xs font-semibold text-[var(--color-text)] min-w-[70px] text-center">
+              {weekLabel}
+            </p>
+            <button onclick={() => weekOffset = Math.min(weekOffset + 1, 0)}
+                    disabled={weekOffset >= 0}
+                    class="p-1 rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]
+                           disabled:opacity-20 transition-colors">
+              <ChevronRight size={14} />
+            </button>
+          </div>
           {#if weekTotal > 0}
             <div class="flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
               <span>Total <span class="text-[var(--color-text)] font-semibold">{formatINR(weekTotal)}</span></span>
               {#if weekAvg > 0}
                 <span class="opacity-40">·</span>
-                <span>Avg/day <span class="text-[var(--color-text)] font-semibold">{formatINR(weekAvg)}</span></span>
+                <span>Avg <span class="text-[var(--color-text)] font-semibold">{formatINR(weekAvg)}/day</span></span>
               {/if}
             </div>
           {/if}
