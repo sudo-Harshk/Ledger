@@ -1,143 +1,96 @@
 <script lang="ts">
-  import { weekDayLabel, today, formatINR } from '$lib/utils';
-  import { cubicOut } from 'svelte/easing';
-  import { fly } from 'svelte/transition';
+  import type { Transaction, Category } from '$lib/db/schema';
+  import { today, formatINR } from '$lib/utils';
 
-  let { data, dailyBudget = 0 }: {
-    data: { date: string; total: number }[];
-    dailyBudget?: number;
+  let { data, transactions = [], categories = [], dailyBudget = 0 }: {
+    data:          { date: string; total: number }[];
+    transactions?: Transaction[];
+    categories?:   Category[];
+    dailyBudget?:  number;
   } = $props();
 
-  const CHART_H = 72;
   const todayStr = today();
-  const max = $derived(Math.max(...data.map(d => d.total), dailyBudget || 0, 1));
 
-  // Hover (desktop) + pinned (tap/click) — hover takes priority when present
-  let hoverDate  = $state<string | null>(null);
-  let pinnedDate = $state<string | null>(null);
-  const activeDate = $derived(hoverDate ?? pinnedDate);
-  const activeDay  = $derived(activeDate ? (data.find(d => d.date === activeDate) ?? null) : null);
-
-  function toggle(date: string) {
-    pinnedDate = pinnedDate === date ? null : date;
+  function dayAbbrev(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }).slice(0, 3);
   }
 
-  function shortAmt(n: number): string {
-    if (n === 0) return '';
-    return n >= 1000 ? `₹${+(n / 1000).toFixed(1)}k` : `₹${n}`;
+  function dayNum(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').getDate().toString();
   }
 
-  function dayLabel(dateStr: string): string {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', {
-      weekday: 'short', day: 'numeric', month: 'short'
-    });
+  // Unique category icons for a given date (up to 4, then "+N more")
+  function iconsForDay(dateStr: string): { icons: string[]; extra: number } {
+    const txs = transactions.filter(t => t.date === dateStr && t.type === 'expense');
+    const seen = new Set<string>();
+    const icons: string[] = [];
+    for (const t of txs) {
+      if (!seen.has(t.categoryId)) {
+        seen.add(t.categoryId);
+        const cat = categories.find(c => c.id === t.categoryId);
+        if (cat) icons.push(cat.icon);
+      }
+    }
+    return { icons: icons.slice(0, 4), extra: Math.max(0, icons.length - 4) };
   }
-
-  const refBottom = $derived(
-    dailyBudget > 0 ? Math.min((dailyBudget / max) * CHART_H, CHART_H - 1) : -1
-  );
 </script>
 
-<!-- Tooltip info line — replaces noisy labels, shows on interaction -->
-<div class="h-7 flex items-center mb-2">
-  {#if activeDay}
-    {@const over = dailyBudget > 0 && activeDay.total > dailyBudget}
-    <div in:fly={{ y: -5, duration: 160, easing: cubicOut }}
-         class="flex items-center gap-1.5 text-xs">
-      <span class="font-medium text-[var(--color-text)]">
-        {dayLabel(activeDay.date)}
-      </span>
-      <span class="text-[var(--color-border)]">·</span>
-      {#if activeDay.total > 0}
-        <span class="font-bold"
-              style="color:{over ? 'var(--color-expense)' : 'var(--color-primary)'}">
-          {formatINR(activeDay.total)}
+<div class="space-y-1">
+  {#each data as day}
+    {@const isToday  = day.date === todayStr}
+    {@const hasSpend = day.total > 0}
+    {@const over     = dailyBudget > 0 && day.total > dailyBudget}
+    {@const { icons, extra } = iconsForDay(day.date)}
+
+    <div class="flex items-center gap-3 py-2 px-1 rounded-xl transition-colors
+                {isToday ? 'bg-[var(--color-primary)]/8' : ''}">
+
+      <!-- Day pill -->
+      <div class="flex flex-col items-center w-8 shrink-0">
+        <span class="text-[10px] font-semibold leading-none
+                     {isToday ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}">
+          {dayAbbrev(day.date)}
         </span>
-        {#if over}
-          <span class="text-[10px] text-[var(--color-expense)]
-                       bg-[var(--color-expense)]/10 px-1.5 py-0.5 rounded-full">
-            +{formatINR(activeDay.total - dailyBudget)} over
-          </span>
-        {/if}
-      {:else}
-        <span class="text-[var(--color-text-muted)]">No spend</span>
-      {/if}
-    </div>
-  {:else}
-    <span class="text-[10px] text-[var(--color-text-muted)]/50 select-none">
-      Tap a bar for details
-    </span>
-  {/if}
-</div>
-
-<!-- Bars -->
-<div class="relative flex items-end justify-between gap-1 px-1" style="height: {CHART_H}px">
-  <!-- Daily budget reference line -->
-  {#if refBottom > 0}
-    <div class="absolute inset-x-1 z-10 flex items-center gap-1 pointer-events-none"
-         style="bottom: {refBottom}px">
-      <div class="flex-1 border-t border-dashed border-[var(--color-warning)]/60"></div>
-      <span class="text-[7px] text-[var(--color-warning)] font-medium leading-none shrink-0">
-        daily limit
-      </span>
-    </div>
-  {/if}
-
-  {#each data as day}
-    {@const barH  = Math.max((day.total / max) * CHART_H, day.total > 0 ? 5 : 2)}
-    {@const isToday  = day.date === todayStr}
-    {@const isActive = activeDate === day.date}
-    {@const over     = dailyBudget > 0 && day.total > dailyBudget}
-    <div class="flex-1 flex justify-center items-end h-full cursor-pointer"
-         role="button"
-         tabindex="0"
-         aria-label="{dayLabel(day.date)}: {day.total > 0 ? formatINR(day.total) : 'No spend'}"
-         onclick={() => toggle(day.date)}
-         onkeydown={(e) => e.key === 'Enter' && toggle(day.date)}
-         onmouseenter={() => hoverDate = day.date}
-         onmouseleave={() => hoverDate = null}>
-      <div class="w-full max-w-[30px] rounded-t-md transition-all duration-300"
-           style="height: {barH}px;
-                  opacity: {activeDate && !isActive ? 0.35 : 1};
-                  transform: {isActive ? 'scaleY(1.04)' : 'scaleY(1)'};
-                  transform-origin: bottom;
-                  background: {isToday
-                    ? 'var(--color-primary)'
-                    : over
-                      ? 'var(--color-expense)'
-                      : isActive
-                        ? 'var(--color-primary)'
-                        : 'var(--color-surface-3)'}">
+        <span class="text-[11px] font-bold leading-none mt-0.5
+                     {isToday ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}">
+          {dayNum(day.date)}
+        </span>
       </div>
-    </div>
-  {/each}
-</div>
 
-<!-- Day name + amount labels -->
-<div class="flex justify-between gap-1 px-1 mt-2">
-  {#each data as day}
-    {@const isToday  = day.date === todayStr}
-    {@const isActive = activeDate === day.date}
-    {@const over     = dailyBudget > 0 && day.total > dailyBudget}
-    <div class="flex-1 flex flex-col items-center gap-[3px]"
-         role="button"
-         tabindex="-1"
-         onclick={() => toggle(day.date)}
-         onkeydown={(e) => e.key === 'Enter' && toggle(day.date)}>
-      <span class="text-[9px] font-medium leading-none transition-colors duration-150
-                   {isToday || isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}">
-        {weekDayLabel(day.date)}
-      </span>
-      <span class="text-[8px] font-semibold leading-none transition-colors duration-150
-                   {isToday
-                     ? 'text-[var(--color-primary)]'
-                     : over
-                       ? 'text-[var(--color-expense)]'
-                       : isActive
-                         ? 'text-[var(--color-primary)]'
-                         : 'text-[var(--color-text-muted)]'}">
-        {shortAmt(day.total)}
-      </span>
+      <!-- Divider -->
+      <div class="w-px h-6 bg-[var(--color-border)]/60 shrink-0"></div>
+
+      <!-- Category icons -->
+      <div class="flex-1 flex items-center gap-1 min-w-0">
+        {#if hasSpend}
+          {#each icons as icon}
+            <span class="text-base leading-none">{icon}</span>
+          {/each}
+          {#if extra > 0}
+            <span class="text-[10px] text-[var(--color-text-muted)] font-medium">+{extra}</span>
+          {/if}
+        {:else}
+          <span class="text-xs text-[var(--color-border)] select-none">—</span>
+        {/if}
+      </div>
+
+      <!-- Amount -->
+      <div class="shrink-0 text-right">
+        {#if hasSpend}
+          <span class="text-sm font-semibold"
+                style="color:{over ? 'var(--color-expense)' : isToday ? 'var(--color-primary)' : 'var(--color-text)'}">
+            {formatINR(day.total)}
+          </span>
+          {#if over && dailyBudget > 0}
+            <p class="text-[9px] text-[var(--color-expense)] leading-none mt-0.5">
+              +{formatINR(day.total - dailyBudget)} over
+            </p>
+          {/if}
+        {:else}
+          <span class="text-xs text-[var(--color-border)]">—</span>
+        {/if}
+      </div>
+
     </div>
   {/each}
 </div>

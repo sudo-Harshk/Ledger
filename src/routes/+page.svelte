@@ -289,7 +289,7 @@
             </div>
           {/if}
         </div>
-        <WeekBarChart data={weekData} dailyBudget={dailyBudget} />
+        <WeekBarChart data={weekData} transactions={app.transactions} categories={app.categories} dailyBudget={dailyBudget} />
       </div>
 
       <!-- Budget category breakdown (distinct from health card's overall bar) -->
