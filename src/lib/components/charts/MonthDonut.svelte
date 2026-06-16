@@ -141,7 +141,10 @@
                        {activeCatId && activeCatId !== seg.categoryId ? 'opacity-30' : 'opacity-100'}">
           <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{seg.color}"></span>
           <span class="text-[var(--color-text-muted)] truncate">{seg.name}</span>
-          <span class="ml-auto font-medium text-[var(--color-text)] shrink-0">{seg.pct}%</span>
+          <div class="ml-auto text-right shrink-0">
+            <p class="font-semibold text-[var(--color-text)] leading-none">{formatINR(seg.total)}</p>
+            <p class="text-[9px] text-[var(--color-text-muted)] leading-none mt-0.5">{seg.pct}%</p>
+          </div>
         </button>
       {/each}
     </div>
