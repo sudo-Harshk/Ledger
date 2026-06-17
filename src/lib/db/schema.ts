@@ -51,12 +51,29 @@ export interface Setting {
   value: string;
 }
 
+export interface Repayment {
+  id: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+}
+
+export interface Lend {
+  id: string;
+  personName: string;
+  amount: number;       // original amount lent
+  date: string;         // YYYY-MM-DD
+  note?: string;
+  repayments: Repayment[];
+  createdAt: string;
+}
+
 class LedgerDB extends Dexie {
   transactions!: Table<Transaction>;
   categories!: Table<Category>;
   budgets!: Table<Budget>;
   emis!: Table<Emi>;
   settings!: Table<Setting>;
+  lends!: Table<Lend>;
 
   constructor() {
     super('ledger');
@@ -66,6 +83,14 @@ class LedgerDB extends Dexie {
       budgets:      'id, [categoryId+month], month',
       emis:         'id, nextDueDate',
       settings:     'key'
+    });
+    this.version(2).stores({
+      transactions: 'id, type, categoryId, date, createdAt',
+      categories:   'id, sortOrder',
+      budgets:      'id, [categoryId+month], month',
+      emis:         'id, nextDueDate',
+      settings:     'key',
+      lends:        'id, createdAt'
     });
   }
 }
