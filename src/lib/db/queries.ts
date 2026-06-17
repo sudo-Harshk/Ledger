@@ -1,5 +1,5 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Budget, Emi, EmiType, TransactionType } from './schema';
+import type { Transaction, Category, Budget, Emi, EmiType, TransactionType, Lend, Repayment } from './schema';
 import { nanoid } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
@@ -219,6 +219,35 @@ export async function markEmiPaid(id: string): Promise<string | null> {
 export async function deleteEmi(id: string) {
   await db.emis.delete(id);
   removeDoc('emis', id).catch(() => {});
+}
+
+// ── Lends ─────────────────────────────────────────────────────────────────────
+
+export async function getLends(): Promise<Lend[]> {
+  return db.lends.orderBy('createdAt').reverse().toArray();
+}
+
+export async function addLend(data: Omit<Lend, 'id' | 'createdAt' | 'repayments'>): Promise<Lend> {
+  const lend: Lend = { ...data, id: nanoid(), repayments: [], createdAt: new Date().toISOString() };
+  await db.lends.add(lend);
+  pushDoc('lends', lend).catch(() => {});
+  return lend;
+}
+
+export async function addRepayment(lendId: string, repayment: Omit<Repayment, 'id'>): Promise<void> {
+  const lend = await db.lends.get(lendId);
+  if (!lend) return;
+  const updated: Lend = {
+    ...lend,
+    repayments: [...lend.repayments, { ...repayment, id: nanoid() }],
+  };
+  await db.lends.put(updated);
+  pushDoc('lends', updated).catch(() => {});
+}
+
+export async function deleteLend(id: string): Promise<void> {
+  await db.lends.delete(id);
+  removeDoc('lends', id).catch(() => {});
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────

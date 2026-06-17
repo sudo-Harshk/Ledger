@@ -1,6 +1,6 @@
-import { getCategories, getTransactions, getBudgetsForMonth, getEmis, seedIfEmpty, getSetting, carryOverBudgets } from '$lib/db/queries';
+import { getCategories, getTransactions, getBudgetsForMonth, getEmis, getLends, seedIfEmpty, getSetting, carryOverBudgets } from '$lib/db/queries';
 import { pullFromFirestore } from '$lib/db/firestore';
-import type { Transaction, Category, Budget, Emi } from '$lib/db/schema';
+import type { Transaction, Category, Budget, Emi, Lend } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
 
 class AppStore {
@@ -8,6 +8,7 @@ class AppStore {
   transactions  = $state<Transaction[]>([]);
   budgets       = $state<Budget[]>([]);
   emis          = $state<Emi[]>([]);
+  lends         = $state<Lend[]>([]);
   monthlyIncome = $state(0);
   isLoading     = $state(true);
   showQuickAdd  = $state(false);
@@ -49,11 +50,12 @@ class AppStore {
 
   async refreshAll() {
     const month = currentMonth();
-    [this.categories, this.transactions, this.budgets, this.emis] = await Promise.all([
+    [this.categories, this.transactions, this.budgets, this.emis, this.lends] = await Promise.all([
       getCategories(),
       getTransactions({ month }),
       getBudgetsForMonth(month),
-      getEmis()
+      getEmis(),
+      getLends(),
     ]);
     const inc = await getSetting('monthlyIncome');
     this.monthlyIncome = parseFloat(inc) || 0;
@@ -69,6 +71,10 @@ class AppStore {
 
   async refreshEmis() {
     this.emis = await getEmis();
+  }
+
+  async refreshLends() {
+    this.lends = await getLends();
   }
 
   async refreshCategories() {

@@ -2,7 +2,7 @@
   import { app } from '$lib/stores/app.svelte';
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
   import { formatINR, getWeekDates, weekRangeLabel, today, daysInMonth, monthLabel } from '$lib/utils';
-  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight, Handshake } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
   import InsightsStrip from '$lib/components/InsightsStrip.svelte';
   import { fly } from 'svelte/transition';
@@ -307,6 +307,26 @@
             {formatINR(app.monthExpenses)} of {formatINR(totalBudget)} budget used
           </p>
         </div>
+      {/if}
+
+      <!-- Lent Money outstanding -->
+      {#if app.lends.some(l => l.repayments.reduce((s, r) => s + r.amount, 0) < l.amount)}
+        {@const outstanding = app.lends.reduce((s, l) => s + Math.max(0, l.amount - l.repayments.reduce((r, p) => r + p.amount, 0)), 0)}
+        {@const count = app.lends.filter(l => l.repayments.reduce((s, r) => s + r.amount, 0) < l.amount).length}
+        <a href="/lent" class="block bg-[var(--color-surface)] rounded-2xl p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-[var(--color-warning)]/15 flex items-center justify-center">
+                <Handshake size={18} class="text-[var(--color-warning)]" />
+              </div>
+              <div>
+                <p class="text-sm font-semibold">Lent Money</p>
+                <p class="text-xs text-[var(--color-text-muted)]">{count} person{count !== 1 ? 's' : ''} owe you</p>
+              </div>
+            </div>
+            <p class="text-sm font-bold text-[var(--color-warning)]">{formatINR(outstanding)}</p>
+          </div>
+        </a>
       {/if}
 
       <!-- Upcoming EMIs -->
