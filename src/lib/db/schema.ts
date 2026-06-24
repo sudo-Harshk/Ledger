@@ -103,6 +103,8 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-groceries',     name: 'Groceries',      icon: '🛒', color: '#22C55E', sortOrder: 2,  isActive: true },
   { id: 'cat-transport',     name: 'Transport',      icon: '🚗', color: '#3B82F6', sortOrder: 3,  isActive: true },
   { id: 'cat-phone-net',     name: 'Phone & Net',    icon: '📱', color: '#8B5CF6', sortOrder: 4,  isActive: true },
+  { id: 'cat-phone-recharge', name: 'Phone Recharge', icon: '📱', color: '#8B5CF6', sortOrder: 16, isActive: true },
+  { id: 'cat-internet',       name: 'Internet',        icon: '🌐', color: '#6366F1', sortOrder: 17, isActive: true },
   { id: 'cat-personal-care', name: 'Personal Care',  icon: '💆', color: '#EC4899', sortOrder: 5,  isActive: true },
   { id: 'cat-entertainment', name: 'Entertainment',  icon: '🎬', color: '#EF4444', sortOrder: 6,  isActive: true },
   { id: 'cat-shopping',      name: 'Shopping',       icon: '🛍️', color: '#F59E0B', sortOrder: 7,  isActive: true },
