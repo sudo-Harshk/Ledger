@@ -2,13 +2,18 @@
   import { app } from '$lib/stores/app.svelte';
   import { getAllCategories, addCategory, updateCategory } from '$lib/db/queries';
   import { validateName } from '$lib/utils/validate';
-  import { Plus, AlertCircle, ChevronLeft } from '@lucide/svelte';
+  import { Plus, AlertCircle, ChevronLeft, Pencil } from '@lucide/svelte';
   import type { Category } from '$lib/db/schema';
 
   let allCats      = $state<Category[]>([]);
   let addingCat    = $state(false);
   let catAttempted = $state(false);
   let newCat       = $state({ name: '', icon: '📌', color: '#9B99B8' });
+
+  // Edit state
+  let editingId      = $state<string | null>(null);
+  let editAttempted  = $state(false);
+  let editCat        = $state({ name: '', icon: '📌', color: '#9B99B8' });
 
   $effect(() => { load(); });
 
@@ -25,6 +30,15 @@
     return null;
   });
 
+  const editNameError = $derived((): string | null => {
+    if (!editAttempted) return null;
+    const base = validateName(editCat.name, { min: 2, max: 30, label: 'Category name' });
+    if (base) return base;
+    const dup = allCats.find(c => c.id !== editingId && c.name.toLowerCase() === editCat.name.trim().toLowerCase());
+    if (dup) return 'A category with this name already exists';
+    return null;
+  });
+
   async function addCat() {
     catAttempted = true;
     if (catNameError()) return;
@@ -34,6 +48,28 @@
     addingCat    = false;
     catAttempted = false;
     newCat = { name: '', icon: '📌', color: '#9B99B8' };
+  }
+
+  function startEdit(cat: Category) {
+    editingId     = cat.id;
+    editAttempted = false;
+    editCat       = { name: cat.name, icon: cat.icon, color: cat.color };
+    addingCat     = false;
+  }
+
+  function cancelEdit() {
+    editingId     = null;
+    editAttempted = false;
+  }
+
+  async function saveEdit() {
+    editAttempted = true;
+    if (editNameError()) return;
+    await updateCategory(editingId!, { name: editCat.name.trim(), icon: editCat.icon, color: editCat.color });
+    await load();
+    await app.refreshCategories();
+    editingId     = null;
+    editAttempted = false;
   }
 
   async function toggleCat(cat: Category) {
@@ -61,7 +97,7 @@
       <h1 class="text-xl font-bold">Categories</h1>
       <p class="text-xs text-[var(--color-text-muted)]">{active.length} active</p>
     </div>
-    <button onclick={() => { addingCat = true; catAttempted = false; }}
+    <button onclick={() => { addingCat = true; catAttempted = false; editingId = null; }}
             class="flex items-center gap-1.5 bg-[var(--color-primary)]/20 text-[var(--color-primary)]
                    px-3 py-2 rounded-xl text-sm font-medium">
       <Plus size={15} /> New
@@ -112,7 +148,6 @@
         </div>
       </div>
 
-      <!-- Preview -->
       <div class="flex items-center gap-3 bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
         <span class="text-xl">{newCat.icon}</span>
         <span class="text-sm font-medium" style="color:{newCat.color}">{newCat.name || 'Preview'}</span>
@@ -137,20 +172,90 @@
       Active ({active.length})
     </p>
     <div class="divide-y divide-[var(--color-border)]/40">
-      {#each active as cat}
-        <div class="flex items-center gap-3 px-4 py-3">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
-               style="background:{cat.color}18">
-            {cat.icon}
+      {#each active as cat (cat.id)}
+        <div>
+          <!-- Row -->
+          <div class="flex items-center gap-3 px-4 py-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
+                 style="background:{cat.color}18">
+              {cat.icon}
+            </div>
+            <span class="flex-1 text-sm font-medium">{cat.name}</span>
+            <div class="w-3 h-3 rounded-full shrink-0" style="background:{cat.color}"></div>
+            <button onclick={() => editingId === cat.id ? cancelEdit() : startEdit(cat)}
+                    class="p-1.5 rounded-lg transition-colors
+                           {editingId === cat.id
+                             ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
+                             : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}">
+              <Pencil size={14} />
+            </button>
+            <button onclick={() => toggleCat(cat)}
+                    class="text-xs px-2.5 py-1 rounded-lg
+                           bg-[var(--color-surface-2)] text-[var(--color-text-muted)]
+                           hover:text-[var(--color-expense)] transition-colors">
+              Hide
+            </button>
           </div>
-          <span class="flex-1 text-sm font-medium">{cat.name}</span>
-          <div class="w-3 h-3 rounded-full shrink-0" style="background:{cat.color}"></div>
-          <button onclick={() => toggleCat(cat)}
-                  class="text-xs px-2.5 py-1 rounded-lg
-                         bg-[var(--color-surface-2)] text-[var(--color-text-muted)]
-                         hover:text-[var(--color-expense)] transition-colors">
-            Hide
-          </button>
+
+          <!-- Inline edit form -->
+          {#if editingId === cat.id}
+            <div class="px-4 pb-4 space-y-3 border-t border-[var(--color-border)]/40 animate-fade-in">
+              <div class="pt-3">
+                <input bind:value={editCat.name} placeholder="Category name" maxlength={30}
+                       class="w-full bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5 text-sm
+                              border transition-colors focus:outline-none text-[var(--color-text)]
+                              {editAttempted && editNameError()
+                                ? 'border-[var(--color-expense)]'
+                                : 'border-[var(--color-border)] focus:border-[var(--color-primary)]'}" />
+                {#if editAttempted && editNameError()}
+                  <p class="text-xs text-[var(--color-expense)] mt-1 flex items-center gap-1">
+                    <AlertCircle size={11} /> {editNameError()}
+                  </p>
+                {/if}
+              </div>
+
+              <div>
+                <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-1.5">Icon</p>
+                <div class="flex flex-wrap gap-1.5">
+                  {#each EMOJI_OPTIONS as e}
+                    <button onclick={() => editCat.icon = e}
+                            class="text-xl p-1.5 rounded-xl transition-colors
+                                   {editCat.icon === e ? 'bg-[var(--color-primary)]/20' : 'hover:bg-[var(--color-surface-2)]'}">
+                      {e}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+
+              <div>
+                <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-1.5">Color</p>
+                <div class="flex flex-wrap gap-2">
+                  {#each COLOR_OPTIONS as c}
+                    <button onclick={() => editCat.color = c}
+                            class="w-7 h-7 rounded-full border-2 transition-all
+                                   {editCat.color === c ? 'border-white scale-110' : 'border-transparent'}"
+                            style="background:{c}" aria-label="Color {c}"></button>
+                  {/each}
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
+                <span class="text-xl">{editCat.icon}</span>
+                <span class="text-sm font-medium" style="color:{editCat.color}">{editCat.name || 'Preview'}</span>
+              </div>
+
+              <div class="flex gap-2">
+                <button onclick={saveEdit}
+                        class="flex-1 py-2.5 bg-[var(--color-primary)] text-white rounded-xl text-sm font-semibold">
+                  Save
+                </button>
+                <button onclick={cancelEdit}
+                        class="px-4 py-2.5 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] rounded-xl text-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -163,7 +268,7 @@
         Hidden ({inactive.length})
       </p>
       <div class="divide-y divide-[var(--color-border)]/40">
-        {#each inactive as cat}
+        {#each inactive as cat (cat.id)}
           <div class="flex items-center gap-3 px-4 py-3">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 grayscale">
               {cat.icon}
