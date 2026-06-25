@@ -56,23 +56,21 @@ export async function migrateCategoryIds() {
 }
 
 export async function migratePhoneCategories() {
+  // Remove cat-phone-net and reassign its transactions to cat-phone-recharge
   const phoneNet = await db.categories.get('cat-phone-net');
-  if (!phoneNet) return;
-
-  // Reassign transactions from cat-phone-net to cat-phone-recharge
-  const affected = await db.transactions.where('categoryId').equals('cat-phone-net').toArray();
-  if (affected.length > 0) {
-    await db.transactions.where('categoryId').equals('cat-phone-net').modify({ categoryId: 'cat-phone-recharge' });
-    for (const tx of affected) pushDoc('transactions', { ...tx, categoryId: 'cat-phone-recharge' }).catch(() => {});
+  if (phoneNet) {
+    const affected = await db.transactions.where('categoryId').equals('cat-phone-net').toArray();
+    if (affected.length > 0) {
+      await db.transactions.where('categoryId').equals('cat-phone-net').modify({ categoryId: 'cat-phone-recharge' });
+      for (const tx of affected) pushDoc('transactions', { ...tx, categoryId: 'cat-phone-recharge' }).catch(() => {});
+    }
+    await db.categories.delete('cat-phone-net');
+    removeDoc('categories', 'cat-phone-net').catch(() => {});
   }
 
-  // Delete cat-phone-net entirely
-  await db.categories.delete('cat-phone-net');
-  removeDoc('categories', 'cat-phone-net').catch(() => {});
-
-  // Rename cat-phone-recharge to "Recharge" if it still says "Phone Recharge"
+  // Rename "Phone Recharge" to "Recharge" — independent of whether cat-phone-net existed
   const recharge = await db.categories.get('cat-phone-recharge');
-  if (recharge && recharge.name === 'Phone Recharge') {
+  if (recharge && recharge.name !== 'Recharge') {
     await db.categories.update('cat-phone-recharge', { name: 'Recharge', sortOrder: 4 });
     pushDoc('categories', { ...recharge, name: 'Recharge', sortOrder: 4 }).catch(() => {});
   }
