@@ -22,14 +22,16 @@
 
 | Route | What it does |
 |---|---|
-| `/` | **Dashboard**: Month Health Card, insights strip, weekly spend list, budget overview, upcoming EMIs, recent transactions |
+| `/` | **Dashboard**: Month Health Card, insights strip, weekly spend list, budget overview, upcoming EMIs, lent money card, recent transactions |
 | `/transactions` | Browse, edit, and delete all transactions grouped by day with month navigation |
 | `/budgets` | Per-category budgets with progress bars, rings, and pace warnings. Auto-rolled over each new month |
 | `/emis` | EMI tracker with loan progress, due-date countdown, and paid/remaining breakdown |
 | `/subscriptions` | Subscription tracking (tab within the EMI section) |
 | `/reports` | Monthly donut chart, category breakdown bars, calendar heatmap for daily spend. Navigate any past month |
+| `/lent` | Lent money tracker: log amounts lent, record partial repayments, track outstanding balance per person |
 | `/wrapped` | Spending DNA with yearly or monthly stats, biggest transaction, favourite payment mode, spending personality |
-| `/settings` | Monthly income, categories, light/dark theme, CSV export, data reset |
+| `/settings` | Monthly income, theme toggle, CSV export, data reset |
+| `/categories` | Manage categories: add, rename, change icon/color, hide or show |
 
 ---
 
@@ -75,6 +77,12 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - Track subscriptions: name, monthly cost, renewal date
 - Due-date countdown and repayment progress ring
 
+### Lent Money Tracker
+- Log money lent to a person with an optional note and date
+- Record partial or full repayments over time
+- See total lent, total recovered, and outstanding balance at a glance
+- Dashboard card shows outstanding count and amount when someone still owes you
+
 ### Reports
 - Navigate any past month with left and right arrows
 - Income vs Expense vs Net summary cards
@@ -103,13 +111,14 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings.
 
 | Icon | Category | Icon | Category |
 |---|---|---|---|
-| 🏠 | PG Rent | 📱 | Phone and Net |
-| 🍽️ | Food and Dining | 💆 | Personal Care |
-| 🛒 | Groceries | 🎬 | Entertainment |
-| 🚗 | Transport | 🛍️ | Shopping |
-| 🧃 | Juice | ⚡ | Electricity |
-| 💊 | Medicine | 📦 | Moving/Setup |
-| 💰 | Salary | 📌 | Miscellaneous | |
+| 🏠 | PG Rent | 💆 | Personal Care |
+| 🍽️ | Food and Dining | 🎬 | Entertainment |
+| 🛒 | Groceries | 🛍️ | Shopping |
+| 🚗 | Transport | 📦 | Moving/Setup |
+| 📱 | Recharge | ⚡ | Electricity |
+| 🌐 | Internet | 💊 | Medicine |
+| 🧃 | Juice | 🤝 | Lent Money |
+| 💰 | Salary | 📌 | Miscellaneous |
 
 ---
 
@@ -201,6 +210,7 @@ transactions  ->  id, type, amount, categoryId, note, paymentMode, date, created
 categories    ->  id, name, icon, color, sortOrder, isActive
 budgets       ->  id, categoryId, amount, month (YYYY-MM)
 emis          ->  id, type, name, principal, monthlyAmount, startDate, totalMonths, paidMonths, nextDueDate, categoryId, notes
+lends         ->  id, personName, amount, date, note, repayments (array), createdAt
 settings      ->  key, value
 ```
 
