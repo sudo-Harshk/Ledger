@@ -3,7 +3,8 @@
   import { setSetting, getSetting, getTransactions, getAllCategories, clearAllData } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
   import { validateAmount } from '$lib/utils/validate';
-  import { Download, AlertCircle, Sun, Moon, Trash2, Tag, ChevronRight, Wallet } from '@lucide/svelte';
+  import { Download, AlertCircle, Sun, Moon, Trash2, Tag, ChevronRight, Wallet, Bell } from '@lucide/svelte';
+  import { onMount } from 'svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import NumberInput from '$lib/components/NumberInput.svelte';
 
@@ -14,6 +15,25 @@
   let resetConfirm    = $state(false);
   let resetting       = $state(false);
   let editingIncome   = $state(false);
+
+  // Dashboard banner toggles (default: both enabled)
+  let monthEndEnabled  = $state(true);
+  let newMonthEnabled  = $state(true);
+
+  onMount(async () => {
+    const [me, nm] = await Promise.all([
+      getSetting('banner_month_end'),
+      getSetting('banner_new_month'),
+    ]);
+    if (me === 'false') monthEndEnabled = false;
+    if (nm === 'false') newMonthEnabled = false;
+  });
+
+  async function toggleBanner(key: string, current: boolean): Promise<boolean> {
+    const next = !current;
+    await setSetting(key, String(next));
+    return next;
+  }
 
   $effect(() => { loadIncome(); });
 
@@ -142,6 +162,58 @@
       </div>
       <ChevronRight size={16} class="text-[var(--color-text-muted)]" />
     </a>
+  </section>
+
+  <!-- Dashboard banners -->
+  <section class="bg-[var(--color-surface)] rounded-2xl overflow-hidden divide-y divide-[var(--color-border)]/40">
+
+    <!-- Section header row (non-interactive) -->
+    <div class="flex items-center gap-3 px-5 py-4">
+      <div class="w-9 h-9 rounded-xl bg-[var(--color-warning)]/15 flex items-center justify-center shrink-0">
+        <Bell size={17} style="color:var(--color-warning)" />
+      </div>
+      <div class="flex-1">
+        <p class="text-sm font-semibold">Dashboard Banners</p>
+        <p class="text-xs text-[var(--color-text-muted)] mt-0.5">Control contextual cards on the home screen</p>
+      </div>
+    </div>
+
+    <!-- Month-end nudge toggle -->
+    <div class="flex items-center gap-3 px-5 py-3.5">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium">Month-end nudge</p>
+        <p class="text-xs text-[var(--color-text-muted)] mt-0.5">Amber highlight in the last 3 days of the month</p>
+      </div>
+      <button
+        onclick={async () => { monthEndEnabled = await toggleBanner('banner_month_end', monthEndEnabled); }}
+        class="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
+               {monthEndEnabled ? 'bg-[var(--color-income)]' : 'bg-[var(--color-border)]'}"
+        aria-label="Toggle month-end nudge"
+        role="switch" aria-checked={monthEndEnabled}>
+        <span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm
+                     transition-transform duration-200
+                     {monthEndEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+      </button>
+    </div>
+
+    <!-- New month welcome toggle -->
+    <div class="flex items-center gap-3 px-5 py-3.5">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium">New month welcome</p>
+        <p class="text-xs text-[var(--color-text-muted)] mt-0.5">Previous month recap on the first 3 days</p>
+      </div>
+      <button
+        onclick={async () => { newMonthEnabled = await toggleBanner('banner_new_month', newMonthEnabled); }}
+        class="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
+               {newMonthEnabled ? 'bg-[var(--color-income)]' : 'bg-[var(--color-border)]'}"
+        aria-label="Toggle new month welcome"
+        role="switch" aria-checked={newMonthEnabled}>
+        <span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm
+                     transition-transform duration-200
+                     {newMonthEnabled ? 'translate-x-5' : 'translate-x-0'}"></span>
+      </button>
+    </div>
+
   </section>
 
   <!-- Export -->

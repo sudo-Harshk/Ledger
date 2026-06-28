@@ -20,18 +20,21 @@
   const shouldShow = todayDate >= 1 && todayDate <= 3;
 
   let dismissed  = $state(true); // hide until DB check resolves (prevents flash)
+  let enabled    = $state(true);
   let loading    = $state(true);
   let prevTxns   = $state<Transaction[]>([]);
 
   onMount(async () => {
     if (!shouldShow) { loading = false; return; }
 
-    const [dismissVal, txns] = await Promise.all([
+    const [dismissVal, txns, bannerSetting] = await Promise.all([
       getSetting(DISMISS_KEY),
       getTransactions({ month: lastMonth }),
+      getSetting('banner_new_month'),
     ]);
 
     dismissed = dismissVal === 'true';
+    enabled   = bannerSetting !== 'false'; // default true if key not set yet
     prevTxns  = txns;
     loading   = false;
   });
@@ -69,7 +72,7 @@
   }
 </script>
 
-{#if shouldShow && !dismissed && !loading}
+{#if shouldShow && enabled && !dismissed && !loading}
   <div out:fly={{ y: -24, duration: 220, easing: cubicIn }}
        class="bg-[var(--color-surface)] rounded-2xl overflow-hidden
               border border-[var(--color-primary)]/20 animate-fade-in">
