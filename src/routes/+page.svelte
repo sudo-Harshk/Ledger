@@ -5,6 +5,8 @@
   import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight, Handshake } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
   import InsightsStrip from '$lib/components/InsightsStrip.svelte';
+  import MonthEndBanner from '$lib/components/MonthEndBanner.svelte';
+  import NewMonthWelcome from '$lib/components/NewMonthWelcome.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -130,6 +132,19 @@
 
     <!-- ── Left panel ─────────────────────────────────────────────────────── -->
     <div class="space-y-4">
+
+      <!-- New month welcome (days 1-3 of month, one-time dismiss per month) -->
+      <NewMonthWelcome />
+
+      <!-- Month-end banner (last 3 days of month, dismissible) -->
+      <MonthEndBanner
+        monthExpenses={app.monthExpenses}
+        monthlyIncome={app.monthlyIncome}
+        monthStr={app.monthStr}
+        transactions={app.transactions}
+        categories={app.categories}
+        {daysLeft}
+      />
 
       <!-- ═══════════════════════════════════════════════════════════════════
            MONTH HEALTH CARD — the single answer to "how much am I spending?"
