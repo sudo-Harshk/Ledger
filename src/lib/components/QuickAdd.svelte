@@ -184,9 +184,15 @@
         {/if}
       </div>
 
-      <!-- Details section:
-           Edit mode  → always visible above the numpad (you're here to change things)
-           Add mode   → collapsible toggle above the numpad                            -->
+      <!-- Date — always visible so backdating is never hidden -->
+      <div class="px-5 mb-3">
+        <input type="date" bind:value={date}
+               class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
+                      px-4 py-3 text-sm text-[var(--color-text)]
+                      focus:outline-none focus:border-[var(--color-primary)]" />
+      </div>
+
+      <!-- Note + payment mode: collapsible in add mode, always shown in edit mode -->
       {#if isEditing}
         <div class="px-5 mb-3 space-y-3">
           <input bind:value={note} placeholder="Note (optional)" maxlength={100}
@@ -204,16 +210,12 @@
               </button>
             {/each}
           </div>
-          <input type="date" bind:value={date}
-                 class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                        px-4 py-3 text-sm text-[var(--color-text)]
-                        focus:outline-none focus:border-[var(--color-primary)]" />
         </div>
       {:else}
         <button onclick={() => expanded = !expanded}
                 class="flex items-center gap-1 mx-5 mb-2 text-xs text-[var(--color-text-muted)]">
           {#if expanded}<ChevronUp size={14}/>{:else}<ChevronDown size={14}/>{/if}
-          {expanded ? 'Less details' : 'Add note & details'}
+          {expanded ? 'Less details' : 'Add note & payment mode'}
         </button>
         {#if expanded}
           <div class="px-5 mb-3 space-y-3 animate-fade-in">
@@ -232,10 +234,6 @@
                 </button>
               {/each}
             </div>
-            <input type="date" bind:value={date}
-                   class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                          px-4 py-3 text-sm text-[var(--color-text)]
-                          focus:outline-none focus:border-[var(--color-primary)]" />
           </div>
         {/if}
       {/if}
