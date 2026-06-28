@@ -2,10 +2,9 @@
   import { app } from '$lib/stores/app.svelte';
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
   import { formatINR, getWeekDates, weekRangeLabel, today, daysInMonth, monthLabel } from '$lib/utils';
-  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight, Handshake } from '@lucide/svelte';
+  import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight, Handshake, ArrowRight } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
   import InsightsStrip from '$lib/components/InsightsStrip.svelte';
-  import MonthEndBanner from '$lib/components/MonthEndBanner.svelte';
   import NewMonthWelcome from '$lib/components/NewMonthWelcome.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -136,29 +135,29 @@
       <!-- New month welcome (days 1-3 of month, one-time dismiss per month) -->
       <NewMonthWelcome />
 
-      <!-- Month-end banner (last 3 days of month, dismissible) -->
-      <MonthEndBanner
-        monthExpenses={app.monthExpenses}
-        monthlyIncome={app.monthlyIncome}
-        monthStr={app.monthStr}
-        transactions={app.transactions}
-        categories={app.categories}
-        {daysLeft}
-      />
-
       <!-- ═══════════════════════════════════════════════════════════════════
            MONTH HEALTH CARD — the single answer to "how much am I spending?"
+           Gains amber accent in the last 3 days of the month.
            ═══════════════════════════════════════════════════════════════════ -->
-      <div class="bg-[var(--color-surface)] rounded-2xl p-5">
+      <div class="bg-[var(--color-surface)] rounded-2xl overflow-hidden">
+
+        <!-- Month-end accent stripe — only last 3 days -->
+        {#if daysLeft <= 2}
+          <div class="h-0.5 bg-gradient-to-r from-[var(--color-warning)] via-[var(--color-warning)]/40 to-transparent"></div>
+        {/if}
+
+        <div class="p-5">
 
         <!-- Month + days left pill -->
         <div class="flex items-center justify-between mb-4">
           <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             {monthLabel(app.monthStr)}
           </p>
-          <span class="text-xs font-medium px-2.5 py-1 rounded-full
-                       bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
-            {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full transition-colors
+                       {daysLeft <= 2
+                         ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'
+                         : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+            {daysLeft === 0 ? 'Last day!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`}
           </span>
         </div>
 
@@ -264,6 +263,22 @@
             </div>
           </div>
         {/if}
+
+        <!-- Month-end CTA — only last 3 days, no duplicate stats, just a link -->
+        {#if daysLeft <= 2}
+          <div class="mt-4 pt-3 border-t border-[var(--color-warning)]/20 flex items-center justify-between"
+               in:fly={{ y: 6, duration: 200, delay: 300, easing: cubicOut }}>
+            <p class="text-xs text-[var(--color-warning)]">
+              {daysLeft === 0 ? 'Last chance to log missing transactions' : 'Wrap up the month'}
+            </p>
+            <a href="/reports"
+               class="flex items-center gap-1 text-xs font-semibold text-[var(--color-warning)] hover:underline underline-offset-2 shrink-0">
+              Full recap <ArrowRight size={11} />
+            </a>
+          </div>
+        {/if}
+
+        </div><!-- end p-5 -->
       </div>
 
       <!-- Insights -->
