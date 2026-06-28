@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { X, ChevronDown, ChevronUp, Check, AlertCircle } from '@lucide/svelte';
+  import { X, Check, AlertCircle, ChevronDown } from '@lucide/svelte';
   import DateChips from '$lib/components/DateChips.svelte';
   import { addTransaction, updateTransaction } from '$lib/db/queries';
   import { app } from '$lib/stores/app.svelte';
@@ -10,25 +10,60 @@
   import { cubicOut, cubicIn } from 'svelte/easing';
   import type { TransactionType, PaymentMode } from '$lib/db/schema';
 
+  type Panel = 'category' | 'date' | 'details';
+
   let amount      = $state('');
   let selectedCat = $state('');
   let note        = $state('');
   let paymentMode = $state<PaymentMode>('upi');
   let date        = $state(today());
   let type        = $state<TransactionType>('expense');
-  let expanded    = $state(false);
+  let panel       = $state<Panel>('category');
   let saving      = $state(false);
   let saved       = $state(false);
   let attempted   = $state(false);
 
   const isEditing = $derived(!!app.editingTx);
 
-  const paymentModes: { value: PaymentMode; label: string }[] = [
-    { value: 'upi',        label: 'UPI'    },
-    { value: 'cash',       label: 'Cash'   },
-    { value: 'card',       label: 'Card'   },
-    { value: 'netbanking', label: 'Net'    },
+  const MODES: { value: PaymentMode; label: string }[] = [
+    { value: 'upi',        label: 'UPI'  },
+    { value: 'cash',       label: 'Cash' },
+    { value: 'card',       label: 'Card' },
+    { value: 'netbanking', label: 'Net'  },
   ];
+  const NUMPAD = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
+
+  // ── Pill labels ───────────────────────────────────────────────────────────────
+
+  const catObj      = $derived(app.getCategoryById(selectedCat));
+  const catLabel    = $derived(catObj ? `${catObj.icon} ${catObj.name}` : 'Category');
+
+  const dateLabel = $derived.by(() => {
+    const t = today();
+    if (date === t) return 'Today';
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    const ys = `${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;
+    if (date === ys) return 'Yesterday';
+    return new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  });
+
+  const detailsLabel = $derived.by(() => {
+    const pm = MODES.find(m => m.value === paymentMode)?.label ?? 'UPI';
+    const n  = note.trim();
+    if (!n) return pm;
+    const preview = n.length > 12 ? n.slice(0, 12) + '…' : n;
+    return `${pm} · ${preview}`;
+  });
+
+  // ── Formatted save amount ─────────────────────────────────────────────────────
+
+  const amountValid = $derived(!validateAmount(amount, { max: 100_000 }));
+  const amountDisplay = $derived(
+    amountValid ? `· ₹${parseFloat(amount).toLocaleString('en-IN')}` : ''
+  );
+
+  // ── Validation ────────────────────────────────────────────────────────────────
 
   const errors = $derived({
     amount:   validateAmount(amount, { max: 100_000, label: 'Amount' }),
@@ -36,91 +71,120 @@
   });
   const hasErrors = $derived(Object.values(errors).some(Boolean));
 
+  // ── Reset on open ─────────────────────────────────────────────────────────────
+
   $effect(() => {
-    if (app.showQuickAdd) {
-      const tx = app.editingTx;
-      if (tx) {
-        amount      = String(tx.amount);
-        selectedCat = tx.categoryId;
-        note        = tx.note ?? '';
-        paymentMode = tx.paymentMode;
-        date        = tx.date;
-        type        = tx.type;
-        expanded    = false;
-      } else {
-        amount = ''; selectedCat = ''; note = '';
-        paymentMode = 'upi'; date = today(); type = 'expense';
-        expanded = false;
-      }
-      attempted = false;
-      saved     = false;
+    if (!app.showQuickAdd) return;
+    const tx = app.editingTx;
+    if (tx) {
+      amount = String(tx.amount); selectedCat = tx.categoryId;
+      note = tx.note ?? '';       paymentMode  = tx.paymentMode;
+      date = tx.date;             type         = tx.type;
+    } else {
+      amount = ''; selectedCat = ''; note = '';
+      paymentMode = 'upi'; date = today(); type = 'expense';
     }
+    panel = 'category'; attempted = false; saved = false; saving = false;
   });
 
-  function appendDigit(d: string) {
-    if (d === '.' && amount.includes('.')) return;
-    if (amount.split('.')[1]?.length >= 2) return;
-    if (amount === '0' && d !== '.') { amount = d; return; }
+  // ── Numpad ────────────────────────────────────────────────────────────────────
+
+  function digit(d: string) {
+    if (saved) return;
+    if (d === '.' && amount.includes('.'))           return; // no double dot
+    if (amount.split('.')[1]?.length >= 2)           return; // max 2 decimals
+    if (amount === '' && d === '.') { amount = '0.'; return; } // leading dot → 0.
+    if (amount === '0'  && d !== '.') { amount = d;  return; } // replace leading zero
+    if (amount.replace('.','').length >= 8)          return; // cap at 8 significant digits
     amount += d;
   }
-  function backspace() { amount = amount.slice(0, -1); }
+
+  function backspace() { if (!saved) amount = amount.slice(0, -1); }
+
+  // ── Keyboard (desktop) ────────────────────────────────────────────────────────
+
+  function onKeydown(e: KeyboardEvent) {
+    if (!app.showQuickAdd) return;
+    if (e.key === 'Escape')    { close();     return; }
+    if (e.key === 'Enter')     { save();      return; }
+    if (e.key === 'Backspace') { backspace(); return; }
+    if (/^[0-9.]$/.test(e.key)) digit(e.key);
+  }
+
+  // ── Save ──────────────────────────────────────────────────────────────────────
 
   async function save() {
     attempted = true;
-    if (hasErrors) return;
+    if (errors.category && !errors.amount) panel = 'category'; // guide user
+    if (hasErrors || saving) return;
     saving = true;
     const num = parseFloat(amount);
     const tx  = app.editingTx;
-    if (tx) {
-      await updateTransaction(tx.id, { amount: num, categoryId: selectedCat, note, paymentMode, date, type });
-    } else {
-      await addTransaction({ amount: num, categoryId: selectedCat, note, paymentMode, date, type });
+    try {
+      if (tx) {
+        await updateTransaction(tx.id, { amount: num, categoryId: selectedCat, note: note.trim(), paymentMode, date, type });
+      } else {
+        await addTransaction({ amount: num, categoryId: selectedCat, note: note.trim(), paymentMode, date, type });
+      }
+      await Promise.all([app.refreshTransactions(), app.refreshBudgets()]);
+      saved = true;
+      const label = tx ? 'Transaction updated' : type === 'income' ? 'Income saved' : 'Expense saved';
+      setTimeout(() => { close(); toast.show(label); }, 500);
+    } catch {
+      saving = false;
+      toast.show('Could not save — please try again.');
     }
-    await Promise.all([app.refreshTransactions(), app.refreshBudgets()]);
-    saving = false;
-    saved  = true;
-    const label = app.editingTx ? 'Transaction updated' : `${type === 'income' ? 'Income' : 'Expense'} saved`;
-    setTimeout(() => {
-      close();
-      toast.show(label);
-    }, 500);
   }
 
   function close() {
+    if (saving && !saved) return; // block close mid-save
     app.showQuickAdd = false;
     app.editingTx   = null;
   }
-
-  const numpad = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 {#if app.showQuickAdd}
+
+  <!-- Backdrop -->
   <div transition:fade={{ duration: 180 }}
-       class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onclick={close} role="presentation"></div>
+       class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+       onclick={close} role="presentation"></div>
 
-  <div in:fly={{ y: 420, duration: 280, easing: cubicOut }}
-       out:fly={{ y: 420, duration: 220, easing: cubicIn }}
-       class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50
-              bg-[var(--color-surface)] rounded-t-3xl flex flex-col"
-       style="max-height: 95dvh;">
+  <!-- Sheet / Modal -->
+  <div in:fly={{ y: 480, duration: 300, easing: cubicOut }}
+       out:fly={{ y: 480, duration: 220, easing: cubicIn }}
+       class="fixed z-50 bg-[var(--color-surface)]
+              bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] rounded-t-3xl
+              md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:max-w-[660px] md:rounded-3xl md:overflow-hidden
+              flex flex-col md:flex-row"
+       style="max-height:95dvh">
 
-    <!-- Scrollable content area -->
-    <div class="flex-1 overflow-y-auto overscroll-contain">
+    <!-- ═══ LEFT COLUMN: amount + numpad + save ════════════════════════════════ -->
+    <div class="flex flex-col shrink-0 md:w-[240px] md:border-r md:border-[var(--color-border)]/40">
 
-      <!-- Handle + Header -->
-      <div class="flex items-center justify-between px-5 pt-4 pb-2">
-        <div class="w-10 h-1 rounded-full bg-[var(--color-border)] mx-auto absolute left-1/2 -translate-x-1/2 top-3"></div>
-        <h2 class="text-base font-semibold mt-2">
-          {isEditing ? 'Edit' : 'Add'} {type === 'income' ? 'Income' : 'Expense'}
-        </h2>
-        <button onclick={close} class="p-1 text-[var(--color-text-muted)]"><X size={20}/></button>
+      <!-- Drag handle (mobile only) -->
+      <div class="md:hidden flex justify-center pt-2.5 pb-0 shrink-0">
+        <div class="w-10 h-1 rounded-full bg-[var(--color-border)]"></div>
       </div>
 
-      <!-- Type toggle -->
-      <div class="flex mx-5 mb-3 bg-[var(--color-surface-2)] rounded-xl p-1">
+      <!-- Top bar -->
+      <div class="flex items-center justify-between px-5 pt-3 pb-2 shrink-0">
+        <h2 class="text-sm font-semibold text-[var(--color-text-muted)]">
+          {isEditing ? 'Edit' : 'Add'} Transaction
+        </h2>
+        <button onclick={close}
+                class="p-1 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+          <X size={18} />
+        </button>
+      </div>
+
+      <!-- Type toggle (mobile: here; desktop: in right column) -->
+      <div class="md:hidden flex mx-4 mb-2 bg-[var(--color-surface-2)] rounded-xl p-1 shrink-0">
         {#each (['expense', 'income'] as TransactionType[]) as t}
           <button onclick={() => type = t}
-                  class="flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150
+                  class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150
                          {type === t
                            ? t === 'expense'
                              ? 'bg-[var(--color-expense)] text-white shadow'
@@ -132,142 +196,260 @@
       </div>
 
       <!-- Amount display -->
-      <div class="px-5 mb-1">
-        <div class="text-center">
-          <span class="text-5xl font-bold tracking-tight
-                       {attempted && errors.amount ? 'text-[var(--color-expense)]' : 'text-[var(--color-text)]'}">
-            ₹{amount || '0'}
-          </span>
+      <div class="px-5 pb-2 text-center shrink-0">
+        <div class="text-5xl font-bold tracking-tight tabular-nums leading-none
+                    {attempted && errors.amount ? 'text-[var(--color-expense)]' : 'text-[var(--color-text)]'}">
+          ₹{amount || '0'}
         </div>
         {#if attempted && errors.amount}
-          <p class="text-xs text-[var(--color-expense)] text-center mt-1 flex items-center justify-center gap-1">
-            <AlertCircle size={11} /> {errors.amount}
+          <p class="text-xs text-[var(--color-expense)] mt-1.5 flex items-center justify-center gap-1">
+            <AlertCircle size={11} />{errors.amount}
           </p>
         {/if}
       </div>
 
-      <!-- Category grid -->
-      <div class="px-5 mb-3 mt-3">
-        <div class="flex items-center justify-between mb-2">
-          <p class="text-xs text-[var(--color-text-muted)] font-medium uppercase tracking-wide">Category</p>
-          {#if attempted && errors.category}
-            <p class="text-xs text-[var(--color-expense)] flex items-center gap-1">
-              <AlertCircle size={11} /> Pick one
-            </p>
-          {/if}
-        </div>
-        <div class="grid grid-cols-4 gap-2
-                    {attempted && errors.category ? 'rounded-xl ring-1 ring-[var(--color-expense)] p-1' : ''}">
-          {#each app.categories.slice(0, 8) as cat}
-            <button onclick={() => selectedCat = cat.id}
-                    class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100 active:scale-95
-                           {selectedCat === cat.id
-                             ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                             : 'border-[var(--color-border)] bg-[var(--color-surface-2)]'}">
-              <span class="text-xl">{cat.icon}</span>
-              <span class="text-[10px] text-center leading-tight text-[var(--color-text-muted)] line-clamp-1">{cat.name}</span>
-            </button>
-          {/each}
-        </div>
-        {#if app.categories.length > 8}
-          <div class="grid grid-cols-4 gap-2 mt-2">
-            {#each app.categories.slice(8) as cat}
-              <button onclick={() => selectedCat = cat.id}
-                      class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all duration-100 active:scale-95
-                             {selectedCat === cat.id
-                               ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
-                               : 'border-[var(--color-border)] bg-[var(--color-surface-2)]'}">
-                <span class="text-xl">{cat.icon}</span>
-                <span class="text-[10px] text-center leading-tight text-[var(--color-text-muted)] line-clamp-1">{cat.name}</span>
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
+      <!-- Pills (mobile only) -->
+      <div class="md:hidden flex gap-1.5 px-4 mb-2 shrink-0">
 
-      <!-- Date chips -->
-      <div class="px-5 mb-3">
-        <DateChips bind:value={date} />
-      </div>
-
-      <!-- Note + payment mode: collapsible in add mode, always shown in edit mode -->
-      {#if isEditing}
-        <div class="px-5 mb-3 space-y-3">
-          <input bind:value={note} placeholder="Note (optional)" maxlength={100}
-                 class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                        px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                        focus:outline-none focus:border-[var(--color-primary)]" />
-          <div class="grid grid-cols-4 gap-2">
-            {#each paymentModes as pm}
-              <button onclick={() => paymentMode = pm.value}
-                      class="py-2 rounded-xl text-xs font-medium border transition-all
-                             {paymentMode === pm.value
-                               ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                               : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface-2)]'}">
-                {pm.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-      {:else}
-        <button onclick={() => expanded = !expanded}
-                class="flex items-center gap-1 mx-5 mb-2 text-xs text-[var(--color-text-muted)]">
-          {#if expanded}<ChevronUp size={14}/>{:else}<ChevronDown size={14}/>{/if}
-          {expanded ? 'Less details' : 'Add note & payment mode'}
+        <!-- Category pill -->
+        <button onclick={() => panel = 'category'}
+                class="flex-1 flex items-center justify-between gap-1 px-3 py-2 rounded-xl text-xs font-medium
+                       truncate transition-all active:scale-95
+                       {panel === 'category'
+                         ? 'bg-[var(--color-primary)] text-white'
+                         : attempted && errors.category
+                           ? 'bg-[var(--color-expense)]/10 text-[var(--color-expense)] ring-1 ring-[var(--color-expense)]'
+                           : selectedCat
+                             ? 'bg-[var(--color-primary)]/12 text-[var(--color-primary)]'
+                             : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+          <span class="truncate">{catLabel}</span>
+          <ChevronDown size={11} class="shrink-0 opacity-60" />
         </button>
-        {#if expanded}
-          <div class="px-5 mb-3 space-y-3 animate-fade-in">
-            <input bind:value={note} placeholder="Note (optional)" maxlength={100}
-                   class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                          px-4 py-3 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
-                          focus:outline-none focus:border-[var(--color-primary)]" />
-            <div class="grid grid-cols-4 gap-2">
-              {#each paymentModes as pm}
-                <button onclick={() => paymentMode = pm.value}
-                        class="py-2 rounded-xl text-xs font-medium border transition-all
-                               {paymentMode === pm.value
-                                 ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                 : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface-2)]'}">
-                  {pm.label}
+
+        <!-- Date pill -->
+        <button onclick={() => panel = 'date'}
+                class="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium
+                       transition-all active:scale-95 shrink-0
+                       {panel === 'date'
+                         ? 'bg-[var(--color-primary)] text-white'
+                         : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+          {dateLabel}
+          <ChevronDown size={11} class="opacity-60" />
+        </button>
+
+        <!-- Details pill -->
+        <button onclick={() => panel = 'details'}
+                class="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium
+                       transition-all active:scale-95 shrink-0
+                       {panel === 'details'
+                         ? 'bg-[var(--color-primary)] text-white'
+                         : note.trim()
+                           ? 'bg-[var(--color-primary)]/12 text-[var(--color-primary)]'
+                           : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+          {detailsLabel}
+          <ChevronDown size={11} class="opacity-60" />
+        </button>
+
+      </div>
+
+      <!-- ── Mobile swap panel ─────────────────────────────────────────────── -->
+      <div class="md:hidden h-[178px] overflow-y-auto overscroll-contain px-4 mb-1 shrink-0">
+
+        {#if panel === 'category'}
+          {#if app.categories.length === 0}
+            <div class="flex flex-col items-center justify-center h-full gap-2 text-center">
+              <p class="text-sm text-[var(--color-text-muted)]">No categories yet.</p>
+              <a href="/categories" onclick={close}
+                 class="text-xs text-[var(--color-primary)] underline underline-offset-2">
+                Add in Settings
+              </a>
+            </div>
+          {:else}
+            <div class="grid grid-cols-4 gap-2 pb-1">
+              {#each app.categories as cat (cat.id)}
+                <button onclick={() => selectedCat = cat.id}
+                        class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all active:scale-95
+                               {selectedCat === cat.id
+                                 ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                                 : 'border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+                  <span class="text-xl leading-none">{cat.icon}</span>
+                  <span class="text-[9px] leading-tight line-clamp-1 text-center">{cat.name}</span>
                 </button>
               {/each}
             </div>
+          {/if}
+
+        {:else if panel === 'date'}
+          <div class="pt-2">
+            <DateChips bind:value={date} />
+          </div>
+
+        {:else}
+          <!-- Details: payment mode + note -->
+          <div class="pt-2 space-y-3">
+            <div class="grid grid-cols-4 gap-2">
+              {#each MODES as m}
+                <button onclick={() => paymentMode = m.value}
+                        class="py-2.5 rounded-xl text-xs font-medium border transition-all active:scale-95
+                               {paymentMode === m.value
+                                 ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                                 : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface-2)]'}">
+                  {m.label}
+                </button>
+              {/each}
+            </div>
+            <div class="relative">
+              <input bind:value={note} placeholder="Note (optional)" maxlength={100}
+                     class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
+                            px-3 py-2.5 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
+                            focus:outline-none focus:border-[var(--color-primary)]
+                            {note.length > 80 ? 'pr-10' : ''}" />
+              {#if note.length > 80}
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--color-text-muted)]
+                             pointer-events-none">
+                  {100 - note.length}
+                </span>
+              {/if}
+            </div>
           </div>
         {/if}
-      {/if}
+
+      </div>
 
       <!-- Numpad -->
-      <div class="grid grid-cols-3 gap-1 px-5 mb-3">
-        {#each numpad as key}
-          <button onclick={() => key === '⌫' ? backspace() : appendDigit(key)}
-                  class="py-4 rounded-xl text-lg font-semibold transition-all active:scale-95
+      <div class="grid grid-cols-3 gap-1.5 px-4 mb-2 shrink-0">
+        {#each NUMPAD as key}
+          <button onclick={() => key === '⌫' ? backspace() : digit(key)}
+                  class="py-3.5 rounded-xl text-lg font-semibold select-none
+                         transition-all duration-75 active:scale-95 active:brightness-90
                          {key === '⌫'
-                           ? 'text-[var(--color-text-muted)] bg-[var(--color-surface-2)]'
-                           : 'text-[var(--color-text)] bg-[var(--color-surface-2)] hover:bg-[var(--color-surface-3)]'}">
+                           ? 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                           : 'bg-[var(--color-surface-2)] text-[var(--color-text)]'}">
             {key}
           </button>
         {/each}
       </div>
 
-    </div><!-- end scrollable -->
+      <!-- Save -->
+      <div class="px-4 pb-6 md:pb-4 shrink-0">
+        <button onclick={save} disabled={saving}
+                class="w-full py-4 rounded-2xl font-bold text-sm transition-all duration-200
+                       flex items-center justify-center gap-1.5 disabled:opacity-60
+                       {saved
+                         ? 'bg-[var(--color-income)] text-white'
+                         : 'bg-[var(--color-primary)] text-white active:scale-[0.98]'}">
+          {#if saved}
+            <Check size={18} /> Saved!
+          {:else if saving}
+            Saving…
+          {:else}
+            <span>{isEditing ? 'Update' : type === 'income' ? 'Save Income' : 'Save Expense'}</span>
+            {#if amountDisplay}
+              <span class="opacity-60 font-normal text-xs">{amountDisplay}</span>
+            {/if}
+          {/if}
+        </button>
+      </div>
 
-    <!-- Sticky save button — always visible at the bottom (Fitts's Law) -->
-    <div class="px-5 pt-2 pb-6 bg-[var(--color-surface)] border-t border-[var(--color-border)]/40 shrink-0">
-      <button onclick={save} disabled={saving}
-              class="w-full py-4 rounded-2xl font-bold text-base transition-all duration-200
-                     flex items-center justify-center gap-2
-                     {saved
-                       ? 'bg-[var(--color-income)] text-white'
-                       : 'bg-[var(--color-primary)] text-white active:scale-[0.98]'}">
-        {#if saved}
-          <Check size={20} class="animate-pop" /> Saved!
-        {:else if saving}
-          Saving…
-        {:else}
-          {isEditing ? 'Update' : 'Save'} {type === 'income' ? 'Income' : 'Expense'}
-        {/if}
-      </button>
-    </div>
+    </div><!-- end left column -->
+
+
+    <!-- ═══ RIGHT COLUMN: desktop panels (hidden on mobile) ═══════════════════ -->
+    <div class="hidden md:flex flex-col flex-1 min-w-0 overflow-hidden">
+
+      <!-- Type toggle -->
+      <div class="px-5 pt-4 pb-3 border-b border-[var(--color-border)]/40 shrink-0">
+        <div class="flex bg-[var(--color-surface-2)] rounded-xl p-1">
+          {#each (['expense', 'income'] as TransactionType[]) as t}
+            <button onclick={() => type = t}
+                    class="flex-1 py-2 rounded-lg text-sm font-semibold transition-all duration-150
+                           {type === t
+                             ? t === 'expense'
+                               ? 'bg-[var(--color-expense)] text-white shadow'
+                               : 'bg-[var(--color-income)] text-white shadow'
+                             : 'text-[var(--color-text-muted)]'}">
+              {t === 'expense' ? '− Expense' : '+ Income'}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!-- Scrollable panels -->
+      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+        <!-- Category -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Category
+            </p>
+            {#if attempted && errors.category}
+              <p class="text-xs text-[var(--color-expense)] flex items-center gap-1">
+                <AlertCircle size={10} /> Required
+              </p>
+            {/if}
+          </div>
+          {#if app.categories.length === 0}
+            <p class="text-sm text-[var(--color-text-muted)]">
+              No categories.
+              <a href="/categories" onclick={close}
+                 class="text-[var(--color-primary)] underline underline-offset-2">Add one</a>
+            </p>
+          {:else}
+            <div class="grid grid-cols-5 gap-2">
+              {#each app.categories as cat (cat.id)}
+                <button onclick={() => selectedCat = cat.id}
+                        class="flex flex-col items-center gap-1 p-2 rounded-xl border transition-all active:scale-95
+                               {selectedCat === cat.id
+                                 ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10'
+                                 : 'border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
+                  <span class="text-lg leading-none">{cat.icon}</span>
+                  <span class="text-[9px] leading-tight line-clamp-1 text-center">{cat.name}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Date -->
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">Date</p>
+          <DateChips bind:value={date} />
+        </div>
+
+        <!-- Payment + Note -->
+        <div>
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+            Payment &amp; Note
+          </p>
+          <div class="grid grid-cols-4 gap-2 mb-3">
+            {#each MODES as m}
+              <button onclick={() => paymentMode = m.value}
+                      class="py-2.5 rounded-xl text-xs font-medium border transition-all active:scale-95
+                             {paymentMode === m.value
+                               ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                               : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface-2)]'}">
+                {m.label}
+              </button>
+            {/each}
+          </div>
+          <div class="relative">
+            <input bind:value={note} placeholder="Note (optional)" maxlength={100}
+                   class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
+                          px-3 py-2.5 text-sm text-[var(--color-text)] placeholder-[var(--color-text-muted)]
+                          focus:outline-none focus:border-[var(--color-primary)]
+                          {note.length > 80 ? 'pr-10' : ''}" />
+            {#if note.length > 80}
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[var(--color-text-muted)]
+                           pointer-events-none">
+                {100 - note.length}
+              </span>
+            {/if}
+          </div>
+        </div>
+
+      </div>
+    </div><!-- end right column -->
 
   </div>
 {/if}
