@@ -22,7 +22,7 @@
 
 | Route | What it does |
 |---|---|
-| `/` | **Dashboard**: Month Health Card, insights strip, weekly spend list, budget overview, upcoming EMIs, lent money card, recent transactions |
+| `/` | **Dashboard**: Month Health Card, Insights Strip, weekly spend chart, budget overview, upcoming EMIs, lent money card, recent transactions, contextual month-end and new-month banners |
 | `/transactions` | Browse, edit, and delete all transactions grouped by day with month navigation |
 | `/budgets` | Per-category budgets with progress bars, rings, and pace warnings. Auto-rolled over each new month |
 | `/emis` | EMI tracker with loan progress, due-date countdown, and paid/remaining breakdown |
@@ -30,8 +30,8 @@
 | `/reports` | Monthly donut chart, category breakdown bars, calendar heatmap for daily spend. Navigate any past month |
 | `/lent` | Lent money tracker: log amounts lent, record partial repayments, track outstanding balance per person |
 | `/wrapped` | Spending DNA with yearly or monthly stats, biggest transaction, favourite payment mode, spending personality |
-| `/settings` | Monthly income, theme toggle, CSV export, data reset |
-| `/categories` | Manage categories: add, rename, change icon/color, hide or show |
+| `/settings` | Monthly income, Categories link, Dashboard Banner toggles, CSV export, data reset |
+| `/categories` | Manage categories: add new, inline rename/edit (icon, colour, name), hide or show |
 
 ---
 
@@ -44,6 +44,7 @@ The hero element on the dashboard answers "how am I tracking this month?" at a g
 - **Left to spend**: how much you have remaining
 - **Month-end pace**: projects your end-of-month total based on your current daily burn rate, with a warning triangle when you are over-pacing
 - **Today**: labelled Spent and Earned chips so today's activity is always visible
+- **Month-end nudge** (last 3 days): card gains an amber accent stripe, the days-left pill turns amber, and a "Full recap →" link to Reports appears — no duplicate numbers, just a visual cue
 
 ### Insights Strip
 Auto-computed insights shown below the Month Health Card. No guesswork, pure arithmetic on your transaction data:
@@ -53,23 +54,37 @@ Auto-computed insights shown below the Month Health Card. No guesswork, pure ari
 - Hidden automatically when there is nothing worth surfacing
 
 ### Quick Add
-Tap the **+** button anywhere to open the bottom sheet:
-- Numpad for fast amount entry
-- Category grid (tap once to select)
-- Expense / Income toggle
-- Collapsible details: note, payment mode (UPI / Cash / Card / Net), date
-- Animated checkmark on save
+Tap the **+** button anywhere to open the transaction sheet:
+
+**Mobile (bottom sheet):**
+- Swipe-down drag handle to dismiss
+- Type toggle (Expense / Income) always visible at the top
+- Large numpad for fast amount entry — numpad never moves regardless of panel open
+- Three context pills: **Category**, **Date**, **Details** — tap any pill to swap the active panel below
+- **Category panel**: emoji grid of all active categories, scrollable; empty state links to /categories
+- **Date panel**: horizontal chip strip (Today / Yesterday / day abbreviations / Older); selecting "Older" opens the OS native date picker; selected date shown as a large formatted card below the chips
+- **Details panel**: UPI / Cash / Card / Net buttons + optional note field (100-char limit with countdown)
+- Save button always anchored at the bottom, shows `· ₹3,500` confirmation when a valid amount is entered
+- Keyboard shortcuts on desktop: digits type amount, Backspace deletes, Enter saves, Escape closes
+
+**Desktop (centred modal, 700 px wide):**
+- Left column: amount display + numpad
+- Right column: all panels (category grid, date chips, payment & note) always visible and scrollable — no pill-switching needed
+- Full-width type toggle header and save button footer
+
+### New Month Welcome Card
+On days 1–3 of a new month, a card appears above the Month Health Card showing the previous month's summary: total spent, savings (if income was logged), top spending category, and transaction count, with a link to the full report. Dismissed per month; can be disabled in Settings.
 
 ### Interactive Charts
 All charts support hover on desktop and tap-to-pin on mobile:
-- **Weekly Spend List**: day-by-day breakdown for the selected week. Each row shows the day, category icons of what you bought, and the total. Navigate back through previous weeks with arrow buttons. Days with no spend show a dash.
-- **Month Donut**: category spend breakdown. Tap a segment to see the name, amount, and percentage in the donut hole. Tap again to reveal the last 8 transactions for that category inline below the chart.
-- **Daily Spend Heatmap** (Reports): a full-month calendar grid coloured by spend intensity. Green for light days, orange for above average, red for the heaviest days. Tap any cell for the exact amount and context.
+- **Weekly Spend Chart**: day-by-day breakdown for the selected week. Each bar shows the total; navigate back through previous weeks with arrow buttons
+- **Month Donut**: category spend breakdown (Reports). Tap a segment to see the name, amount, and percentage; tap again to reveal the last 8 transactions for that category inline
+- **Daily Spend Heatmap** (Reports): a full-month calendar grid coloured by spend intensity — green for light days, orange for above average, red for the heaviest. Tap any cell for the exact amount
 
 ### Budgets
 - Set a monthly budget per category
-- Progress bars colour-coded: green (safe), orange (80%+), red (over)
-- **Pace warning** on each card: "On track at Rs X/day", "Runs out in ~3 days", or "Over by X%"
+- Progress bars colour-coded: green (safe), orange (80 %+), red (over)
+- **Pace warning** on each card: "On track at ₹X/day", "Runs out in ~3 days", or "Over by X %"
 - **Auto-rollover**: if no budgets exist for the new month, last month's budgets are copied automatically on app start
 
 ### EMI and Subscription Tracker
@@ -82,6 +97,12 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - Record partial or full repayments over time
 - See total lent, total recovered, and outstanding balance at a glance
 - Dashboard card shows outstanding count and amount when someone still owes you
+
+### Categories
+- Add new categories with a custom emoji icon and colour
+- Inline rename/edit: tap the pencil icon on any active category to expand a form — change name, icon, colour — with live preview and duplicate-name validation
+- Hide categories to remove them from Quick Add without deleting history
+- Show hidden categories to restore them
 
 ### Reports
 - Navigate any past month with left and right arrows
@@ -97,6 +118,13 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - Favourite payment mode
 - Spending personality: The Saver, The Foodie, The Commuter, The Explorer, The Shopaholic, The Self-Care Guru, or The Balanced One
 
+### Settings
+- **Monthly Income**: set income to power the health card progress bar and savings calculations
+- **Categories**: shortcut to the Categories management page
+- **Dashboard Banners**: toggle the month-end nudge and new-month welcome card independently
+- **Export as CSV**: download all transactions as a UTF-8 CSV file
+- **Reset All Data**: wipe all transactions, budgets, EMIs, lends, and settings (with confirmation); default categories are re-seeded
+
 ### Sync and Offline
 - All data lives in **IndexedDB** (Dexie.js) for instant reads and writes that work offline
 - Every write syncs to **Firebase Firestore** in the background, silently
@@ -107,12 +135,12 @@ All charts support hover on desktop and tap-to-pin on mobile:
 
 ## Default Categories
 
-Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings.
+Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings → Categories.
 
 | Icon | Category | Icon | Category |
 |---|---|---|---|
 | 🏠 | PG Rent | 💆 | Personal Care |
-| 🍽️ | Food and Dining | 🎬 | Entertainment |
+| 🍽️ | Food & Dining | 🎬 | Entertainment |
 | 🛒 | Groceries | 🛍️ | Shopping |
 | 🚗 | Transport | 📦 | Moving/Setup |
 | 📱 | Recharge | ⚡ | Electricity |
@@ -127,13 +155,13 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings.
 | Law | Applied as |
 |---|---|
 | **Fitts's Law** | Large FAB at bottom-centre for easy thumb reach. Hero spend number is the biggest element on the page |
-| **Hick's Law** | Quick Add shows only amount and category. Note, date, and payment mode are hidden behind an expand toggle |
-| **Miller's Law** | Max 8 categories visible in the picker grid at once |
-| **Jakob's Law** | Familiar bottom-nav pattern, card-based layouts, standard sheet interactions |
-| **Progressive Disclosure** | Month Health Card reveals: hero, bar, stats, today strip, each with a staggered fly-in |
-| **Von Restorff Effect** | Warning triangle only appears when you are genuinely over-pacing, never for decoration |
+| **Hick's Law** | Quick Add shows amount and three context pills; all fields accessible but secondary ones are behind a tap |
+| **Miller's Law** | Category grid limited to a scrollable panel; 4 columns on mobile, 5 on desktop |
+| **Jakob's Law** | Familiar bottom-nav pattern, card-based layouts, standard sheet interactions, iOS-style toggle switches |
+| **Progressive Disclosure** | Month Health Card reveals: hero, bar, stats, today strip, each with a staggered fly-in; Quick Add details behind Details pill |
+| **Von Restorff Effect** | Warning triangle only appears when you are genuinely over-pacing, never for decoration; amber pill only in last 3 days |
 | **Zeigarnik Effect** | Budget bars are always incomplete, keeping spending awareness active |
-| **Peak-End Rule** | Green checkmark animation plays when an expense is saved |
+| **Peak-End Rule** | Green checkmark animation plays when a transaction is saved |
 | **Gestalt Similarity** | Category colours are consistent across every page, chart, and tooltip |
 
 ---
@@ -144,11 +172,13 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings.
 |---|---|
 | Framework | Svelte 5 (Runes: `$state`, `$derived`, `$effect`) |
 | Meta-framework | SvelteKit 2.x |
-| Language | TypeScript |
+| Language | TypeScript 5.x |
 | Styling | Tailwind CSS 4.x |
 | Icons | @lucide/svelte |
-| Local storage | Dexie.js (IndexedDB) |
-| Cloud sync | Firebase Firestore |
+| Charts | layerchart |
+| Local storage | Dexie.js 4.x (IndexedDB) |
+| Cloud sync | Firebase Firestore 12.x |
+| Analytics | Vercel Analytics + Speed Insights |
 | Deployment | Vercel (adapter-auto) |
 
 ---
@@ -210,7 +240,7 @@ transactions  ->  id, type, amount, categoryId, note, paymentMode, date, created
 categories    ->  id, name, icon, color, sortOrder, isActive
 budgets       ->  id, categoryId, amount, month (YYYY-MM)
 emis          ->  id, type, name, principal, monthlyAmount, startDate, totalMonths, paidMonths, nextDueDate, categoryId, notes
-lends         ->  id, personName, amount, date, note, repayments (array), createdAt
+lends         ->  id, personName, amount, date, note, repayments (array of { id, amount, date }), createdAt
 settings      ->  key, value
 ```
 
