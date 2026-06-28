@@ -1,5 +1,6 @@
 <script lang="ts">
   import { X, ChevronDown, ChevronUp, Check, AlertCircle } from '@lucide/svelte';
+  import DateChips from '$lib/components/DateChips.svelte';
   import { addTransaction, updateTransaction } from '$lib/db/queries';
   import { app } from '$lib/stores/app.svelte';
   import { toast } from '$lib/stores/toast.svelte';
@@ -184,12 +185,9 @@
         {/if}
       </div>
 
-      <!-- Date — always visible so backdating is never hidden -->
+      <!-- Date chips -->
       <div class="px-5 mb-3">
-        <input type="date" bind:value={date}
-               class="w-full bg-[var(--color-surface-2)] border border-[var(--color-border)] rounded-xl
-                      px-4 py-3 text-sm text-[var(--color-text)]
-                      focus:outline-none focus:border-[var(--color-primary)]" />
+        <DateChips bind:value={date} />
       </div>
 
       <!-- Note + payment mode: collapsible in add mode, always shown in edit mode -->
