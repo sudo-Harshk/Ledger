@@ -8,6 +8,8 @@
   import NewMonthWelcome from '$lib/components/NewMonthWelcome.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
+  import { onMount } from 'svelte';
+  import { getSetting } from '$lib/db/queries';
 
   const todayStr  = today();
 
@@ -85,6 +87,12 @@
     return () => cancelAnimationFrame(id);
   });
 
+  let monthEndBannerEnabled = $state(true); // default on until DB says otherwise
+  onMount(async () => {
+    const val = await getSetting('banner_month_end');
+    if (val === 'false') monthEndBannerEnabled = false;
+  });
+
   // ── Weekly stats ─────────────────────────────────────────────────────────
   const dailyBudget   = $derived(totalBudget > 0 ? totalBudget / daysInMonth(app.monthStr) : 0);
   const weekTotal     = $derived(weekData.reduce((s, d) => s + d.total, 0));
@@ -141,8 +149,8 @@
            ═══════════════════════════════════════════════════════════════════ -->
       <div class="bg-[var(--color-surface)] rounded-2xl overflow-hidden">
 
-        <!-- Month-end accent stripe — only last 3 days -->
-        {#if daysLeft <= 2}
+        <!-- Month-end accent stripe — only last 3 days, only if banner enabled -->
+        {#if daysLeft <= 2 && monthEndBannerEnabled}
           <div class="h-0.5 bg-gradient-to-r from-[var(--color-warning)] via-[var(--color-warning)]/40 to-transparent"></div>
         {/if}
 
@@ -154,7 +162,7 @@
             {monthLabel(app.monthStr)}
           </p>
           <span class="text-xs font-medium px-2.5 py-1 rounded-full transition-colors
-                       {daysLeft <= 2
+                       {daysLeft <= 2 && monthEndBannerEnabled
                          ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'
                          : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}">
             {daysLeft === 0 ? 'Last day!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`}
@@ -264,8 +272,8 @@
           </div>
         {/if}
 
-        <!-- Month-end CTA — only last 3 days, no duplicate stats, just a link -->
-        {#if daysLeft <= 2}
+        <!-- Month-end CTA — only last 3 days and only if setting is on -->
+        {#if daysLeft <= 2 && monthEndBannerEnabled}
           <div class="mt-4 pt-3 border-t border-[var(--color-warning)]/20 flex items-center justify-between"
                in:fly={{ y: 6, duration: 200, delay: 300, easing: cubicOut }}>
             <p class="text-xs text-[var(--color-warning)]">
