@@ -373,7 +373,10 @@
         <div class="bg-[var(--color-surface)] rounded-2xl p-5">
           <div class="flex items-center justify-between mb-3">
             <p class="text-sm font-semibold">Upcoming</p>
-            <a href="/emis" class="text-xs text-[var(--color-primary)]">See all</a>
+            <div class="flex items-center gap-3">
+              <a href="/emis" class="text-xs text-[var(--color-primary)]">EMIs</a>
+              <a href="/subscriptions" class="text-xs text-[var(--color-primary)]">Subscriptions</a>
+            </div>
           </div>
           <div class="space-y-2">
             {#each upcoming as emi}
