@@ -205,10 +205,21 @@
           </div>
         {/if}
 
-        <!-- Two-stat row: Left to spend + On-pace projection -->
-        <!-- Staggered fly-in (Progressive Disclosure — context after the hero) -->
-        <div class="grid grid-cols-2 gap-3"
+        <!-- Stats row — 3-col when income logged, 2-col otherwise -->
+        <div class="{app.monthIncome > 0 ? 'grid-cols-3' : 'grid-cols-2'} grid gap-3"
              in:fly={{ y: 10, duration: 240, delay: 180, easing: cubicOut }}>
+
+          <!-- Earned (only when income transactions exist this month) -->
+          {#if app.monthIncome > 0}
+            <div class="bg-[var(--color-income)]/8 rounded-xl px-3 py-2.5">
+              <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
+                Earned
+              </p>
+              <p class="text-sm font-bold leading-none text-[var(--color-income)]">
+                {formatINR(app.monthIncome)}
+              </p>
+            </div>
+          {/if}
 
           <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
             <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
