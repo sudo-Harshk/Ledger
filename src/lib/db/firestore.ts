@@ -4,6 +4,7 @@ import {
   setDoc,
   deleteDoc as fsDeleteDoc,
   getDocs,
+  onSnapshot,
 } from 'firebase/firestore';
 import { firestore } from './firebase';
 import { db } from './schema';
@@ -45,6 +46,36 @@ export async function clearFirestoreCollection(col: CollectionName): Promise<voi
   } catch {
     // silent
   }
+}
+
+export function subscribeToFirestore(onUpdate: () => void): () => void {
+  if (!configured()) return () => {};
+
+  function watch<T>(col: CollectionName, table: { bulkPut: (rows: T[]) => Promise<any>; bulkDelete: (ids: string[]) => Promise<any> }) {
+    return onSnapshot(collection(firestore, col), snap => {
+      const toUpsert = snap.docChanges()
+        .filter(c => c.type !== 'removed')
+        .map(c => c.doc.data() as T);
+      const toDelete = snap.docChanges()
+        .filter(c => c.type === 'removed')
+        .map(c => c.doc.id);
+      Promise.all([
+        toUpsert.length > 0 ? table.bulkPut(toUpsert) : Promise.resolve(),
+        toDelete.length > 0 ? table.bulkDelete(toDelete) : Promise.resolve(),
+      ]).then(onUpdate).catch(() => {});
+    }, () => {}); // silent error handler (offline / permission)
+  }
+
+  const unsubs = [
+    watch<Transaction>('transactions', db.transactions),
+    watch<Category>('categories',     db.categories),
+    watch<Budget>('budgets',          db.budgets),
+    watch<Emi>('emis',                db.emis),
+    watch<Setting>('settings',        db.settings),
+    watch<Lend>('lends',              db.lends),
+  ];
+
+  return () => unsubs.forEach(u => u());
 }
 
 export async function pullFromFirestore(): Promise<void> {
