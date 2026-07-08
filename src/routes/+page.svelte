@@ -45,13 +45,15 @@
   );
 
   // ── Month Health Card ──────────────────────────────────────────────────────
-  // Reference = income if set, else total budget, else 0 (bar hidden)
+  // Reference = settings income → logged income → budget → 0 (bar hidden)
   const reference = $derived(
     app.monthlyIncome > 0 ? app.monthlyIncome :
+    app.monthIncome > 0   ? app.monthIncome   :
     totalBudget > 0       ? totalBudget        : 0
   );
   const refLabel = $derived(
     app.monthlyIncome > 0 ? `${formatINR(app.monthlyIncome)} income` :
+    app.monthIncome > 0   ? `${formatINR(app.monthIncome)} income`   :
     totalBudget > 0       ? `${formatINR(totalBudget)} budget`        : ''
   );
 
