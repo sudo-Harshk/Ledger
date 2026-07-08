@@ -39,18 +39,15 @@
       .sort((a, b) => a.date.localeCompare(b.date));
   })());
 
-  let loading = $state(false);
-
   // ── Historical months: query DB when month changes ────────────────────────
   $effect(() => {
     const m = month;
-    if (m === currentMonth()) { loading = false; return; }
-    loading = true;
+    if (m === currentMonth()) return;
     Promise.all([
       getMonthSummary(m),
       getCategorySpend(m),
       getDailySpend(m),
-    ]).then(([s, c, d]) => { histSummary = s; histCatSpend = c; histDaily = d; loading = false; });
+    ]).then(([s, c, d]) => { histSummary = s; histCatSpend = c; histDaily = d; });
   });
 
   const summary  = $derived(isCurrentMonth ? liveSummary  : histSummary);
@@ -78,29 +75,20 @@
 
   <!-- Summary stats -->
   <div class="grid grid-cols-3 gap-3 mb-5">
-    {#if loading}
-      {#each [0,1,2] as _}
-        <div class="bg-[var(--color-surface)] rounded-2xl p-4 space-y-2">
-          <div class="h-2.5 w-10 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-          <div class="h-4 w-16 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-        </div>
-      {/each}
-    {:else}
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4">
-        <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Income</p>
-        <p class="font-bold text-[var(--color-income)] text-sm">{formatINR(summary.income)}</p>
-      </div>
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4">
-        <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Expense</p>
-        <p class="font-bold text-[var(--color-expense)] text-sm">{formatINR(summary.expense)}</p>
-      </div>
-      <div class="bg-[var(--color-surface)] rounded-2xl p-4">
-        <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Net</p>
-        <p class="font-bold text-sm {summary.net >= 0 ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'}">
-          {summary.net >= 0 ? '+' : ''}{formatINR(summary.net)}
-        </p>
-      </div>
-    {/if}
+    <div class="bg-[var(--color-surface)] rounded-2xl p-4">
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Income</p>
+      <p class="font-bold text-[var(--color-income)] text-sm">{formatINR(summary.income)}</p>
+    </div>
+    <div class="bg-[var(--color-surface)] rounded-2xl p-4">
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Expense</p>
+      <p class="font-bold text-[var(--color-expense)] text-sm">{formatINR(summary.expense)}</p>
+    </div>
+    <div class="bg-[var(--color-surface)] rounded-2xl p-4">
+      <p class="text-[10px] text-[var(--color-text-muted)] uppercase mb-1">Net</p>
+      <p class="font-bold text-sm {summary.net >= 0 ? 'text-[var(--color-income)]' : 'text-[var(--color-expense)]'}">
+        {summary.net >= 0 ? '+' : ''}{formatINR(summary.net)}
+      </p>
+    </div>
   </div>
 
   <!-- Desktop: two-column split / Mobile: single column -->
@@ -110,29 +98,10 @@
     <div class="space-y-5">
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Spend by Category</p>
-        {#if loading}
-          <div class="flex items-center justify-center">
-            <div class="w-40 h-40 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-          </div>
-        {:else}
-          <MonthDonut slices={catSpend} categories={app.categories} transactions={summary.transactions} />
-        {/if}
+        <MonthDonut slices={catSpend} categories={app.categories} transactions={summary.transactions} />
       </div>
 
-      {#if loading}
-        <div class="bg-[var(--color-surface)] rounded-2xl p-5 space-y-4">
-          <div class="h-2.5 w-20 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-          {#each [0,1,2,3] as _}
-            <div class="space-y-1.5">
-              <div class="flex justify-between">
-                <div class="h-2.5 w-24 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-                <div class="h-2.5 w-14 rounded-full bg-[var(--color-border)] animate-pulse"></div>
-              </div>
-              <div class="h-1.5 w-full rounded-full bg-[var(--color-border)] animate-pulse"></div>
-            </div>
-          {/each}
-        </div>
-      {:else if catSpend.length > 0}
+      {#if catSpend.length > 0}
         {@const breakdownTotal = catSpend.reduce((s, c) => s + c.total, 0)}
         <div class="bg-[var(--color-surface)] rounded-2xl p-5">
           <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Breakdown</p>
@@ -163,19 +132,7 @@
     <div class="space-y-5">
       <div class="bg-[var(--color-surface)] rounded-2xl p-5">
         <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-4">Daily Spend</p>
-        {#if loading}
-          <div class="space-y-2">
-            <div class="flex items-end gap-1 h-32">
-              {#each [40,65,30,80,55,70,45,90,35,60,75,50,85,40,65,25,70,55,80,45,60,35,75,50,65,40,85,55,70,45] as h}
-                <div class="flex-1 rounded-t-sm bg-[var(--color-border)] animate-pulse"
-                     style="height:{h}%"></div>
-              {/each}
-            </div>
-            <div class="h-2 w-full rounded-full bg-[var(--color-border)] animate-pulse"></div>
-          </div>
-        {:else}
-          <DailyTrend data={dailyData} month={month} />
-        {/if}
+        <DailyTrend data={dailyData} month={month} />
       </div>
     </div>
 
