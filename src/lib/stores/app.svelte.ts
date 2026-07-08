@@ -1,5 +1,5 @@
 import { getCategories, getTransactions, getBudgetsForMonth, getEmis, getLends, seedIfEmpty, getSetting } from '$lib/db/queries';
-import { pullFromFirestore } from '$lib/db/firestore';
+import { subscribeToFirestore } from '$lib/db/firestore';
 import type { Transaction, Category, Budget, Emi, Lend } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
 
@@ -42,9 +42,7 @@ class AppStore {
     await seedIfEmpty();
     await this.refreshAll();
     this.isLoading = false;
-    pullFromFirestore()
-      .then(() => this.refreshAll())
-      .catch(() => {});
+    subscribeToFirestore(() => this.refreshAll());
   }
 
   async refreshAll() {
