@@ -171,7 +171,7 @@
           </span>
         </div>
 
-        <!-- Hero spend number — biggest element on the page (Fitts's Law) -->
+        <!-- Hero spend number -->
         <div class="mb-5">
           <CountUp
             value={app.monthExpenses}
@@ -182,23 +182,23 @@
           </p>
         </div>
 
-        <!-- Progress bar — animates from 0 on mount so it feels alive -->
+        <!-- Progress bar -->
         {#if reference > 0}
           <div class="mb-4">
-            <div class="h-3 bg-[var(--color-border)] rounded-full overflow-hidden">
+            <div class="h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
               <div class="h-full rounded-full transition-all duration-700 ease-out"
                    style="width:{barMounted ? Math.min(spendPct, 1) * 100 : 0}%;
                           background:{barColor}">
               </div>
             </div>
-            <div class="flex justify-between mt-1.5 text-[10px]">
-              <span class="text-[var(--color-text-muted)]">₹0</span>
-              <span class="font-semibold" style="color:{barColor}">{Math.round(spendPct * 100)}%</span>
-              <span class="text-[var(--color-text-muted)]">{refLabel}</span>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-[10px] font-semibold" style="color:{barColor}">
+                {Math.round(spendPct * 100)}% used
+              </span>
+              <span class="text-[10px] text-[var(--color-text-muted)]">{refLabel}</span>
             </div>
           </div>
         {:else}
-          <!-- No income/budget set — nudge toward setting one -->
           <div class="mb-4">
             <a href="/settings"
                class="text-xs text-[var(--color-primary)] underline underline-offset-2">
@@ -208,45 +208,38 @@
         {/if}
 
         <!-- Stats row — 3-col when income logged, 2-col otherwise -->
-        <div class="{app.monthIncome > 0 ? 'grid-cols-3' : 'grid-cols-2'} grid gap-3"
+        <div class="{app.monthIncome > 0 ? 'grid-cols-3' : 'grid-cols-2'} grid gap-2"
              in:fly={{ y: 10, duration: 240, delay: 180, easing: cubicOut }}>
 
-          <!-- Earned (only when income transactions exist this month) -->
           {#if app.monthIncome > 0}
-            <div class="bg-[var(--color-income)]/8 rounded-xl px-3 py-2.5">
-              <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
-                Earned
-              </p>
+            <div class="bg-[var(--color-income)]/10 rounded-2xl px-3 py-3">
+              <p class="text-[10px] text-[var(--color-text-muted)] mb-1">Earned</p>
               <p class="text-sm font-bold leading-none text-[var(--color-income)]">
                 {formatINR(app.monthIncome)}
               </p>
             </div>
           {/if}
 
-          <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
-            <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
-              Left to spend
-            </p>
+          <div class="bg-[var(--color-surface-2)] rounded-2xl px-3 py-3">
+            <p class="text-[10px] text-[var(--color-text-muted)] mb-1">Left</p>
             {#if reference > 0}
               <p class="text-sm font-bold leading-none" style="color:{leftColor}">
-                {left > 0 ? formatINR(left) : 'Over budget'}
+                {left > 0 ? formatINR(left) : 'Over!'}
               </p>
             {:else}
               <p class="text-sm font-bold text-[var(--color-text-muted)]">—</p>
             {/if}
           </div>
 
-          <div class="bg-[var(--color-surface-2)] rounded-xl px-3 py-2.5">
-            <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">
-              Month-end pace
-            </p>
+          <div class="bg-[var(--color-surface-2)] rounded-2xl px-3 py-3">
+            <p class="text-[10px] text-[var(--color-text-muted)] mb-1">Pace</p>
             {#if dailyRate > 0}
               <div class="flex items-center gap-1">
                 <p class="text-sm font-bold leading-none" style="color:{paceColor}">
                   {formatINR(pace)}
                 </p>
                 {#if paceWarning}
-                  <AlertTriangle size={11} style="color:{paceColor}" />
+                  <AlertTriangle size={10} style="color:{paceColor}" />
                 {/if}
               </div>
             {:else}
@@ -255,30 +248,28 @@
           </div>
         </div>
 
-        <!-- Today strip — labelled clearly so meaning is never ambiguous -->
+        <!-- Today strip -->
         {#if app.todayExpenses > 0 || todayIncome > 0}
-          <div class="mt-4 pt-3 border-t border-[var(--color-border)]/50"
+          <div class="mt-3 pt-3 border-t border-[var(--color-border)]/50"
                in:fly={{ y: 6, duration: 200, delay: 260, easing: cubicOut }}>
             <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Today</p>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               {#if app.todayExpenses > 0}
-                <div class="flex items-center gap-1.5 bg-[var(--color-expense)]/10
-                            px-2.5 py-1.5 rounded-lg">
+                <div class="flex items-center gap-1.5 bg-[var(--color-expense)]/10 px-3 py-2 rounded-xl">
                   <TrendingDown size={12} class="text-[var(--color-expense)] shrink-0" />
-                  <span class="text-xs text-[var(--color-text-muted)]">Spent</span>
                   <span class="text-xs font-bold text-[var(--color-expense)]">
                     {formatINR(app.todayExpenses)}
                   </span>
+                  <span class="text-[10px] text-[var(--color-text-muted)]">spent</span>
                 </div>
               {/if}
               {#if todayIncome > 0}
-                <div class="flex items-center gap-1.5 bg-[var(--color-income)]/10
-                            px-2.5 py-1.5 rounded-lg">
+                <div class="flex items-center gap-1.5 bg-[var(--color-income)]/10 px-3 py-2 rounded-xl">
                   <TrendingUp size={12} class="text-[var(--color-income)] shrink-0" />
-                  <span class="text-xs text-[var(--color-text-muted)]">Earned</span>
                   <span class="text-xs font-bold text-[var(--color-income)]">
                     {formatINR(todayIncome)}
                   </span>
+                  <span class="text-[10px] text-[var(--color-text-muted)]">earned</span>
                 </div>
               {/if}
             </div>
