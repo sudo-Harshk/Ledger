@@ -24,7 +24,6 @@ async function clearDB() {
   await Promise.all([
     db.categories.clear(),
     db.transactions.clear(),
-    db.budgets.clear(),
     db.emis.clear(),
     db.settings.clear(),
   ]);
@@ -107,19 +106,6 @@ describe('migrateCategoryIds', () => {
 
     const updated = await db.transactions.get(tx.id);
     expect(updated?.categoryId).toBe(def.id);
-  });
-
-  it('updates budgets that reference the old category ID', async () => {
-    const def = DEFAULT_CATEGORIES.find(c => c.name === 'Groceries')!;
-    const randomId = 'old-groceries-id';
-
-    await db.categories.add({ ...def, id: randomId });
-    await db.budgets.add({ id: 'bud-1', categoryId: randomId, month: '2026-06', amount: 5000 });
-
-    await migrateCategoryIds();
-
-    const bud = await db.budgets.get('bud-1');
-    expect(bud?.categoryId).toBe(def.id);
   });
 
   it('updates EMIs/subscriptions that reference the old category ID', async () => {

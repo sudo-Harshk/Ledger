@@ -1,5 +1,5 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Budget, Emi, EmiType, TransactionType, Lend, Repayment } from './schema';
+import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment } from './schema';
 import { nanoid } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
@@ -18,7 +18,7 @@ export async function deduplicateCategories() {
 }
 
 // Migrates existing categories that have random IDs to their canonical stable IDs,
-// and cascades the ID change to all transactions, budgets, and EMIs that reference them.
+// and cascades the ID change to all transactions and EMIs that reference them.
 // This fixes cross-device "Unknown" category names caused by independent re-seeding.
 export async function migrateCategoryIds() {
   const nameToStable = new Map(
@@ -33,13 +33,11 @@ export async function migrateCategoryIds() {
     const oldId = cat.id;
 
     // Collect affected records before modifying
-    const affectedTxs      = await db.transactions.where('categoryId').equals(oldId).toArray();
-    const affectedBudgets  = (await db.budgets.toArray()).filter(b => b.categoryId === oldId);
-    const affectedEmis     = (await db.emis.toArray()).filter(e => e.categoryId === oldId);
+    const affectedTxs  = await db.transactions.where('categoryId').equals(oldId).toArray();
+    const affectedEmis = (await db.emis.toArray()).filter(e => e.categoryId === oldId);
 
     // Update references in local DB
     await db.transactions.where('categoryId').equals(oldId).modify({ categoryId: stableId });
-    await Promise.all(affectedBudgets.map(b => db.budgets.update(b.id, { categoryId: stableId })));
     await Promise.all(affectedEmis.map(e => db.emis.update(e.id, { categoryId: stableId })));
 
     // Replace category record (Dexie can't update primary key, so delete + put)
@@ -50,7 +48,6 @@ export async function migrateCategoryIds() {
     pushDoc('categories', { ...cat, id: stableId }).catch(() => {});
     removeDoc('categories', oldId).catch(() => {});
     for (const tx of affectedTxs) pushDoc('transactions', { ...tx, categoryId: stableId }).catch(() => {});
-    for (const b of affectedBudgets) pushDoc('budgets', { ...b, categoryId: stableId }).catch(() => {});
     for (const emi of affectedEmis) pushDoc('emis', { ...emi, categoryId: stableId }).catch(() => {});
   }
 }
@@ -88,13 +85,6 @@ export async function seedIfEmpty() {
   if (toAdd.length > 0) {
     await db.categories.bulkAdd(toAdd);
     for (const cat of toAdd) pushDoc('categories', cat).catch(() => {});
-  }
-
-  const income = await db.settings.get('monthlyIncome');
-  if (!income) {
-    const setting = { key: 'monthlyIncome', value: '0' };
-    await db.settings.put(setting);
-    pushDoc('settings', setting).catch(() => {});
   }
 }
 
@@ -163,39 +153,6 @@ export async function deleteCategory(id: string) {
   await db.categories.update(id, { isActive: false });
   const updated = await db.categories.get(id);
   if (updated) pushDoc('categories', updated).catch(() => {});
-}
-
-// ── Budgets ───────────────────────────────────────────────────────────────────
-
-export async function getBudgetsForMonth(month: string) {
-  return db.budgets.where('month').equals(month).toArray();
-}
-
-export async function setBudget(categoryId: string, month: string, amount: number) {
-  const existing = await db.budgets.where('[categoryId+month]').equals([categoryId, month]).first();
-  if (existing) {
-    await db.budgets.update(existing.id, { amount });
-    pushDoc('budgets', { ...existing, amount }).catch(() => {});
-  } else {
-    const budget: Budget = { id: nanoid(), categoryId, month, amount };
-    await db.budgets.add(budget);
-    pushDoc('budgets', budget).catch(() => {});
-  }
-}
-
-export async function deleteBudget(id: string) {
-  await db.budgets.delete(id);
-  removeDoc('budgets', id).catch(() => {});
-}
-
-export async function carryOverBudgets(month: string): Promise<void> {
-  const existing = await getBudgetsForMonth(month);
-  if (existing.length > 0) return;
-  const [y, m] = month.split('-').map(Number);
-  const prevDate = new Date(y, m - 2, 1);
-  const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-  const prev = await getBudgetsForMonth(prevMonth);
-  await Promise.all(prev.map(b => setBudget(b.categoryId, month, b.amount)));
 }
 
 // ── EMIs ──────────────────────────────────────────────────────────────────────
@@ -291,7 +248,6 @@ export async function clearAllData() {
   // Wipe IndexedDB
   await Promise.all([
     db.transactions.clear(),
-    db.budgets.clear(),
     db.emis.clear(),
     db.settings.clear(),
     db.categories.clear(),
@@ -299,7 +255,6 @@ export async function clearAllData() {
   // Wipe Firestore
   await Promise.all([
     clearFirestoreCollection('transactions'),
-    clearFirestoreCollection('budgets'),
     clearFirestoreCollection('emis'),
     clearFirestoreCollection('settings'),
     clearFirestoreCollection('categories'),

@@ -2,19 +2,12 @@
   import { app } from '$lib/stores/app.svelte';
   import { setSetting, getSetting, getTransactions, getAllCategories, clearAllData } from '$lib/db/queries';
   import { currentMonth } from '$lib/utils';
-  import { validateAmount } from '$lib/utils/validate';
-  import { Download, AlertCircle, Sun, Moon, Trash2, Tag, ChevronRight, Wallet, Bell } from '@lucide/svelte';
+  import { Download, Sun, Moon, Trash2, Tag, ChevronRight, Bell } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
-  import NumberInput from '$lib/components/NumberInput.svelte';
 
-  let income          = $state('');
-  let savingIncome    = $state(false);
-  let savedIncome     = $state(false);
-  let incomeAttempted = $state(false);
-  let resetConfirm    = $state(false);
-  let resetting       = $state(false);
-  let editingIncome   = $state(false);
+  let resetConfirm  = $state(false);
+  let resetting     = $state(false);
 
   // Dashboard banner toggles (default: both enabled)
   let monthEndEnabled  = $state(true);
@@ -33,36 +26,6 @@
     const next = !current;
     await setSetting(key, String(next));
     return next;
-  }
-
-  $effect(() => { loadIncome(); });
-
-  async function loadIncome() {
-    const saved = await getSetting('monthlyIncome');
-    const n = parseFloat(saved);
-    income = n > 0 ? String(n) : '';
-  }
-
-  const incomeError = $derived((): string | null => {
-    if (!incomeAttempted || income === '') return null;
-    const n = parseFloat(income);
-    if (isNaN(n) || n < 0) return 'Income must be a positive number';
-    if (n > 1_000_000)     return "Income can't exceed ₹10L";
-    return null;
-  });
-
-  async function saveIncome() {
-    incomeAttempted = true;
-    if (incomeError()) return;
-    savingIncome = true;
-    const val = income === '' ? 0 : parseFloat(income);
-    await setSetting('monthlyIncome', String(val));
-    app.monthlyIncome = val;
-    income       = val > 0 ? String(val) : '';
-    savingIncome = false;
-    savedIncome  = true;
-    editingIncome = false;
-    setTimeout(() => savedIncome = false, 2000);
   }
 
   async function exportCSV() {
@@ -89,10 +52,7 @@
     await app.refreshAll();
     resetting    = false;
     resetConfirm = false;
-    income       = '';
   }
-
-  import { formatINR } from '$lib/utils';
 </script>
 
 <div class="px-4 pt-6 pb-28 md:px-8 md:pt-8 md:max-w-2xl md:mx-auto animate-fade-in space-y-5">
@@ -109,46 +69,6 @@
       {/if}
     </button>
   </div>
-
-  <!-- Monthly income -->
-  <section class="bg-[var(--color-surface)] rounded-2xl overflow-hidden">
-    <button onclick={() => editingIncome = !editingIncome}
-            class="w-full flex items-center gap-3 px-5 py-4 text-left">
-      <div class="w-9 h-9 rounded-xl bg-[var(--color-income)]/15 flex items-center justify-center shrink-0">
-        <Wallet size={17} class="text-[var(--color-income)]" />
-      </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold">Monthly Income</p>
-        <p class="text-xs text-[var(--color-text-muted)] mt-0.5">
-          {app.monthlyIncome > 0 ? formatINR(app.monthlyIncome) : 'Not set'}
-        </p>
-      </div>
-      <ChevronRight size={16} class="text-[var(--color-text-muted)] transition-transform duration-200
-                                     {editingIncome ? 'rotate-90' : ''}" />
-    </button>
-
-    {#if editingIncome}
-      <div class="px-5 pb-4 space-y-2 border-t border-[var(--color-border)]/50">
-        <div class="flex gap-2 pt-3">
-          <div class="flex-1">
-            <NumberInput bind:value={income} min={0} max={1000000} step={1000}
-                         placeholder="Enter monthly income" inputmode="numeric"
-                         invalid={!!incomeError()} />
-          </div>
-          <button onclick={saveIncome} disabled={savingIncome}
-                  class="px-4 py-3 rounded-xl text-sm font-medium transition-colors shrink-0 disabled:opacity-50
-                         {savedIncome ? 'bg-[var(--color-income)] text-white' : 'bg-[var(--color-primary)] text-white'}">
-            {savedIncome ? '✓ Saved' : 'Save'}
-          </button>
-        </div>
-        {#if incomeError()}
-          <p class="text-xs text-[var(--color-expense)] flex items-center gap-1">
-            <AlertCircle size={11} /> {incomeError()}
-          </p>
-        {/if}
-      </div>
-    {/if}
-  </section>
 
   <!-- Quick nav rows -->
   <section class="bg-[var(--color-surface)] rounded-2xl overflow-hidden divide-y divide-[var(--color-border)]/40">
@@ -248,7 +168,7 @@
       <div class="px-5 py-4 space-y-3">
         <p class="text-sm font-semibold text-[var(--color-expense)]">Are you sure?</p>
         <p class="text-xs text-[var(--color-text-muted)]">
-          This permanently deletes all transactions, budgets, EMIs, lends, and settings. Default categories will be restored.
+          This permanently deletes all transactions, EMIs, lends, and settings. Default categories will be restored.
         </p>
         <div class="flex gap-2">
           <button onclick={resetAll} disabled={resetting}

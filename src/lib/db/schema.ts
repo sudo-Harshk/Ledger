@@ -23,13 +23,6 @@ export interface Category {
   isActive: boolean;
 }
 
-export interface Budget {
-  id: string;
-  categoryId: string;
-  amount: number;
-  month: string; // YYYY-MM
-}
-
 export type EmiType = 'emi' | 'subscription';
 
 export interface Emi {
@@ -70,7 +63,6 @@ export interface Lend {
 class LedgerDB extends Dexie {
   transactions!: Table<Transaction>;
   categories!: Table<Category>;
-  budgets!: Table<Budget>;
   emis!: Table<Emi>;
   settings!: Table<Setting>;
   lends!: Table<Lend>;
@@ -88,6 +80,14 @@ class LedgerDB extends Dexie {
       transactions: 'id, type, categoryId, date, createdAt',
       categories:   'id, sortOrder',
       budgets:      'id, [categoryId+month], month',
+      emis:         'id, nextDueDate',
+      settings:     'key',
+      lends:        'id, createdAt'
+    });
+    // v3 drops the budgets table — budgets feature removed
+    this.version(3).stores({
+      transactions: 'id, type, categoryId, date, createdAt',
+      categories:   'id, sortOrder',
       emis:         'id, nextDueDate',
       settings:     'key',
       lends:        'id, createdAt'

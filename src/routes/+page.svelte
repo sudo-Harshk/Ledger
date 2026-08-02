@@ -35,9 +35,7 @@
       .slice(0, 20)
   );
 
-  const totalBudget = $derived(app.budgets.reduce((s, b) => s + b.amount, 0));
   const daysLeft    = $derived(daysInMonth(app.monthStr) - new Date().getDate());
-
   const todayIncome = $derived(
     app.transactions
       .filter(t => t.date === todayStr && t.type === 'income')
@@ -45,17 +43,9 @@
   );
 
   // ── Month Health Card ──────────────────────────────────────────────────────
-  // Reference = settings income → logged income → budget → 0 (bar hidden)
-  const reference = $derived(
-    app.monthlyIncome > 0 ? app.monthlyIncome :
-    app.monthIncome > 0   ? app.monthIncome   :
-    totalBudget > 0       ? totalBudget        : 0
-  );
-  const refLabel = $derived(
-    app.monthlyIncome > 0 ? `${formatINR(app.monthlyIncome)} income` :
-    app.monthIncome > 0   ? `${formatINR(app.monthIncome)} income`   :
-    totalBudget > 0       ? `${formatINR(totalBudget)} budget`        : ''
-  );
+  // Reference = income logged this month → 0 (bar hidden until income is logged)
+  const reference = $derived(app.monthIncome > 0 ? app.monthIncome : 0);
+  const refLabel  = $derived(app.monthIncome > 0 ? `${formatINR(app.monthIncome)} income` : '');
 
   const spendPct  = $derived(reference > 0 ? app.monthExpenses / reference : 0);
   const barColor  = $derived(
@@ -96,18 +86,9 @@
   });
 
   // ── Weekly stats ─────────────────────────────────────────────────────────
-  const dailyBudget   = $derived(totalBudget > 0 ? totalBudget / daysInMonth(app.monthStr) : 0);
   const weekTotal     = $derived(weekData.reduce((s, d) => s + d.total, 0));
   const weekDaysSpent = $derived(weekData.filter(d => d.total > 0).length);
   const weekAvg       = $derived(weekDaysSpent > 0 ? Math.round(weekTotal / weekDaysSpent) : 0);
-
-  // ── Budget overview (separate from per-category Budgets page) ────────────
-  const budgetPct   = $derived(totalBudget > 0 ? Math.min(app.monthExpenses / totalBudget, 1) : 0);
-  const budgetColor = $derived(
-    budgetPct >= 1   ? 'var(--color-expense)'  :
-    budgetPct >= 0.8 ? 'var(--color-warning)'  :
-                       'var(--color-income)'
-  );
 </script>
 
 <div class="px-4 pt-6 pb-32 md:px-8 md:pt-8 md:pb-0 animate-fade-in">
@@ -200,10 +181,10 @@
           </div>
         {:else}
           <div class="mb-4">
-            <a href="/settings"
-               class="text-xs text-[var(--color-primary)] underline underline-offset-2">
-              Set monthly income to see how you're tracking →
-            </a>
+            <button onclick={() => app.openQuickAdd('income')}
+                    class="text-xs text-[var(--color-primary)] underline underline-offset-2">
+              Log your income to see how you're tracking →
+            </button>
           </div>
         {/if}
 
@@ -297,8 +278,6 @@
       <InsightsStrip
         transactions={app.transactions}
         categories={app.categories}
-        budgets={app.budgets}
-        monthStr={app.monthStr}
       />
 
       <!-- Weekly chart -->
@@ -331,25 +310,8 @@
             </div>
           {/if}
         </div>
-        <WeekBarChart data={weekData} transactions={app.transactions} categories={app.categories} dailyBudget={dailyBudget} />
+        <WeekBarChart data={weekData} transactions={app.transactions} categories={app.categories} />
       </div>
-
-      <!-- Budget category breakdown (distinct from health card's overall bar) -->
-      {#if totalBudget > 0}
-        <div class="bg-[var(--color-surface)] rounded-2xl p-5">
-          <div class="flex justify-between items-center text-xs mb-3">
-            <span class="font-medium">Budget overview</span>
-            <a href="/budgets" class="text-[var(--color-primary)]">Manage →</a>
-          </div>
-          <div class="h-2 bg-[var(--color-border)] rounded-full overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-700"
-                 style="width:{budgetPct * 100}%; background:{budgetColor}"></div>
-          </div>
-          <p class="text-xs text-[var(--color-text-muted)] mt-2">
-            {formatINR(app.monthExpenses)} of {formatINR(totalBudget)} budget used
-          </p>
-        </div>
-      {/if}
 
       <!-- Lent Money outstanding -->
       {#if app.lends.some(l => l.repayments.reduce((s, r) => s + r.amount, 0) < l.amount)}

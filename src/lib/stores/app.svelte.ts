@@ -1,17 +1,16 @@
-import { getCategories, getTransactions, getBudgetsForMonth, getEmis, getLends, seedIfEmpty, getSetting } from '$lib/db/queries';
+import { getCategories, getTransactions, getEmis, getLends, seedIfEmpty } from '$lib/db/queries';
 import { subscribeToFirestore } from '$lib/db/firestore';
-import type { Transaction, Category, Budget, Emi, Lend } from '$lib/db/schema';
+import type { Transaction, Category, Emi, Lend, TransactionType } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
 
 class AppStore {
   categories    = $state<Category[]>([]);
   transactions  = $state<Transaction[]>([]);
-  budgets       = $state<Budget[]>([]);
   emis          = $state<Emi[]>([]);
   lends         = $state<Lend[]>([]);
-  monthlyIncome = $state(0);
   isLoading     = $state(true);
   showQuickAdd  = $state(false);
+  quickAddType  = $state<TransactionType>('expense');
   editingTx     = $state<Transaction | null>(null);
 
   get todayStr()  { return today(); }
@@ -37,6 +36,12 @@ class AppStore {
     return this.categories.find(c => c.id === id);
   }
 
+  openQuickAdd(type: TransactionType = 'expense') {
+    this.editingTx   = null;
+    this.quickAddType = type;
+    this.showQuickAdd = true;
+  }
+
   async init() {
     this.isLoading = true;
     await seedIfEmpty();
@@ -47,23 +52,16 @@ class AppStore {
 
   async refreshAll() {
     const month = currentMonth();
-    [this.categories, this.transactions, this.budgets, this.emis, this.lends] = await Promise.all([
+    [this.categories, this.transactions, this.emis, this.lends] = await Promise.all([
       getCategories(),
       getTransactions({ month }),
-      getBudgetsForMonth(month),
       getEmis(),
       getLends(),
     ]);
-    const inc = await getSetting('monthlyIncome');
-    this.monthlyIncome = parseFloat(inc) || 0;
   }
 
   async refreshTransactions(month?: string) {
     this.transactions = await getTransactions({ month: month ?? currentMonth() });
-  }
-
-  async refreshBudgets(month?: string) {
-    this.budgets = await getBudgetsForMonth(month ?? currentMonth());
   }
 
   async refreshEmis() {

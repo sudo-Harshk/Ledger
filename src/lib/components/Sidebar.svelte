@@ -3,14 +3,13 @@
   import { app } from '$lib/stores/app.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import {
-    LayoutDashboard, ArrowLeftRight, PieChart,
+    LayoutDashboard, ArrowLeftRight,
     CreditCard, BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles,
   } from '@lucide/svelte';
 
   const nav = [
     { href: '/',             label: 'Home',         Icon: LayoutDashboard },
     { href: '/transactions', label: 'Transactions', Icon: ArrowLeftRight  },
-    { href: '/budgets',      label: 'Budgets',       Icon: PieChart        },
     { href: '/emis',         label: 'EMI & Loans',  Icon: CreditCard      },
     { href: '/reports',      label: 'Reports',       Icon: BarChart3       },
     { href: '/wrapped',      label: 'Spending DNA', Icon: Sparkles        },

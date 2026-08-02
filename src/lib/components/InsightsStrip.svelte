@@ -1,12 +1,10 @@
 <script lang="ts">
-  import type { Transaction, Category, Budget } from '$lib/db/schema';
-  import { formatINR, daysInMonth } from '$lib/utils';
+  import type { Transaction, Category } from '$lib/db/schema';
+  import { formatINR } from '$lib/utils';
 
-  let { transactions, categories, budgets, monthStr }: {
+  let { transactions, categories }: {
     transactions: Transaction[];
     categories:   Category[];
-    budgets:      Budget[];
-    monthStr:     string;
   } = $props();
 
   function localStr(d: Date): string {
@@ -23,40 +21,8 @@
   const insights = $derived((() => {
     const result: Insight[] = [];
     const expenses  = transactions.filter(t => t.type === 'expense');
-    const daysGone  = new Date().getDate();
-    const daysTotal = daysInMonth(monthStr);
-    const daysLeft  = daysTotal - daysGone;
 
-    // ── 1. Budget warnings (most urgent) ─────────────────────────────────
-    for (const budget of budgets) {
-      const spent = expenses
-        .filter(t => t.categoryId === budget.categoryId)
-        .reduce((s, t) => s + t.amount, 0);
-      const cat        = categories.find(c => c.id === budget.categoryId);
-      const pct        = budget.amount > 0 ? spent / budget.amount : 0;
-      const dailyRate  = daysGone > 0 ? spent / daysGone : 0;
-      const daysToExceed = dailyRate > 0
-        ? Math.floor((budget.amount - spent) / dailyRate)
-        : Infinity;
-
-      if (pct >= 1) {
-        result.push({
-          icon: cat?.icon ?? '📌',
-          text: `${cat?.name} budget exceeded`,
-          sub:  `over by ${formatINR(spent - budget.amount)}`,
-          kind: 'danger',
-        });
-      } else if (daysLeft > 0 && isFinite(daysToExceed) && daysToExceed <= Math.min(daysLeft, 4)) {
-        result.push({
-          icon: '⚠️',
-          text: `${cat?.name} budget runs out`,
-          sub:  daysToExceed <= 0 ? 'today at this pace' : `in ~${daysToExceed} day${daysToExceed !== 1 ? 's' : ''} at this pace`,
-          kind: 'warning',
-        });
-      }
-    }
-
-    // ── 2. Category streak ────────────────────────────────────────────────
+    // ── 1. Category streak ────────────────────────────────────────────────
     const catDates = new Map<string, Set<string>>();
     for (const t of expenses) {
       const s = catDates.get(t.categoryId) ?? new Set<string>();
@@ -88,7 +54,7 @@
       });
     }
 
-    // ── 3. Week-over-week comparison ──────────────────────────────────────
+    // ── 2. Week-over-week comparison ──────────────────────────────────────
     const now           = new Date();
     const thisMonday    = new Date(now);
     thisMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));

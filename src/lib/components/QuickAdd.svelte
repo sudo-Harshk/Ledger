@@ -93,7 +93,7 @@
       date = tx.date;             type = tx.type;
     } else {
       amount = ''; selectedCat = ''; note = '';
-      paymentMode = 'upi'; date = today(); type = 'expense';
+      paymentMode = 'upi'; date = today(); type = app.quickAddType;
     }
     panel = 'category'; attempted = false; saved = false; saving = false;
   });
@@ -133,7 +133,7 @@
       } else {
         await addTransaction({ amount: num, categoryId: selectedCat, note: note.trim(), paymentMode, date, type });
       }
-      await Promise.all([app.refreshTransactions(), app.refreshBudgets()]);
+      await app.refreshTransactions();
       saved = true;
       setTimeout(() => {
         close();

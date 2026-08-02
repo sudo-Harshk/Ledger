@@ -2,11 +2,10 @@
   import type { Transaction, Category } from '$lib/db/schema';
   import { today, formatINR } from '$lib/utils';
 
-  let { data, transactions = [], categories = [], dailyBudget = 0 }: {
+  let { data, transactions = [], categories = [] }: {
     data:          { date: string; total: number }[];
     transactions?: Transaction[];
     categories?:   Category[];
-    dailyBudget?:  number;
   } = $props();
 
   const todayStr = today();
@@ -39,7 +38,6 @@
   {#each data as day}
     {@const isToday  = day.date === todayStr}
     {@const hasSpend = day.total > 0}
-    {@const over     = dailyBudget > 0 && day.total > dailyBudget}
     {@const { icons, extra } = iconsForDay(day.date)}
 
     <div class="flex items-center gap-3 py-2 px-1 rounded-xl transition-colors
@@ -78,14 +76,9 @@
       <div class="shrink-0 text-right">
         {#if hasSpend}
           <span class="text-sm font-semibold"
-                style="color:{over ? 'var(--color-expense)' : isToday ? 'var(--color-primary)' : 'var(--color-text)'}">
+                style="color:{isToday ? 'var(--color-primary)' : 'var(--color-text)'}">
             {formatINR(day.total)}
           </span>
-          {#if over && dailyBudget > 0}
-            <p class="text-[9px] text-[var(--color-expense)] leading-none mt-0.5">
-              +{formatINR(day.total - dailyBudget)} over
-            </p>
-          {/if}
         {:else}
           <span class="text-xs text-[var(--color-border)]">—</span>
         {/if}
