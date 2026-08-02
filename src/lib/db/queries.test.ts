@@ -16,6 +16,10 @@ import {
   addEmi,
   markEmiPaid,
   getTransactions,
+  addPgNeed,
+  togglePgNeed,
+  deletePgNeed,
+  getPgNeeds,
 } from './queries';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -26,6 +30,8 @@ async function clearDB() {
     db.transactions.clear(),
     db.emis.clear(),
     db.settings.clear(),
+    db.lends.clear(),
+    db.pgneeds.clear(),
   ]);
 }
 
@@ -244,5 +250,39 @@ describe('subscription payment → transaction category resolution', () => {
 
     const updated = await db.emis.get(sub.id);
     expect(updated?.nextDueDate).toBe('2026-07-10');
+  });
+});
+
+// ── PG Needs ─────────────────────────────────────────────────────────────────
+
+describe('PG Needs', () => {
+  it('adds an item to the given month', async () => {
+    const need = await addPgNeed({ name: 'Detergent', month: '2026-08' });
+    const list = await getPgNeeds('2026-08');
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe('Detergent');
+    expect(list[0].done).toBe(false);
+    expect(need.month).toBe('2026-08');
+  });
+
+  it('is scoped per month', async () => {
+    await addPgNeed({ name: 'Detergent', month: '2026-08' });
+    await addPgNeed({ name: 'Napkins',   month: '2026-09' });
+    expect(await getPgNeeds('2026-08')).toHaveLength(1);
+    expect(await getPgNeeds('2026-09')).toHaveLength(1);
+  });
+
+  it('toggles done and deletes', async () => {
+    const need = await addPgNeed({ name: 'Toothpaste', month: '2026-08' });
+    await togglePgNeed(need.id);
+    let list = await getPgNeeds('2026-08');
+    expect(list[0].done).toBe(true);
+
+    await togglePgNeed(need.id);
+    list = await getPgNeeds('2026-08');
+    expect(list[0].done).toBe(false);
+
+    await deletePgNeed(need.id);
+    expect(await getPgNeeds('2026-08')).toHaveLength(0);
   });
 });

@@ -60,12 +60,22 @@ export interface Lend {
   createdAt: string;
 }
 
+export interface PgNeed {
+  id: string;
+  name: string;
+  done: boolean;
+  month: string; // YYYY-MM
+  createdAt: string; // ISO string
+  doneAt?: string;   // ISO string
+}
+
 class LedgerDB extends Dexie {
   transactions!: Table<Transaction>;
   categories!: Table<Category>;
   emis!: Table<Emi>;
   settings!: Table<Setting>;
   lends!: Table<Lend>;
+  pgneeds!: Table<PgNeed>;
 
   constructor() {
     super('ledger');
@@ -91,6 +101,15 @@ class LedgerDB extends Dexie {
       emis:         'id, nextDueDate',
       settings:     'key',
       lends:        'id, createdAt'
+    });
+    // v4 adds the PG needs (monthly shopping list) table
+    this.version(4).stores({
+      transactions: 'id, type, categoryId, date, createdAt',
+      categories:   'id, sortOrder',
+      emis:         'id, nextDueDate',
+      settings:     'key',
+      lends:        'id, createdAt',
+      pgneeds:      'id, month, done'
     });
   }
 }

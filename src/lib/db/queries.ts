@@ -1,5 +1,5 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment } from './schema';
+import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment, PgNeed } from './schema';
 import { nanoid } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
@@ -229,6 +229,39 @@ export async function deleteLend(id: string): Promise<void> {
   removeDoc('lends', id).catch(() => {});
 }
 
+// ── PG Needs (monthly shopping list) ──────────────────────────────────────────
+
+export async function getPgNeeds(month: string): Promise<PgNeed[]> {
+  const items = await db.pgneeds.where('month').equals(month).toArray();
+  return items.sort((a, b) => Number(a.done) - Number(b.done) || a.createdAt.localeCompare(b.createdAt));
+}
+
+export async function addPgNeed(data: { name: string; month: string }): Promise<PgNeed> {
+  const need: PgNeed = {
+    id: nanoid(),
+    name: data.name,
+    done: false,
+    month: data.month,
+    createdAt: new Date().toISOString(),
+  };
+  await db.pgneeds.add(need);
+  pushDoc('pgneeds', need).catch(() => {});
+  return need;
+}
+
+export async function togglePgNeed(id: string): Promise<void> {
+  const need = await db.pgneeds.get(id);
+  if (!need) return;
+  const updated: PgNeed = { ...need, done: !need.done, doneAt: need.done ? undefined : new Date().toISOString() };
+  await db.pgneeds.put(updated);
+  pushDoc('pgneeds', updated).catch(() => {});
+}
+
+export async function deletePgNeed(id: string): Promise<void> {
+  await db.pgneeds.delete(id);
+  removeDoc('pgneeds', id).catch(() => {});
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 export async function getSetting(key: string): Promise<string> {
@@ -251,6 +284,8 @@ export async function clearAllData() {
     db.emis.clear(),
     db.settings.clear(),
     db.categories.clear(),
+    db.lends.clear(),
+    db.pgneeds.clear(),
   ]);
   // Wipe Firestore
   await Promise.all([
@@ -258,6 +293,8 @@ export async function clearAllData() {
     clearFirestoreCollection('emis'),
     clearFirestoreCollection('settings'),
     clearFirestoreCollection('categories'),
+    clearFirestoreCollection('lends'),
+    clearFirestoreCollection('pgneeds'),
   ]);
   // Re-seed defaults
   await seedIfEmpty();

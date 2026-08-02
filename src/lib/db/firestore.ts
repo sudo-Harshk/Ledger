@@ -8,10 +8,10 @@ import {
 } from 'firebase/firestore';
 import { firestore } from './firebase';
 import { db } from './schema';
-import type { Transaction, Category, Emi, Setting, Lend } from './schema';
+import type { Transaction, Category, Emi, Setting, Lend, PgNeed } from './schema';
 import { PUBLIC_FIREBASE_PROJECT_ID } from '$env/static/public';
 
-type CollectionName = 'transactions' | 'categories' | 'emis' | 'settings' | 'lends';
+type CollectionName = 'transactions' | 'categories' | 'emis' | 'settings' | 'lends' | 'pgneeds';
 
 function configured() {
   return !!PUBLIC_FIREBASE_PROJECT_ID;
@@ -72,6 +72,7 @@ export function subscribeToFirestore(onUpdate: () => void): () => void {
     watch<Emi>('emis',                db.emis),
     watch<Setting>('settings',        db.settings),
     watch<Lend>('lends',              db.lends),
+    watch<PgNeed>('pgneeds',          db.pgneeds),
   ];
 
   return () => unsubs.forEach(u => u());

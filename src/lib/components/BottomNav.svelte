@@ -1,12 +1,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { LayoutDashboard, ArrowLeftRight, CreditCard, BarChart3, Handshake } from '@lucide/svelte';
+  import { LayoutDashboard, ArrowLeftRight, CreditCard, BarChart3, Handshake, ShoppingBasket } from '@lucide/svelte';
 
   const nav = [
     { href: '/',             label: 'Home',    Icon: LayoutDashboard },
     { href: '/transactions', label: 'Spends',  Icon: ArrowLeftRight  },
     { href: '/emis',         label: 'EMIs',    Icon: CreditCard      },
     { href: '/reports',      label: 'Reports', Icon: BarChart3       },
+    { href: '/pgneeds',      label: 'Needs',   Icon: ShoppingBasket  },
     { href: '/lent',         label: 'Lent',    Icon: Handshake       },
   ];
 </script>

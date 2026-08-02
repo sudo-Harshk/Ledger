@@ -27,6 +27,7 @@
 | `/emis` | EMI tracker with loan progress, due-date countdown, and paid/remaining breakdown |
 | `/subscriptions` | Subscription tracking (tab within the EMI section) |
 | `/reports` | Monthly donut chart, category breakdown bars, calendar heatmap for daily spend. Navigate any past month |
+| `/pgneeds` | Monthly PG needs checklist: add items, mark bought, month navigation to review past months |
 | `/lent` | Lent money tracker: log amounts lent, record partial repayments, track outstanding balance per person |
 | `/wrapped` | Spending DNA with yearly or monthly stats, biggest transaction, favourite payment mode, spending personality |
 | `/settings` | Categories link, Dashboard Banner toggles, CSV export, data reset |
@@ -90,9 +91,14 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - See total lent, total recovered, and outstanding balance at a glance
 - Dashboard card shows outstanding count and amount when someone still owes you
 
+### PG Needs
+- Monthly checklist of things to buy for the PG — just a name and a checkbox
+- Progress bar and "N of M bought" count at a glance
+- Navigate past months to review what you bought before; current month is live-synced
+- Each month starts fresh for planning
+
 ### Categories
-- Add new categories with a custom emoji icon and colour
-- Inline rename/edit: tap the pencil icon on any active category to expand a form — change name, icon, colour — with live preview and duplicate-name validation
+- Add new categories with a custom emoji icon and colour- Inline rename/edit: tap the pencil icon on any active category to expand a form — change name, icon, colour — with live preview and duplicate-name validation
 - Hide categories to remove them from Quick Add without deleting history
 - Show hidden categories to restore them
 
@@ -230,6 +236,7 @@ transactions  ->  id, type, amount, categoryId, note, paymentMode, date, created
 categories    ->  id, name, icon, color, sortOrder, isActive
 emis          ->  id, type, name, principal, monthlyAmount, startDate, totalMonths, paidMonths, nextDueDate, categoryId, notes
 lends         ->  id, personName, amount, date, note, repayments (array of { id, amount, date }), createdAt
+pgneeds       ->  id, name, done, month (YYYY-MM)
 settings      ->  key, value
 ```
 

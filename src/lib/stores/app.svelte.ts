@@ -1,6 +1,6 @@
-import { getCategories, getTransactions, getEmis, getLends, seedIfEmpty } from '$lib/db/queries';
+import { getCategories, getTransactions, getEmis, getLends, getPgNeeds, seedIfEmpty } from '$lib/db/queries';
 import { subscribeToFirestore } from '$lib/db/firestore';
-import type { Transaction, Category, Emi, Lend, TransactionType } from '$lib/db/schema';
+import type { Transaction, Category, Emi, Lend, TransactionType, PgNeed } from '$lib/db/schema';
 import { currentMonth, today } from '$lib/utils';
 
 class AppStore {
@@ -8,6 +8,7 @@ class AppStore {
   transactions  = $state<Transaction[]>([]);
   emis          = $state<Emi[]>([]);
   lends         = $state<Lend[]>([]);
+  pgneeds       = $state<PgNeed[]>([]);
   isLoading     = $state(true);
   showQuickAdd  = $state(false);
   quickAddType  = $state<TransactionType>('expense');
@@ -52,11 +53,12 @@ class AppStore {
 
   async refreshAll() {
     const month = currentMonth();
-    [this.categories, this.transactions, this.emis, this.lends] = await Promise.all([
+    [this.categories, this.transactions, this.emis, this.lends, this.pgneeds] = await Promise.all([
       getCategories(),
       getTransactions({ month }),
       getEmis(),
       getLends(),
+      getPgNeeds(month),
     ]);
   }
 
@@ -70,6 +72,10 @@ class AppStore {
 
   async refreshLends() {
     this.lends = await getLends();
+  }
+
+  async refreshPgNeeds(month?: string) {
+    this.pgneeds = await getPgNeeds(month ?? currentMonth());
   }
 
   async refreshCategories() {

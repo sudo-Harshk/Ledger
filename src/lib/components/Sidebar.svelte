@@ -4,7 +4,7 @@
   import { themeStore } from '$lib/stores/theme.svelte';
   import {
     LayoutDashboard, ArrowLeftRight,
-    CreditCard, BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles,
+    CreditCard, BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles, ShoppingBasket,
   } from '@lucide/svelte';
 
   const nav = [
@@ -12,6 +12,7 @@
     { href: '/transactions', label: 'Transactions', Icon: ArrowLeftRight  },
     { href: '/emis',         label: 'EMI & Loans',  Icon: CreditCard      },
     { href: '/reports',      label: 'Reports',       Icon: BarChart3       },
+    { href: '/pgneeds',      label: 'PG Needs',     Icon: ShoppingBasket  },
     { href: '/wrapped',      label: 'Spending DNA', Icon: Sparkles        },
   ];
 </script>
