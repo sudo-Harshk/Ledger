@@ -1,20 +1,23 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
-  import { deleteTransaction, getTransactions } from '$lib/db/queries';
+  import { deleteTransaction, getTransactions, getEarliestMonth } from '$lib/db/queries';
   import { formatINR, formatDate, currentMonth, prevMonth, nextMonth, monthLabel } from '$lib/utils';
   import { toast } from '$lib/stores/toast.svelte';
   import { Search, Trash2, Pencil, ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import { flip } from 'svelte/animate';
+  import { onMount } from 'svelte';
   import type { Transaction } from '$lib/db/schema';
 
-  const APP_START_MONTH = '2026-06';
+  let startMonth = $state(currentMonth());
 
   let search      = $state('');
   let month       = $state(currentMonth());
   let allForMonth = $state<Transaction[]>([]);
   let loading     = $state(false);
+
+  onMount(() => { getEarliestMonth().then(m => { startMonth = m; }); });
 
   $effect(() => {
     loading = true;
@@ -70,7 +73,7 @@
 
       <div class="flex items-center justify-between bg-[var(--color-surface)] rounded-2xl p-3 mb-4">
         <button onclick={() => month = prevMonth(month)}
-                disabled={month <= APP_START_MONTH}
+                disabled={month <= startMonth}
                 class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
           <ChevronLeft size={20} />
         </button>

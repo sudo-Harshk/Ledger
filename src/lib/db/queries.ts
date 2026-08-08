@@ -1,6 +1,6 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
 import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment, PgNeed } from './schema';
-import { nanoid } from '$lib/utils';
+import { nanoid, currentMonth } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
@@ -124,6 +124,11 @@ export async function getTransactionsForDate(date: string) {
 
 export async function getTransactionsForWeek(weekDates: string[]) {
   return db.transactions.where('date').anyOf(weekDates).toArray();
+}
+
+export async function getEarliestMonth(): Promise<string> {
+  const first = await db.transactions.orderBy('date').first();
+  return first ? first.date.slice(0, 7) : currentMonth();
 }
 
 // ── Categories ────────────────────────────────────────────────────────────────

@@ -1,12 +1,13 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
-  import { getMonthSummary, getCategorySpend, getDailySpend } from '$lib/db/queries';
+  import { getMonthSummary, getCategorySpend, getDailySpend, getEarliestMonth } from '$lib/db/queries';
   import MonthDonut from '$lib/components/charts/MonthDonut.svelte';
   import DailyTrend from '$lib/components/charts/DailyTrend.svelte';
   import { formatINR, currentMonth, prevMonth, nextMonth, monthLabel } from '$lib/utils';
   import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { onMount } from 'svelte';
 
-  const APP_START_MONTH = '2026-06';
+  let startMonth = $state(currentMonth());
 
   let month        = $state(currentMonth());
   let histSummary  = $state({ income: 0, expense: 0, net: 0, transactions: [] as any[] });
@@ -14,6 +15,8 @@
   let histDaily    = $state<{ date: string; total: number }[]>([]);
 
   const isCurrentMonth = $derived(month === currentMonth());
+
+  onMount(() => { getEarliestMonth().then(m => { startMonth = m; }); });
 
   // ── Current month: derive directly from store (always reactive) ───────────
   const liveSummary = $derived((() => {
@@ -60,7 +63,7 @@
     <h1 class="text-xl md:text-2xl font-bold">Reports</h1>
     <div class="flex items-center gap-2 bg-[var(--color-surface)] rounded-2xl px-2">
       <button onclick={() => month = prevMonth(month)}
-              disabled={month <= APP_START_MONTH}
+              disabled={month <= startMonth}
               class="p-2 text-[var(--color-text-muted)] disabled:opacity-30">
         <ChevronLeft size={18} />
       </button>
