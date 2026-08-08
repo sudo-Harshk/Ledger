@@ -9,7 +9,8 @@
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import { onMount } from 'svelte';
-  import { getSetting } from '$lib/db/queries';
+  import { getSetting, getTransactionsForWeek } from '$lib/db/queries';
+  import type { Transaction } from '$lib/db/schema';
 
   const todayStr  = today();
 
@@ -17,9 +18,20 @@
   const weekDates = $derived(getWeekDates(weekOffset));
   const weekLabel = $derived(weekRangeLabel(weekOffset));
 
+  // The store only holds the current month's transactions, so past weeks (which can
+  // cross a month boundary) are queried straight from the DB. Re-runs when the store
+  // changes so freshly added transactions appear immediately on the current week.
+  let weekTxns = $state<Transaction[]>([]);
+  $effect(() => {
+    const key = weekDates.join('|');
+    getTransactionsForWeek(weekDates).then(txs => {
+      if (key === weekDates.join('|')) weekTxns = txs;
+    });
+  });
+
   const weekData = $derived(weekDates.map(date => ({
     date,
-    total: app.transactions
+    total: weekTxns
       .filter(t => t.date === date && t.type === 'expense')
       .reduce((s, t) => s + t.amount, 0)
   })));
@@ -310,7 +322,7 @@
             </div>
           {/if}
         </div>
-        <WeekBarChart data={weekData} transactions={app.transactions} categories={app.categories} />
+        <WeekBarChart data={weekData} transactions={weekTxns} categories={app.categories} />
       </div>
 
       <!-- Lent Money outstanding -->

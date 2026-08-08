@@ -139,7 +139,8 @@ refactor(store): simplify refreshAll using Promise.all
 |---|---|
 | `src/lib/db/schema.ts` | Dexie table definitions and TypeScript types |
 | `src/lib/db/queries.ts` | All database read/write helpers |
-| `src/lib/db/sync.svelte.ts` | Turso Cloud sync logic |
+| `src/lib/db/firestore.ts` | Firebase Firestore background sync (push + `onSnapshot` stream) |
+| `src/lib/db/firebase.ts` | Firebase app initialization |
 | `src/lib/stores/app.svelte.ts` | Shared reactive state (one class, all pages) |
 | `src/lib/utils.ts` | Pure helper functions (dates, currency, etc.) |
 | `src/lib/components/` | Reusable UI components |

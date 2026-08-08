@@ -6,7 +6,7 @@
 
 [![Svelte](https://img.shields.io/badge/Svelte-5.x-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)](https://svelte.dev)
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-2.x-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)](https://kit.svelte.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
@@ -76,7 +76,7 @@ On days 1–3 of a new month, a card appears above the Month Health Card showing
 
 ### Interactive Charts
 All charts support hover on desktop and tap-to-pin on mobile:
-- **Weekly Spend Chart**: day-by-day breakdown for the selected week. Each bar shows the total; navigate back through previous weeks with arrow buttons
+- **Weekly Spend Chart**: day-by-day breakdown for the selected week, each row showing the day's total with category icons; arrow buttons navigate back through any past week — past weeks are fetched straight from the database, so weeks that span into previous months still show the right data
 - **Month Donut**: category spend breakdown (Reports). Tap a segment to see the name, amount, and percentage; tap again to reveal the last 8 transactions for that category inline
 - **Daily Spend Heatmap** (Reports): a full-month calendar grid coloured by spend intensity — green for light days, orange for above average, red for the heaviest. Tap any cell for the exact amount
 
@@ -125,7 +125,7 @@ All charts support hover on desktop and tap-to-pin on mobile:
 ### Sync and Offline
 - All data lives in **IndexedDB** (Dexie.js) for instant reads and writes that work offline
 - Every write syncs to **Firebase Firestore** in the background, silently
-- On every app load, the latest data is pulled from Firestore into IndexedDB
+- Firestore changes are streamed back into IndexedDB in real time via `onSnapshot` listeners
 - Single-user, last-write-wins with no conflict resolution needed
 
 ---
@@ -168,7 +168,7 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings → 
 |---|---|
 | Framework | Svelte 5 (Runes: `$state`, `$derived`, `$effect`) |
 | Meta-framework | SvelteKit 2.x |
-| Language | TypeScript 5.x |
+| Language | TypeScript 6.x |
 | Styling | Tailwind CSS 4.x |
 | Icons | @lucide/svelte |
 | Charts | layerchart |
@@ -183,7 +183,7 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings → 
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org) >= 18
+- [Node.js](https://nodejs.org) >= 20.19
 - npm >= 9
 - A free [Firebase](https://firebase.google.com) project with Firestore enabled
 
@@ -223,6 +223,7 @@ npm run dev        # Start dev server at http://localhost:5173
 npm run build      # Production build to ./build
 npm run preview    # Preview production build locally
 npm run check      # TypeScript and Svelte type checking
+npm run test       # Run unit tests (Vitest)
 ```
 
 ---
@@ -246,7 +247,7 @@ settings      ->  key, value
 
 ```
 Write:   UI -> IndexedDB (instant) -> Firestore (background, fire-and-forget)
-Read:    App start -> Firestore pull -> IndexedDB -> reactive state
+Read:    App start -> IndexedDB -> reactive state; Firestore onSnapshot streams changes in real time
 Offline: Writes go to IndexedDB only; auto-synced on next write when online
 ```
 
