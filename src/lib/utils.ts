@@ -17,12 +17,38 @@ function localDateStr(d: Date): string {
   return `${y}-${m}-${dd}`;
 }
 
+const IST_TZ = 'Asia/Kolkata';
+
+// Formats a Date as YYYY-MM-DD in IST (Asia/Kolkata), bypassing the device
+// timezone entirely — "now" is always IST, never UTC.
+function istDateStr(d: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: IST_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+}
+
 export function today(): string {
-  return localDateStr(new Date());
+  return istDateStr(new Date());
 }
 
 export function currentMonth(): string {
-  return localDateStr(new Date()).slice(0, 7);
+  return istDateStr(new Date()).slice(0, 7);
+}
+
+/**
+ * Pure calendar arithmetic on a YYYY-MM-DD string — no Date object, no timezone.
+ * Clamps the day to the target month's last day (Jan 31 + 1mo → Feb 28).
+ */
+export function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const total     = y * 12 + (m - 1) + months;
+  const targetY   = Math.floor(total / 12);
+  const targetM   = (total % 12) + 1;
+  const lastDay   = new Date(targetY, targetM, 0).getDate();
+  return `${targetY}-${String(targetM).padStart(2, '0')}-${String(Math.min(d, lastDay)).padStart(2, '0')}`;
 }
 
 export function getWeekDates(weekOffset = 0): string[] {

@@ -8,6 +8,14 @@ vi.mock('./firestore', () => ({
   pullFromFirestore:        vi.fn().mockResolvedValue(undefined),
 }));
 
+// Override only today() — real addMonths/nanoid/currentMonth stay in use.
+// today() itself is proven to be IST in src/lib/utils.test.ts; this mock pins
+// the app's shared IST date so markEmiPaid's transaction date is deterministic.
+vi.mock('$lib/utils', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('$lib/utils')>();
+  return { ...mod, today: () => '2026-08-09' };
+});
+
 import { db, DEFAULT_CATEGORIES } from './schema';
 import {
   seedIfEmpty,
@@ -250,6 +258,53 @@ describe('subscription payment → transaction category resolution', () => {
 
     const updated = await db.emis.get(sub.id);
     expect(updated?.nextDueDate).toBe('2026-07-10');
+  });
+
+  it('clamps a month-end due date to the target month\'s last day (Jan 31 → Feb 28)', async () => {
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const emi = await addEmi({
+      type: 'emi', name: 'Jan Loan', monthlyAmount: 1000, principal: 12000,
+      startDate: '2026-01-31', paidMonths: 0, nextDueDate: '2026-01-31', totalMonths: 12,
+      categoryId: def.id,
+    });
+
+    await markEmiPaid(emi.id);
+
+    const updated = await db.emis.get(emi.id);
+    expect(updated?.nextDueDate).toBe('2026-02-28');
+  });
+
+  it('does not skip a month when the next due date is the 29th', async () => {
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const emi = await addEmi({
+      type: 'emi', name: 'Feb Loan', monthlyAmount: 1000, principal: 12000,
+      startDate: '2026-02-28', paidMonths: 0, nextDueDate: '2026-02-28', totalMonths: 12,
+      categoryId: def.id,
+    });
+
+    await markEmiPaid(emi.id);
+
+    const updated = await db.emis.get(emi.id);
+    expect(updated?.nextDueDate).toBe('2026-03-28');
+  });
+
+  it('dates the auto-created transaction with the app today() (IST), not a UTC-derived date', async () => {
+    // today() is mocked to '2026-08-09' (the shared IST date helper). The
+    // transaction must use it verbatim instead of new Date().toISOString().
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const sub = await addEmi({
+      type: 'subscription', name: 'IST Sub', monthlyAmount: 100,
+      startDate: '2026-08-01', paidMonths: 0, nextDueDate: '2026-08-01',
+      categoryId: def.id,
+    });
+
+    const txId = await markEmiPaid(sub.id);
+    const tx = await db.transactions.get(txId!);
+
+    expect(tx?.date).toBe('2026-08-09');
   });
 });
 

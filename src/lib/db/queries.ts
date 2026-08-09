@@ -1,6 +1,6 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
 import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment, PgNeed } from './schema';
-import { nanoid, currentMonth } from '$lib/utils';
+import { nanoid, currentMonth, today, addMonths } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
@@ -178,21 +178,22 @@ export async function markEmiPaid(id: string): Promise<string | null> {
   if (!emi) return null;
   const isSubscription = emi.type === 'subscription';
   const paidMonths = isSubscription ? emi.paidMonths : emi.paidMonths + 1;
-  const next = new Date(emi.nextDueDate);
-  next.setMonth(next.getMonth() + 1);
-  const updated = { ...emi, paidMonths, nextDueDate: next.toISOString().slice(0, 10) };
+  const updated = {
+    ...emi,
+    paidMonths,
+    nextDueDate: addMonths(emi.nextDueDate, 1),
+  };
   await db.emis.update(id, { paidMonths, nextDueDate: updated.nextDueDate });
   pushDoc('emis', updated).catch(() => {});
 
   // Auto-create expense transaction if a category is linked
   if (emi.categoryId) {
-    const today = new Date().toISOString().slice(0, 10);
     const tx = await addTransaction({
       type: 'expense',
       amount: emi.monthlyAmount,
       categoryId: emi.categoryId,
       paymentMode: 'upi',
-      date: today,
+      date: today(),
       note: emi.name,
     });
     return tx.id;
