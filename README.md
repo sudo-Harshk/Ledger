@@ -243,6 +243,15 @@ settings      ->  key, value
 
 ---
 
+## Dates & Timezones
+
+- All calendar dates (`date`, `nextDueDate`, `startDate`, `month`, …) are stored as `YYYY-MM-DD` strings in **IST (`Asia/Kolkata`)** — never UTC.
+- `today()` and `currentMonth()` (from `src/lib/utils.ts`) resolve "now" via `Intl.DateTimeFormat` with `timeZone: 'Asia/Kolkata'`, so the app's notion of today is IST regardless of the device's timezone.
+- Month arithmetic is pure calendar math: `addMonths(dateStr, n)` advances a date string and **clamps the day to the target month's last day** (e.g. `2026-01-31` + 1 month → `2026-02-28`, leap years respected). EMI/subscription due dates use it, so a 31st due date never skips a month.
+- Do **not** parse `YYYY-MM-DD` with `new Date(str)` (parses as UTC midnight) or serialize with `toISOString()` (UTC) for calendar dates — use the `$lib/utils` helpers.
+
+---
+
 ## Sync Architecture
 
 ```

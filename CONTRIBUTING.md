@@ -130,6 +130,7 @@ refactor(store): simplify refreshAll using Promise.all
 - **No dead code** — remove unused imports, variables, functions
 - **Tailwind** — utility classes in the template, CSS variables for design tokens
 - **No new dependencies** without discussion — keep the bundle lean
+- **Dates** — calendar dates are `YYYY-MM-DD` strings in **IST (`Asia/Kolkata`)**, never UTC. Use `$lib/utils` helpers (`today()`, `currentMonth()`, `addMonths()`) for "now" and month arithmetic. Never parse `YYYY-MM-DD` with `new Date(str)` (UTC midnight) or serialize calendar dates with `toISOString()` (UTC) — see the README's "Dates & Timezones" section
 
 ---
 
