@@ -191,7 +191,7 @@
               <h3 class="font-semibold text-sm truncate">{sub.name}</h3>
               <p class="text-xs text-[var(--color-text-muted)]">{formatINR(sub.monthlyAmount)}/month</p>
             </div>
-            <button onclick={() => remove(sub.id)} aria-label="Delete"
+            <button onclick={() => remove(sub.id)} aria-label="Delete {sub.name}"
                     class="p-1.5 text-[var(--color-text-muted)] shrink-0">
               <Trash2 size={14} />
             </button>

@@ -203,6 +203,7 @@
               {/if}
             </div>
             <button onclick={() => remove(lend.id)}
+                    aria-label="Delete lend to {lend.personName}"
                     class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-expense)] transition-colors shrink-0">
               <Trash2 size={14} />
             </button>
@@ -255,10 +256,12 @@
                      class="bg-[var(--color-surface-2)] rounded-xl px-2 py-2 text-xs
                             border border-[var(--color-border)] focus:outline-none text-[var(--color-text)]" />
               <button onclick={saveRepayment}
+                      aria-label="Save repayment"
                       class="p-2 bg-[var(--color-income)]/20 text-[var(--color-income)] rounded-xl">
                 <Check size={16} />
               </button>
               <button onclick={() => repayingId = null}
+                      aria-label="Cancel repayment"
                       class="p-2 bg-[var(--color-surface-2)] text-[var(--color-text-muted)] rounded-xl text-xs">
                 ✕
               </button>
@@ -299,6 +302,7 @@
                 <p class="text-xs text-[var(--color-text-muted)]">{formatINR(lend.amount)} · {fmtDate(lend.date)}</p>
               </div>
               <button onclick={() => remove(lend.id)}
+                      aria-label="Delete lend to {lend.personName}"
                       class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-expense)] transition-colors">
                 <Trash2 size={14} />
               </button>

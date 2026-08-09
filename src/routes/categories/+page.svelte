@@ -183,6 +183,7 @@
             <span class="flex-1 text-sm font-medium">{cat.name}</span>
             <div class="w-3 h-3 rounded-full shrink-0" style="background:{cat.color}"></div>
             <button onclick={() => editingId === cat.id ? cancelEdit() : startEdit(cat)}
+                    aria-label="Edit {cat.name}"
                     class="p-1.5 rounded-lg transition-colors
                            {editingId === cat.id
                              ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'

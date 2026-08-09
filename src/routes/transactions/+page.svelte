@@ -160,10 +160,10 @@
                       {tx.type === 'income' ? '+' : '-'}{formatINR(tx.amount)}
                     </span>
                     <div class="flex gap-1 shrink-0 ml-1">
-                      <button onclick={() => edit(tx)} class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)]">
+                      <button onclick={() => edit(tx)} aria-label="Edit transaction" class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-primary)]">
                         <Pencil size={14} />
                       </button>
-                      <button onclick={() => remove(tx.id)} class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-expense)]">
+                      <button onclick={() => remove(tx.id)} aria-label="Delete transaction" class="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-expense)]">
                         <Trash2 size={14} />
                       </button>
                     </div>

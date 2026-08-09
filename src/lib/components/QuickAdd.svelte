@@ -207,6 +207,7 @@
         {/each}
       </div>
       <button onclick={close}
+              aria-label="Close"
               class="w-8 h-8 rounded-xl bg-[var(--color-surface-2)] flex items-center justify-center
                      text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors shrink-0">
         <X size={15} />

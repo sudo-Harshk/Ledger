@@ -61,6 +61,7 @@
 
       <!-- FAB: mobile only -->
       <button onclick={() => app.showQuickAdd = true}
+              aria-label="Add transaction"
               class="md:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full
                      bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/40
                      flex items-center justify-center transition-transform active:scale-90">
