@@ -92,11 +92,9 @@ export async function seedIfEmpty() {
 // ── Transactions ─────────────────────────────────────────────────────────────
 
 export async function addTransaction(
-  data: Omit<Transaction, 'id' | 'createdAt' | 'categoryId'> & { categoryId?: string }
+  data: Omit<Transaction, 'id' | 'createdAt'>
 ) {
-  // categoryId may be absent when the category no longer exists — the UI
-  // already renders such rows with an "Unknown" fallback.
-  const tx = { ...data, id: nanoid(), createdAt: new Date().toISOString() } as Transaction;
+  const tx: Transaction = { ...data, id: nanoid(), createdAt: new Date().toISOString() };
   await db.transactions.add(tx);
   pushDoc('transactions', tx).catch(() => {});
   return tx;
@@ -412,7 +410,10 @@ export async function getMonthSummary(month: string) {
 export async function getCategorySpend(month: string): Promise<{ categoryId: string; total: number }[]> {
   const txs = await getTransactions({ month, type: 'expense' });
   const map  = new Map<string, number>();
-  for (const t of txs) map.set(t.categoryId, (map.get(t.categoryId) ?? 0) + t.amount);
+  for (const t of txs) {
+    const id = t.categoryId ?? 'unknown';
+    map.set(id, (map.get(id) ?? 0) + t.amount);
+  }
   return Array.from(map.entries()).map(([categoryId, total]) => ({ categoryId, total }));
 }
 

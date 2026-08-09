@@ -14,7 +14,7 @@
 
   // ── Form state ────────────────────────────────────────────────────────────────
   let amount      = $state('');
-  let selectedCat = $state('');
+  let selectedCat = $state<string | undefined>('');
   let note        = $state('');
   let paymentMode = $state<PaymentMode>('upi');
   let date        = $state(today());

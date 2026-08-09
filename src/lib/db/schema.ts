@@ -7,7 +7,7 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   amount: number;
-  categoryId: string;
+  categoryId?: string; // may be absent when the linked category no longer exists
   note?: string;
   paymentMode: PaymentMode;
   date: string; // YYYY-MM-DD

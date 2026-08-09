@@ -209,7 +209,7 @@ describe('subscription payment → transaction category resolution', () => {
     expect(tx!.categoryId).toBe(def.id);
 
     // Simulates what the UI does: getCategoryById(tx.categoryId)
-    const cat = await getCategoryById(tx!.categoryId);
+    const cat = await getCategoryById(tx!.categoryId!);
     expect(cat).toBeTruthy();
     expect(cat!.name).toBe('Entertainment');
   });
@@ -231,7 +231,7 @@ describe('subscription payment → transaction category resolution', () => {
     // Mark subscription paid — the categoryId in the EMI must still resolve
     const txId = await markEmiPaid(sub.id);
     const tx = await db.transactions.get(txId!);
-    const cat = await getCategoryById(tx!.categoryId);
+    const cat = await getCategoryById(tx!.categoryId!);
 
     expect(cat?.name).toBe('Entertainment');
   });

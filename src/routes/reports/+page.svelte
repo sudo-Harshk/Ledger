@@ -28,8 +28,10 @@
 
   const liveCatSpend = $derived((() => {
     const map = new Map<string, number>();
-    for (const t of app.transactions.filter(t => t.type === 'expense'))
-      map.set(t.categoryId, (map.get(t.categoryId) ?? 0) + t.amount);
+    for (const t of app.transactions.filter(t => t.type === 'expense')) {
+      const id = t.categoryId ?? 'unknown';
+      map.set(id, (map.get(id) ?? 0) + t.amount);
+    }
     return Array.from(map.entries()).map(([categoryId, total]) => ({ categoryId, total }));
   })());
 

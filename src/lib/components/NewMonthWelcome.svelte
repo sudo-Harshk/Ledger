@@ -58,7 +58,10 @@
   const topCatId = $derived.by(() => {
     const tally: Record<string, number> = {};
     for (const t of prevTxns) {
-      if (t.type === 'expense') tally[t.categoryId] = (tally[t.categoryId] ?? 0) + t.amount;
+      if (t.type === 'expense') {
+        const id = t.categoryId ?? 'unknown';
+        tally[id] = (tally[id] ?? 0) + t.amount;
+      }
     }
     return Object.entries(tally).sort(([, a], [, b]) => b - a)[0]?.[0] ?? null;
   });

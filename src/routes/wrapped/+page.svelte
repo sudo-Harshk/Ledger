@@ -119,13 +119,16 @@
     try {
       if (navigator.share) {
         await navigator.share({ title: 'My Spending DNA', text: lines });
-      } else {
+        return;
+      }
+      if (navigator.clipboard) {
         await navigator.clipboard.writeText(lines);
         toast.show('Copied to clipboard!');
+        return;
       }
+      toast.show('Sharing not supported here');
     } catch {
-      await navigator.clipboard.writeText(lines);
-      toast.show('Copied to clipboard!');
+      toast.show('Could not share — please copy manually');
     }
   }
 </script>

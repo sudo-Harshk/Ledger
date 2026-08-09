@@ -38,8 +38,8 @@ export function validateName(
   return null;
 }
 
-export function validateRequired(value: string, label = 'This field'): string | null {
-  return value.trim() === '' ? `${label} is required` : null;
+export function validateRequired(value: string | undefined, label = 'This field'): string | null {
+  return !value || value.trim() === '' ? `${label} is required` : null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

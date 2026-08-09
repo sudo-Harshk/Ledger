@@ -33,8 +33,8 @@ class AppStore {
       .reduce((s, t) => s + t.amount, 0);
   }
 
-  getCategoryById(id: string) {
-    return this.categories.find(c => c.id === id);
+  getCategoryById(id?: string) {
+    return id ? this.categories.find(c => c.id === id) : undefined;
   }
 
   openQuickAdd(type: TransactionType = 'expense') {

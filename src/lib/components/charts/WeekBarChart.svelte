@@ -24,9 +24,10 @@
     const seen = new Set<string>();
     const icons: string[] = [];
     for (const t of txs) {
-      if (!seen.has(t.categoryId)) {
-        seen.add(t.categoryId);
-        const cat = categories.find(c => c.id === t.categoryId);
+      const id = t.categoryId ?? 'unknown';
+      if (!seen.has(id)) {
+        seen.add(id);
+        const cat = categories.find(c => c.id === id);
         if (cat) icons.push(cat.icon);
       }
     }

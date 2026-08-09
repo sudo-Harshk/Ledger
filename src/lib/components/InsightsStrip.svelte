@@ -21,9 +21,10 @@
     // ── 1. Category streak ────────────────────────────────────────────────
     const catDates = new Map<string, Set<string>>();
     for (const t of expenses) {
-      const s = catDates.get(t.categoryId) ?? new Set<string>();
+      const id = t.categoryId ?? 'unknown';
+      const s = catDates.get(id) ?? new Set<string>();
       s.add(t.date);
-      catDates.set(t.categoryId, s);
+      catDates.set(id, s);
     }
 
     let bestStreak = { catId: '', count: 0 };

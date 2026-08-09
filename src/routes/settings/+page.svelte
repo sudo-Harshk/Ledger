@@ -34,7 +34,7 @@
     const rows   = [['Date','Type','Amount','Category','Note','Payment Mode']];
     for (const t of txs) {
       rows.push([t.date, t.type, String(t.amount),
-        catMap.get(t.categoryId)?.name ?? '', t.note ?? '', t.paymentMode]);
+        catMap.get(t.categoryId ?? '')?.name ?? '', t.note ?? '', t.paymentMode]);
     }
     const csv  = rows.map(r => r.map(v => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
