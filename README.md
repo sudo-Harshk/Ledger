@@ -144,8 +144,9 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings → 
 | 🚗 | Transport | 📦 | Moving/Setup |
 | 📱 | Recharge | ⚡ | Electricity |
 | 🌐 | Internet | 💊 | Medicine |
-| 🧃 | Juice | 🤝 | Lent Money |
-| 💰 | Salary | 📌 | Miscellaneous |
+| 🧃 | Juice | 🧾 | EMI |
+| 💰 | Salary | 🤝 | Lent Money |
+| 📌 | Miscellaneous |  |  |
 
 ---
 
