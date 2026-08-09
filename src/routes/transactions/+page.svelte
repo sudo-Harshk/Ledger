@@ -21,7 +21,15 @@
 
   $effect(() => {
     loading = true;
-    getTransactions({ month }).then(txs => { allForMonth = txs; loading = false; });
+    const m = month;
+    getTransactions({ month: m }).then(txs => {
+      if (m !== month) return; // stale response — month changed while querying
+      allForMonth = txs;
+      loading = false;
+    });
+    // Re-run whenever the store refreshes (e.g. after a QuickAdd save/edit) so
+    // the list reflects newly added or edited transactions immediately.
+    void app.transactions;
   });
 
   const filtered = $derived(
