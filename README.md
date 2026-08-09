@@ -174,7 +174,7 @@ Pre-seeded for PG life. Fully customisable (add, edit, reorder) in Settings → 
 | Language | TypeScript 6.x |
 | Styling | Tailwind CSS 4.x |
 | Icons | @lucide/svelte |
-| Charts | layerchart |
+| Charts | Custom SVG |
 | Local storage | Dexie.js 4.x (IndexedDB) |
 | Cloud sync | Firebase Firestore 12.x |
 | Analytics | Vercel Analytics + Speed Insights |
@@ -236,11 +236,11 @@ npm run test       # Run unit tests (Vitest)
 Stored locally in IndexedDB via Dexie.js and synced to Firebase Firestore.
 
 ```
-transactions  ->  id, type, amount, categoryId, note, paymentMode, date, createdAt
+transactions  ->  id, type, amount, categoryId?, note, paymentMode, date, createdAt
 categories    ->  id, name, icon, color, sortOrder, isActive
-emis          ->  id, type, name, principal, monthlyAmount, startDate, totalMonths, paidMonths, nextDueDate, categoryId, notes (subscriptions only; loan tracking removed)
-lends         ->  id, personName, amount, date, note, repayments (array of { id, amount, date }), createdAt
-pgneeds       ->  id, name, done, month (YYYY-MM)
+emis          ->  id, type ('subscription'), name, monthlyAmount, startDate, paidMonths, nextDueDate, categoryId?, notes
+lends         ->  id, personName, amount, date, note, repayments (array of { id, amount, date, txId? }), createdAt, txId?
+pgneeds       ->  id, name, done, month (YYYY-MM), createdAt, doneAt?
 settings      ->  key, value
 ```
 

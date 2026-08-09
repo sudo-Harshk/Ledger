@@ -57,8 +57,9 @@ Open an issue with the prefix `[Feature]` in the title. Describe:
 2. **Install dependencies** — `npm install`
 3. **Make your changes** — keep them focused and minimal.
 4. **Type-check** — `npm run check` must pass with zero errors.
-5. **Test manually** — run `npm run dev` and verify the affected pages work.
-6. **Commit** using the [commit message format](#commit-messages) below.
+5. **Run tests** — `npm run test` must pass. Add unit tests for new pure helpers in `src/lib/utils.test.ts` or `src/lib/db/queries.test.ts`.
+6. **Test manually** — run `npm run dev` and verify the affected pages work.
+7. **Commit** using the [commit message format](#commit-messages) below.
 7. **Open a PR** against `main` with a clear title and description.
 
 ---
