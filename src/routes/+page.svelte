@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import WeekBarChart from '$lib/components/charts/WeekBarChart.svelte';
-  import { formatINR, getWeekDates, weekRangeLabel, today, daysInMonth, monthLabel } from '$lib/utils';
+  import { formatINR, getWeekDates, weekRangeLabel, today, daysInMonth, monthLabel, formatDateFull, monthName } from '$lib/utils';
   import { TrendingUp, TrendingDown, Wallet, Settings, AlertTriangle, ChevronLeft, ChevronRight, Handshake, ArrowRight } from '@lucide/svelte';
   import CountUp from '$lib/components/CountUp.svelte';
   import InsightsStrip from '$lib/components/InsightsStrip.svelte';
@@ -47,7 +47,7 @@
       .slice(0, 20)
   );
 
-  const daysLeft    = $derived(daysInMonth(app.monthStr) - new Date().getDate());
+  const daysLeft    = $derived(daysInMonth(app.monthStr) - Number(todayStr.slice(8, 10)));
   const todayIncome = $derived(
     app.transactions
       .filter(t => t.date === todayStr && t.type === 'income')
@@ -74,7 +74,7 @@
   );
 
   // Pace: project end-of-month spend based on current daily burn rate
-  const daysGone    = $derived(new Date().getDate());
+  const daysGone    = $derived(Number(todayStr.slice(8, 10)));
   const dailyRate   = $derived(daysGone > 0 && app.monthExpenses > 0 ? app.monthExpenses / daysGone : 0);
   const pace        = $derived(Math.round(dailyRate * daysInMonth(app.monthStr)));
   const paceWarning = $derived(reference > 0 && pace > reference);
@@ -109,7 +109,7 @@
   <div class="flex items-center justify-between mb-5 md:hidden">
     <div>
       <p class="text-xs text-[var(--color-text-muted)] font-medium">
-        {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+        {formatDateFull(todayStr)}
       </p>
       <h1 class="text-xl font-bold text-[var(--color-text)]">My Ledger</h1>
     </div>
@@ -171,7 +171,7 @@
             class="text-5xl font-extrabold tracking-tight text-[var(--color-text)]"
           />
           <p class="text-sm text-[var(--color-text-muted)] mt-1 leading-tight">
-            spent in {new Date().toLocaleDateString('en-IN', { month: 'long' })}
+            spent in {monthName(app.monthStr)}
           </p>
         </div>
 

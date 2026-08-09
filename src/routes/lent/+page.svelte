@@ -2,7 +2,7 @@
   import { app } from '$lib/stores/app.svelte';
   import { addLend, addRepayment, deleteLend } from '$lib/db/queries';
   import { toast } from '$lib/stores/toast.svelte';
-  import { formatINR, today } from '$lib/utils';
+  import { formatINR, today, formatDate } from '$lib/utils';
   import { Plus, Trash2, ChevronDown, ChevronUp, Check } from '@lucide/svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -75,7 +75,7 @@
   }
 
   function fmtDate(d: string) {
-    return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+    return formatDate(d);
   }
 </script>
 

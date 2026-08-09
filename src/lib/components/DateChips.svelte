@@ -1,23 +1,18 @@
 <script lang="ts">
   import { CalendarDays } from '@lucide/svelte';
+  import { today, addDays, weekDayLabel, formatShortDate } from '$lib/utils';
 
   let { value = $bindable() }: { value: string } = $props();
 
   let nativeInput = $state<HTMLInputElement | null>(null);
 
-  function localStr(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
   const chips = $derived(
     Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const date = addDays(today(), -i);
       return {
-        date: localStr(d),
-        label: i === 0 ? 'Today' : i === 1 ? 'Yest' : DAY[d.getDay()],
-        num: d.getDate(),
+        date,
+        label: i === 0 ? 'Today' : i === 1 ? 'Yest' : weekDayLabel(date),
+        num: Number(date.slice(8, 10)),
         isToday: i === 0,
       };
     })
@@ -27,8 +22,7 @@
 
   const olderLabel = $derived(() => {
     if (!isOlderDate) return '';
-    const d = new Date(value + 'T00:00:00');
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    return formatShortDate(value);
   });
 
   function openNative() {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatINR } from '$lib/utils';
+  import { formatINR, daysInMonth, dayOfWeek, formatDateFull } from '$lib/utils';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -19,10 +19,9 @@
 
   // Build Mon-first calendar grid for the month
   const calendarDays = $derived((() => {
-    const [y, m]    = month.split('-').map(Number);
-    const daysInMon = new Date(y, m, 0).getDate();
-    const firstDow  = new Date(y, m - 1, 1).getDay(); // 0 = Sun
-    const offset    = (firstDow + 6) % 7;             // Mon = 0, Sun = 6
+    const daysInMon = daysInMonth(month);
+    const firstDow  = dayOfWeek(`${month}-01`); // 0 = Sun
+    const offset    = (firstDow + 6) % 7;       // Mon = 0, Sun = 6
     const days: (string | null)[] = Array(offset).fill(null);
     for (let d = 1; d <= daysInMon; d++)
       days.push(`${month}-${String(d).padStart(2, '0')}`);
@@ -70,9 +69,7 @@
     <div in:fly={{ y: -4, duration: 150, easing: cubicOut }}
          class="flex items-center gap-2 flex-wrap">
       <span class="text-xs font-semibold text-[var(--color-text)]">
-        {new Date(activeDate + 'T00:00:00').toLocaleDateString('en-IN', {
-          weekday: 'short', day: 'numeric', month: 'short'
-        })}
+        {formatDateFull(activeDate)}
       </span>
       <span class="text-[var(--color-border)]">·</span>
       <span class="text-sm font-bold" style="color:{activeTotal > 0 ? 'var(--color-primary)' : 'var(--color-text-muted)'}">

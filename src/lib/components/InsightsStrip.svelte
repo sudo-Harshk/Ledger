@@ -1,15 +1,11 @@
 <script lang="ts">
   import type { Transaction, Category } from '$lib/db/schema';
-  import { formatINR } from '$lib/utils';
+  import { formatINR, today, addDays, dayOfWeek } from '$lib/utils';
 
   let { transactions, categories }: {
     transactions: Transaction[];
     categories:   Category[];
   } = $props();
-
-  function localStr(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
 
   interface Insight {
     icon:  string;
@@ -33,10 +29,10 @@
     let bestStreak = { catId: '', count: 0 };
     for (const [catId, dates] of catDates) {
       let count = 0;
-      const d = new Date();
-      while (dates.has(localStr(d))) {
+      let d = today();
+      while (dates.has(d)) {
         count++;
-        d.setDate(d.getDate() - 1);
+        d = addDays(d, -1);
       }
       if (count > bestStreak.count) bestStreak = { catId, count };
     }
@@ -55,18 +51,15 @@
     }
 
     // ── 2. Week-over-week comparison ──────────────────────────────────────
-    const now           = new Date();
-    const thisMonday    = new Date(now);
-    thisMonday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    const lastMonday    = new Date(thisMonday);
-    lastMonday.setDate(thisMonday.getDate() - 7);
-    const lastSunday    = new Date(thisMonday);
-    lastSunday.setDate(thisMonday.getDate() - 1);
+    const now           = today();
+    const thisMonday    = addDays(now, -((dayOfWeek(now) + 6) % 7));
+    const lastMonday    = addDays(thisMonday, -7);
+    const lastSunday    = addDays(thisMonday, -1);
 
-    const thisWeekStart = localStr(thisMonday);
-    const lastWeekStart = localStr(lastMonday);
-    const lastWeekEnd   = localStr(lastSunday);
-    const todayStr      = localStr(now);
+    const thisWeekStart = thisMonday;
+    const lastWeekStart = lastMonday;
+    const lastWeekEnd   = lastSunday;
+    const todayStr      = now;
 
     const thisWeekTotal = expenses
       .filter(t => t.date >= thisWeekStart && t.date <= todayStr)

@@ -18,7 +18,7 @@ function configured() {
 }
 
 export async function pushDoc(col: CollectionName, data: object) {
-  if (!configured()) return;
+  if (!configured() || !firestore) return;
   const d = data as Record<string, unknown>;
   const id = String((d.id ?? d.key) ?? '');
   if (!id) return;
@@ -30,7 +30,7 @@ export async function pushDoc(col: CollectionName, data: object) {
 }
 
 export async function removeDoc(col: CollectionName, id: string) {
-  if (!configured()) return;
+  if (!configured() || !firestore) return;
   try {
     await fsDeleteDoc(doc(firestore, col, id));
   } catch {
@@ -39,7 +39,7 @@ export async function removeDoc(col: CollectionName, id: string) {
 }
 
 export async function clearFirestoreCollection(col: CollectionName): Promise<void> {
-  if (!configured()) return;
+  if (!configured() || !firestore) return;
   try {
     const snap = await getDocs(collection(firestore, col));
     await Promise.all(snap.docs.map(d => fsDeleteDoc(d.ref)));
@@ -49,10 +49,11 @@ export async function clearFirestoreCollection(col: CollectionName): Promise<voi
 }
 
 export function subscribeToFirestore(onUpdate: () => void): () => void {
-  if (!configured()) return () => {};
+  if (!configured() || !firestore) return () => {};
+  const fs = firestore;
 
   function watch<T>(col: CollectionName, table: { bulkPut: (rows: T[]) => Promise<any>; bulkDelete: (ids: string[]) => Promise<any> }) {
-    return onSnapshot(collection(firestore, col), snap => {
+    return onSnapshot(collection(fs, col), snap => {
       const toUpsert = snap.docChanges()
         .filter(c => c.type !== 'removed')
         .map(c => c.doc.data() as T);

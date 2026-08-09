@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Transaction, Category } from '$lib/db/schema';
-  import { today, formatINR } from '$lib/utils';
+  import { today, formatINR, weekDayLabel } from '$lib/utils';
 
   let { data, transactions = [], categories = [] }: {
     data:          { date: string; total: number }[];
@@ -11,11 +11,11 @@
   const todayStr = today();
 
   function dayAbbrev(dateStr: string): string {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' }).slice(0, 3);
+    return weekDayLabel(dateStr);
   }
 
   function dayNum(dateStr: string): string {
-    return new Date(dateStr + 'T00:00:00').getDate().toString();
+    return String(Number(dateStr.slice(8, 10)));
   }
 
   // Unique category icons for a given date (up to 4, then "+N more")

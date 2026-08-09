@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { app } from '$lib/stores/app.svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
+  import { today, formatDateFull } from '$lib/utils';
   import {
     LayoutDashboard, ArrowLeftRight,
     BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles, ShoppingBasket, RefreshCw,
@@ -41,7 +42,7 @@
       </button>
     </div>
     <p class="text-[11px] text-[var(--color-text-muted)] mt-2 leading-snug">
-      {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+      {formatDateFull(today())}
     </p>
   </div>
 

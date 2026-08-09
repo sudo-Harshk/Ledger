@@ -6,12 +6,16 @@ import {
   PUBLIC_FIREBASE_APP_ID,
 } from '$env/static/public';
 
-const firebaseApp = getApps().length === 0
-  ? initializeApp({
-      apiKey:    PUBLIC_FIREBASE_API_KEY,
-      projectId: PUBLIC_FIREBASE_PROJECT_ID,
-      appId:     PUBLIC_FIREBASE_APP_ID,
-    })
-  : getApps()[0];
+const config = {
+  apiKey:    PUBLIC_FIREBASE_API_KEY,
+  projectId: PUBLIC_FIREBASE_PROJECT_ID,
+  appId:     PUBLIC_FIREBASE_APP_ID,
+};
 
-export const firestore = getFirestore(firebaseApp);
+export const firebaseApp = getApps().length
+  ? getApps()[0]
+  : PUBLIC_FIREBASE_PROJECT_ID
+    ? initializeApp(config)
+    : null;
+
+export const firestore = firebaseApp ? getFirestore(firebaseApp) : null;

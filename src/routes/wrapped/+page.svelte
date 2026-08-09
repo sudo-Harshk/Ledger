@@ -2,7 +2,7 @@
   import { getMonthSummary, getCategorySpend, getTransactions } from '$lib/db/queries';
   import { app } from '$lib/stores/app.svelte';
   import { toast } from '$lib/stores/toast.svelte';
-  import { formatINR, currentMonth, monthLabel } from '$lib/utils';
+  import { formatINR, currentMonth, monthLabel, today } from '$lib/utils';
   import CountUp from '$lib/components/CountUp.svelte';
   import { Share2, Sparkles } from '@lucide/svelte';
 
@@ -22,7 +22,7 @@
   let breakdown     = $state<{ categoryId: string; total: number }[]>([]);
   let personality   = $state({ label: 'The Balanced One', emoji: '⚖️' });
 
-  const year       = new Date().getFullYear().toString();
+  const year       = today().slice(0, 4);
   const thisMonth  = currentMonth();
 
   function monthsForMode(m: Mode): string[] {

@@ -1,20 +1,20 @@
 <script lang="ts">
   import { X, ArrowRight, Sparkles } from '@lucide/svelte';
   import { getSetting, setSetting, getTransactions } from '$lib/db/queries';
-  import { formatINR, prevMonth, currentMonth, monthLabel } from '$lib/utils';
+  import { formatINR, prevMonth, currentMonth, monthLabel, monthName, today } from '$lib/utils';
   import { fly } from 'svelte/transition';
   import { cubicIn } from 'svelte/easing';
   import { onMount } from 'svelte';
   import { app } from '$lib/stores/app.svelte';
   import type { Transaction } from '$lib/db/schema';
 
-  const todayDate   = new Date().getDate();              // 1, 2, or 3
+  const todayDate   = Number(today().slice(8, 10));      // 1, 2, or 3
   const thisMonth   = currentMonth();                    // e.g. "2026-07"
   const lastMonth   = prevMonth(thisMonth);              // e.g. "2026-06"
   const DISMISS_KEY = `new_month_welcome_dismissed_${thisMonth}`;
 
-  const thisMonthName = new Date(thisMonth + '-01T00:00:00').toLocaleDateString('en-IN', { month: 'long' });
-  const lastMonthName = new Date(lastMonth + '-01T00:00:00').toLocaleDateString('en-IN', { month: 'long' });
+  const thisMonthName = monthName(thisMonth);
+  const lastMonthName = monthName(lastMonth);
 
   // Only relevant on days 1-3 of a new month
   const shouldShow = todayDate >= 1 && todayDate <= 3;
