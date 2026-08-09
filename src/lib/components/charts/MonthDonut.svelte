@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Category, Transaction } from '$lib/db/schema';
-  import { formatINR } from '$lib/utils';
+  import { formatINR, formatShortDate } from '$lib/utils';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -30,7 +30,7 @@
     return `M ${CX} ${CY} L ${s.x} ${s.y} A ${R} ${R} 0 ${large} 1 ${e.x} ${e.y} Z`;
   }
 
-  const arcs = $derived(() => {
+  const arcs = $derived.by(() => {
     if (total === 0) return [];
     let current = 0;
     return slices.map(s => {
@@ -54,7 +54,7 @@
   let hoverCatId  = $state<string | null>(null);
   let pinnedCatId = $state<string | null>(null);
   const activeCatId = $derived(hoverCatId ?? pinnedCatId);
-  const activeSeg   = $derived(activeCatId ? (arcs().find(a => a.categoryId === activeCatId) ?? null) : null);
+  const activeSeg   = $derived(activeCatId ? (arcs.find(a => a.categoryId === activeCatId) ?? null) : null);
 
   // Drill-down: transactions for the pinned category, newest first
   const drillTxs = $derived(
@@ -71,7 +71,7 @@
   }
 
   function fmtDate(dateStr: string): string {
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    return formatShortDate(dateStr);
   }
 </script>
 
@@ -85,7 +85,7 @@
     <!-- Donut SVG + center overlay -->
     <div class="relative shrink-0" style="width:{SIZE}px; height:{SIZE}px;">
       <svg width={SIZE} height={SIZE} viewBox="0 0 {SIZE} {SIZE}">
-        {#each arcs() as seg}
+        {#each arcs as seg}
           <path d={seg.path}
                 fill={seg.color}
                 class="cursor-pointer transition-all duration-200"
@@ -133,7 +133,7 @@
 
     <!-- Legend — also interactive -->
     <div class="flex flex-col gap-1.5 min-w-0">
-      {#each arcs().slice(0, 5) as seg}
+      {#each arcs.slice(0, 5) as seg}
         <button onclick={() => toggle(seg.categoryId)}
                 onmouseenter={() => hoverCatId = seg.categoryId}
                 onmouseleave={() => hoverCatId = null}

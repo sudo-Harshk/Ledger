@@ -44,7 +44,7 @@
     })
   );
 
-  const grouped = $derived(() => {
+  const grouped = $derived.by(() => {
     const map = new Map<string, Transaction[]>();
     for (const t of filtered) {
       if (!map.has(t.date)) map.set(t.date, []);
@@ -123,14 +123,14 @@
             <div class="h-16 bg-[var(--color-surface)] rounded-xl animate-pulse"></div>
           {/each}
         </div>
-      {:else if grouped().length === 0}
+      {:else if grouped.length === 0}
         <div class="text-center py-16">
           <p class="text-4xl mb-3">📭</p>
           <p class="text-[var(--color-text-muted)]">No transactions found</p>
         </div>
       {:else}
         <div class="space-y-5 pb-28 md:pb-8">
-          {#each grouped() as [date, txs]}
+          {#each grouped as [date, txs]}
             <div>
               <div class="flex justify-between items-baseline mb-2">
                 <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase">{formatDate(date)}</p>

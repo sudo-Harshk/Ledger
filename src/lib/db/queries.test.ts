@@ -267,30 +267,30 @@ describe('subscription payment → transaction category resolution', () => {
   it('clamps a month-end due date to the target month\'s last day (Jan 31 → Feb 28)', async () => {
     await seedIfEmpty();
     const def = DEFAULT_CATEGORIES[0];
-    const emi = await addEmi({
-      type: 'emi', name: 'Jan Loan', monthlyAmount: 1000, principal: 12000,
-      startDate: '2026-01-31', paidMonths: 0, nextDueDate: '2026-01-31', totalMonths: 12,
+    const sub = await addEmi({
+      type: 'subscription', name: 'Jan Sub', monthlyAmount: 1000,
+      startDate: '2026-01-31', paidMonths: 0, nextDueDate: '2026-01-31',
       categoryId: def.id,
     });
 
-    await markEmiPaid(emi.id);
+    await markEmiPaid(sub.id);
 
-    const updated = await db.emis.get(emi.id);
+    const updated = await db.emis.get(sub.id);
     expect(updated?.nextDueDate).toBe('2026-02-28');
   });
 
   it('does not skip a month when the next due date is the 29th', async () => {
     await seedIfEmpty();
     const def = DEFAULT_CATEGORIES[0];
-    const emi = await addEmi({
-      type: 'emi', name: 'Feb Loan', monthlyAmount: 1000, principal: 12000,
-      startDate: '2026-02-28', paidMonths: 0, nextDueDate: '2026-02-28', totalMonths: 12,
+    const sub = await addEmi({
+      type: 'subscription', name: 'Feb Sub', monthlyAmount: 1000,
+      startDate: '2026-02-28', paidMonths: 0, nextDueDate: '2026-02-28',
       categoryId: def.id,
     });
 
-    await markEmiPaid(emi.id);
+    await markEmiPaid(sub.id);
 
-    const updated = await db.emis.get(emi.id);
+    const updated = await db.emis.get(sub.id);
     expect(updated?.nextDueDate).toBe('2026-03-28');
   });
 

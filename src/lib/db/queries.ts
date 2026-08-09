@@ -1,5 +1,5 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment, PgNeed } from './schema';
+import type { Transaction, Category, Emi, TransactionType, Lend, Repayment, PgNeed } from './schema';
 import { nanoid, currentMonth, today, addMonths } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
@@ -181,14 +181,9 @@ export async function addEmi(data: Omit<Emi, 'id'>) {
 export async function markEmiPaid(id: string): Promise<string | null> {
   const emi = await db.emis.get(id);
   if (!emi) return null;
-  const isSubscription = emi.type === 'subscription';
-  const paidMonths = isSubscription ? emi.paidMonths : emi.paidMonths + 1;
-  const updated = {
-    ...emi,
-    paidMonths,
-    nextDueDate: addMonths(emi.nextDueDate, 1),
-  };
-  await db.emis.update(id, { paidMonths, nextDueDate: updated.nextDueDate });
+  const nextDueDate = addMonths(emi.nextDueDate, 1);
+  const updated = { ...emi, nextDueDate };
+  await db.emis.update(id, { nextDueDate });
   pushDoc('emis', updated).catch(() => {});
 
   // Auto-create expense transaction if a category is linked

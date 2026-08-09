@@ -23,16 +23,12 @@ export interface Category {
   isActive: boolean;
 }
 
-export type EmiType = 'emi' | 'subscription';
-
 export interface Emi {
   id: string;
-  type: EmiType;
+  type: 'subscription';
   name: string;
-  principal?: number;
   monthlyAmount: number;
   startDate: string; // YYYY-MM-DD
-  totalMonths?: number;
   paidMonths: number;
   nextDueDate: string; // YYYY-MM-DD
   categoryId?: string;
@@ -150,7 +146,6 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-juice',         name: 'Juice',          icon: '🧃', color: '#F59E0B', sortOrder: 10, isActive: true },
   { id: 'cat-electricity',   name: 'Electricity',    icon: '⚡', color: '#EAB308', sortOrder: 11, isActive: true },
   { id: 'cat-medicine',      name: 'Medicine',       icon: '💊', color: '#EF4444', sortOrder: 12, isActive: true },
-  { id: 'cat-emi',           name: 'EMI',            icon: '🧾', color: '#8B5CF6', sortOrder: 13, isActive: true },
-  { id: 'cat-lent',          name: 'Lent Money',     icon: '🤝', color: '#14B8A6', sortOrder: 14, isActive: true },
-  { id: 'cat-misc',          name: 'Miscellaneous',  icon: '📌', color: '#9B99B8', sortOrder: 15, isActive: true },
+  { id: 'cat-lent',          name: 'Lent Money',     icon: '🤝', color: '#14B8A6', sortOrder: 13, isActive: true },
+  { id: 'cat-misc',          name: 'Miscellaneous',  icon: '📌', color: '#9B99B8', sortOrder: 14, isActive: true },
 ];

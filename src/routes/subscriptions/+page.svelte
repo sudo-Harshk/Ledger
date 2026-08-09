@@ -73,7 +73,7 @@
     return nextDueDate.slice(0, 7) > currentMonth();
   }
 
-  const subscriptions = $derived(app.emis.filter(e => !e.totalMonths || e.type === 'subscription'));
+  const subscriptions = $derived(app.emis);
   const totalCost     = $derived(subscriptions.reduce((s, e) => s + e.monthlyAmount, 0));
 </script>
 
