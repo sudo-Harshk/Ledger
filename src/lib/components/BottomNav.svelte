@@ -1,11 +1,10 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { LayoutDashboard, ArrowLeftRight, CreditCard, BarChart3, Handshake, ShoppingBasket } from '@lucide/svelte';
+  import { LayoutDashboard, ArrowLeftRight, BarChart3, Handshake, ShoppingBasket } from '@lucide/svelte';
 
   const nav = [
     { href: '/',             label: 'Home',    Icon: LayoutDashboard },
     { href: '/transactions', label: 'Spends',  Icon: ArrowLeftRight  },
-    { href: '/emis',         label: 'EMIs',    Icon: CreditCard      },
     { href: '/reports',      label: 'Reports', Icon: BarChart3       },
     { href: '/pgneeds',      label: 'Needs',   Icon: ShoppingBasket  },
     { href: '/lent',         label: 'Lent',    Icon: Handshake       },
@@ -17,8 +16,7 @@
             bg-[var(--color-surface)] border-t border-[var(--color-border)]
             pb-[env(safe-area-inset-bottom)]">
   {#each nav as item}
-    {@const active = $page.url.pathname === item.href ||
-                     (item.href === '/emis' && $page.url.pathname === '/subscriptions')}
+    {@const active = $page.url.pathname === item.href}
     <a href={item.href}
        class="flex flex-col items-center gap-1 py-3 px-2 min-w-0 flex-1 transition-colors duration-150
               {active ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}">

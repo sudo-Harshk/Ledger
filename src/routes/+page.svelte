@@ -345,34 +345,6 @@
         </a>
       {/if}
 
-      <!-- Upcoming EMIs / Subscriptions -->
-      {#if app.emis.length > 0}
-        {@const upcoming = app.emis.slice(0, 3)}
-        <div class="bg-[var(--color-surface)] rounded-2xl overflow-hidden">
-          <div class="px-5 pt-5 pb-3">
-            <p class="text-sm font-semibold">Upcoming</p>
-          </div>
-          <div class="divide-y divide-[var(--color-border)]/40">
-            {#each upcoming as emi}
-              <a href={emi.type === 'subscription' ? '/subscriptions' : '/emis'}
-                 class="flex items-center gap-3 px-5 py-3 hover:bg-[var(--color-surface-2)] transition-colors">
-                <div class="flex-1 min-w-0 flex items-center gap-2">
-                  <span class="text-sm font-medium truncate">{emi.name}</span>
-                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md shrink-0
-                               {emi.type === 'subscription'
-                                 ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-                                 : 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]'}">
-                    {emi.type === 'subscription' ? 'SUB' : 'EMI'}
-                  </span>
-                </div>
-                <span class="text-sm font-semibold shrink-0">{formatINR(emi.monthlyAmount)}</span>
-                <ChevronRight size={14} class="text-[var(--color-text-muted)] shrink-0" />
-              </a>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
       <!-- Recent transactions (mobile only) -->
       <div class="md:hidden bg-[var(--color-surface)] rounded-2xl p-5">
         <div class="flex items-center justify-between mb-4">

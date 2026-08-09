@@ -4,13 +4,12 @@
   import { themeStore } from '$lib/stores/theme.svelte';
   import {
     LayoutDashboard, ArrowLeftRight,
-    CreditCard, BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles, ShoppingBasket,
+    BarChart3, Plus, Settings, Wallet, Sun, Moon, Sparkles, ShoppingBasket,
   } from '@lucide/svelte';
 
   const nav = [
     { href: '/',             label: 'Home',         Icon: LayoutDashboard },
     { href: '/transactions', label: 'Transactions', Icon: ArrowLeftRight  },
-    { href: '/emis',         label: 'EMI & Loans',  Icon: CreditCard      },
     { href: '/reports',      label: 'Reports',       Icon: BarChart3       },
     { href: '/pgneeds',      label: 'PG Needs',     Icon: ShoppingBasket  },
     { href: '/wrapped',      label: 'Spending DNA', Icon: Sparkles        },
@@ -48,8 +47,7 @@
   <!-- Nav -->
   <nav class="flex-1 px-3 py-4 space-y-0.5">
     {#each nav as item}
-      {@const active = $page.url.pathname === item.href ||
-                       (item.href === '/emis' && $page.url.pathname === '/subscriptions')}
+      {@const active = $page.url.pathname === item.href}
       <a href={item.href}
          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
                 {active

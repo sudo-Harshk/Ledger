@@ -1,6 +1,6 @@
 import { db, DEFAULT_CATEGORIES } from './schema';
-import type { Transaction, Category, Emi, EmiType, TransactionType, Lend, Repayment, PgNeed } from './schema';
-import { nanoid, currentMonth, today, addMonths } from '$lib/utils';
+import type { Transaction, Category, TransactionType, Lend, Repayment, PgNeed } from './schema';
+import { nanoid, currentMonth } from '$lib/utils';
 import { pushDoc, removeDoc, clearFirestoreCollection } from './firestore';
 
 // ── Seed ────────────────────────────────────────────────────────────────────
@@ -33,12 +33,10 @@ export async function migrateCategoryIds() {
     const oldId = cat.id;
 
     // Collect affected records before modifying
-    const affectedTxs  = await db.transactions.where('categoryId').equals(oldId).toArray();
-    const affectedEmis = (await db.emis.toArray()).filter(e => e.categoryId === oldId);
+    const affectedTxs = await db.transactions.where('categoryId').equals(oldId).toArray();
 
     // Update references in local DB
     await db.transactions.where('categoryId').equals(oldId).modify({ categoryId: stableId });
-    await Promise.all(affectedEmis.map(e => db.emis.update(e.id, { categoryId: stableId })));
 
     // Replace category record (Dexie can't update primary key, so delete + put)
     await db.categories.delete(oldId);
@@ -48,7 +46,6 @@ export async function migrateCategoryIds() {
     pushDoc('categories', { ...cat, id: stableId }).catch(() => {});
     removeDoc('categories', oldId).catch(() => {});
     for (const tx of affectedTxs) pushDoc('transactions', { ...tx, categoryId: stableId }).catch(() => {});
-    for (const emi of affectedEmis) pushDoc('emis', { ...emi, categoryId: stableId }).catch(() => {});
   }
 }
 
@@ -163,52 +160,6 @@ export async function deleteCategory(id: string) {
   await db.categories.update(id, { isActive: false });
   const updated = await db.categories.get(id);
   if (updated) pushDoc('categories', updated).catch(() => {});
-}
-
-// ── EMIs ──────────────────────────────────────────────────────────────────────
-
-export async function getEmis() {
-  return db.emis.orderBy('nextDueDate').toArray();
-}
-
-export async function addEmi(data: Omit<Emi, 'id'>) {
-  const emi: Emi = { ...data, id: nanoid() };
-  await db.emis.add(emi);
-  pushDoc('emis', emi).catch(() => {});
-  return emi;
-}
-
-export async function markEmiPaid(id: string): Promise<string | null> {
-  const emi = await db.emis.get(id);
-  if (!emi) return null;
-  const isSubscription = emi.type === 'subscription';
-  const paidMonths = isSubscription ? emi.paidMonths : emi.paidMonths + 1;
-  const updated = {
-    ...emi,
-    paidMonths,
-    nextDueDate: addMonths(emi.nextDueDate, 1),
-  };
-  await db.emis.update(id, { paidMonths, nextDueDate: updated.nextDueDate });
-  pushDoc('emis', updated).catch(() => {});
-
-  // Auto-create expense transaction if a category is linked
-  if (emi.categoryId) {
-    const tx = await addTransaction({
-      type: 'expense',
-      amount: emi.monthlyAmount,
-      categoryId: emi.categoryId,
-      paymentMode: 'upi',
-      date: today(),
-      note: emi.name,
-    });
-    return tx.id;
-  }
-  return null;
-}
-
-export async function deleteEmi(id: string) {
-  await db.emis.delete(id);
-  removeDoc('emis', id).catch(() => {});
 }
 
 // ── Lends ─────────────────────────────────────────────────────────────────────
@@ -386,7 +337,6 @@ export async function clearAllData() {
   // Wipe IndexedDB
   await Promise.all([
     db.transactions.clear(),
-    db.emis.clear(),
     db.settings.clear(),
     db.categories.clear(),
     db.lends.clear(),
@@ -395,7 +345,6 @@ export async function clearAllData() {
   // Wipe Firestore
   await Promise.all([
     clearFirestoreCollection('transactions'),
-    clearFirestoreCollection('emis'),
     clearFirestoreCollection('settings'),
     clearFirestoreCollection('categories'),
     clearFirestoreCollection('lends'),
