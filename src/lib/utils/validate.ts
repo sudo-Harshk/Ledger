@@ -42,20 +42,6 @@ export function validateRequired(value: string, label = 'This field'): string | 
   return value.trim() === '' ? `${label} is required` : null;
 }
 
-export function validateTursoUrl(value: string): string | null {
-  if (!value.trim()) return 'Database URL is required';
-  if (!value.startsWith('libsql://') && !value.startsWith('https://')) {
-    return 'URL must start with libsql:// or https://';
-  }
-  return null;
-}
-
-export function validateTursoToken(value: string): string | null {
-  if (!value.trim()) return 'Auth token is required';
-  if (value.trim().length < 20) return 'Token looks too short — check your Turso dashboard';
-  return null;
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function formatMax(n: number): string {
