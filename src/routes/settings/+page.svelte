@@ -168,7 +168,7 @@
       <div class="px-5 py-4 space-y-3">
         <p class="text-sm font-semibold text-[var(--color-expense)]">Are you sure?</p>
         <p class="text-xs text-[var(--color-text-muted)]">
-          This permanently deletes all transactions, EMIs, lends, and settings. Default categories will be restored.
+          This permanently deletes all transactions, subscriptions, lends, PG needs, and settings. Default categories will be restored.
         </p>
         <div class="flex gap-2">
           <button onclick={resetAll} disabled={resetting}

@@ -31,6 +31,12 @@ export function currentMonth(): string {
   return istDateStr(new Date()).slice(0, 7);
 }
 
+// Converts a value from a native <input type="date"> (interpreted in the
+// user's local timezone) to an IST YYYY-MM-DD string before persistence.
+export function localDateToIST(localDateStr: string): string {
+  return istDateStr(new Date(localDateStr + 'T00:00:00'));
+}
+
 const MONTH_LONG = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'

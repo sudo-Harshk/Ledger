@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import { addEmi, markEmiPaid, deleteEmi } from '$lib/db/queries';
-  import { formatINR, formatShortDate, daysUntil, today, currentMonth } from '$lib/utils';
+  import { formatINR, formatShortDate, daysUntil, today, currentMonth, localDateToIST } from '$lib/utils';
   import { toast } from '$lib/stores/toast.svelte';
   import { validateAmount, validateName } from '$lib/utils/validate';
   import { Plus, Check, Trash2, CalendarClock, X, AlertCircle, RefreshCw } from '@lucide/svelte';
@@ -29,13 +29,14 @@
   async function save() {
     attempted = true;
     if (hasErrors) return;
+    const startDate = localDateToIST(form.startDate);
     await addEmi({
       type:          'subscription',
       name:          form.name.trim(),
       monthlyAmount: parseFloat(form.monthlyAmount),
-      startDate:     form.startDate,
+      startDate,
       paidMonths:    0,
-      nextDueDate:   form.startDate,
+      nextDueDate:   startDate,
       categoryId:    form.categoryId || undefined,
       notes:         form.notes.trim()
     });
