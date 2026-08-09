@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { LayoutDashboard, ArrowLeftRight, BarChart3, Handshake, ShoppingBasket } from '@lucide/svelte';
+  import { LayoutDashboard, ArrowLeftRight, BarChart3, Handshake, ShoppingBasket, RefreshCw } from '@lucide/svelte';
 
   const nav = [
     { href: '/',             label: 'Home',    Icon: LayoutDashboard },
@@ -8,6 +8,7 @@
     { href: '/reports',      label: 'Reports', Icon: BarChart3       },
     { href: '/pgneeds',      label: 'Needs',   Icon: ShoppingBasket  },
     { href: '/lent',         label: 'Lent',    Icon: Handshake       },
+    { href: '/subscriptions', label: 'Subs',   Icon: RefreshCw       },
   ];
 </script>
 

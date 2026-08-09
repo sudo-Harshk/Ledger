@@ -23,6 +23,22 @@ export interface Category {
   isActive: boolean;
 }
 
+export type EmiType = 'emi' | 'subscription';
+
+export interface Emi {
+  id: string;
+  type: EmiType;
+  name: string;
+  principal?: number;
+  monthlyAmount: number;
+  startDate: string; // YYYY-MM-DD
+  totalMonths?: number;
+  paidMonths: number;
+  nextDueDate: string; // YYYY-MM-DD
+  categoryId?: string;
+  notes?: string;
+}
+
 export interface Setting {
   key: string;
   value: string;
@@ -58,6 +74,7 @@ export interface PgNeed {
 class LedgerDB extends Dexie {
   transactions!: Table<Transaction>;
   categories!: Table<Category>;
+  emis!: Table<Emi>;
   settings!: Table<Setting>;
   lends!: Table<Lend>;
   pgneeds!: Table<PgNeed>;
@@ -100,6 +117,15 @@ class LedgerDB extends Dexie {
     this.version(5).stores({
       transactions: 'id, type, categoryId, date, createdAt',
       categories:   'id, sortOrder',
+      settings:     'key',
+      lends:        'id, createdAt',
+      pgneeds:      'id, month, done'
+    });
+    // v6 re-creates the emis table — subscriptions feature kept (EMI loans stay removed)
+    this.version(6).stores({
+      transactions: 'id, type, categoryId, date, createdAt',
+      categories:   'id, sortOrder',
+      emis:         'id, nextDueDate',
       settings:     'key',
       lends:        'id, createdAt',
       pgneeds:      'id, month, done'

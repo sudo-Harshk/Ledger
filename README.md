@@ -22,8 +22,9 @@
 
 | Route | What it does |
 |---|---|
-| `/` | **Dashboard**: Month Health Card, Insights Strip, weekly spend chart, lent money card, recent transactions, contextual month-end and new-month banners |
+| `/` | **Dashboard**: Month Health Card, Insights Strip, weekly spend chart, upcoming subscriptions, lent money card, recent transactions, contextual month-end and new-month banners |
 | `/transactions` | Browse, edit, and delete all transactions grouped by day with month navigation |
+| `/subscriptions` | Subscription tracker: name, monthly cost, renewal date, mark-paid logs an expense |
 | `/reports` | Monthly donut chart, category breakdown bars, calendar heatmap for daily spend. Navigate any past month |
 | `/pgneeds` | Monthly PG needs checklist: add items, mark bought, month navigation to review past months |
 | `/lent` | Lent money tracker: log amounts lent, record partial repayments, track outstanding balance per person |
@@ -78,6 +79,11 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - **Month Donut**: category spend breakdown (Reports). Tap a segment to see the name, amount, and percentage; tap again to reveal the last 8 transactions for that category inline
 - **Daily Spend Heatmap** (Reports): a full-month calendar grid coloured by spend intensity — green for light days, orange for above average, red for the heaviest. Tap any cell for the exact amount
 
+### Subscription Tracker
+- Track subscriptions: name, monthly cost, next renewal date, optional notes
+- Due-date countdown with urgency colours (overdue / due today / due soon)
+- **Mark Paid** advances the renewal date and auto-logs an expense transaction in the linked category
+
 ### Lent Money Tracker
 - Log money lent to a person with an optional note and date
 - Lending **auto-records an expense transaction** (Lent Money category, payment mode UPI, note "Lent to {name}") on the lend date — money has left your account
@@ -116,7 +122,7 @@ All charts support hover on desktop and tap-to-pin on mobile:
 - **Categories**: shortcut to the Categories management page
 - **Dashboard Banners**: toggle the month-end nudge and new-month welcome card independently
 - **Export as CSV**: download all transactions as a UTF-8 CSV file
-- **Reset All Data**: wipe all transactions, lends, and settings (with confirmation); default categories are re-seeded
+- **Reset All Data**: wipe all transactions, subscriptions, lends, and settings (with confirmation); default categories are re-seeded
 
 ### Sync and Offline
 - All data lives in **IndexedDB** (Dexie.js) for instant reads and writes that work offline
@@ -231,6 +237,7 @@ Stored locally in IndexedDB via Dexie.js and synced to Firebase Firestore.
 ```
 transactions  ->  id, type, amount, categoryId, note, paymentMode, date, createdAt
 categories    ->  id, name, icon, color, sortOrder, isActive
+emis          ->  id, type, name, principal, monthlyAmount, startDate, totalMonths, paidMonths, nextDueDate, categoryId, notes (subscriptions only; loan tracking removed)
 lends         ->  id, personName, amount, date, note, repayments (array of { id, amount, date }), createdAt
 pgneeds       ->  id, name, done, month (YYYY-MM)
 settings      ->  key, value
@@ -240,9 +247,9 @@ settings      ->  key, value
 
 ## Dates & Timezones
 
-- All calendar dates (`date`, `startDate`, `month`, …) are stored as `YYYY-MM-DD` strings in **IST (`Asia/Kolkata`)** — never UTC.
+- All calendar dates (`date`, `nextDueDate`, `startDate`, `month`, …) are stored as `YYYY-MM-DD` strings in **IST (`Asia/Kolkata`)** — never UTC.
 - `today()` and `currentMonth()` (from `src/lib/utils.ts`) resolve "now" via `Intl.DateTimeFormat` with `timeZone: 'Asia/Kolkata'`, so the app's notion of today is IST regardless of the device's timezone.
-- Month arithmetic is pure calendar math: `addMonths(dateStr, n)` advances a date string and **clamps the day to the target month's last day** (e.g. `2026-01-31` + 1 month → `2026-02-28`, leap years respected), so a 31st date never skips a month.
+- Month arithmetic is pure calendar math: `addMonths(dateStr, n)` advances a date string and **clamps the day to the target month's last day** (e.g. `2026-01-31` + 1 month → `2026-02-28`, leap years respected). Subscription renewal dates use it, so a 31st renewal date never skips a month.
 - Do **not** parse `YYYY-MM-DD` with `new Date(str)` (parses as UTC midnight) or serialize with `toISOString()` (UTC) for calendar dates — use the `$lib/utils` helpers.
 
 ---

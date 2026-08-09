@@ -8,11 +8,21 @@ vi.mock('./firestore', () => ({
   pullFromFirestore:        vi.fn().mockResolvedValue(undefined),
 }));
 
+// Override only today() — real addMonths/nanoid/currentMonth stay in use.
+// today() itself is proven to be IST in src/lib/utils.test.ts; this mock pins
+// the app's shared IST date so markEmiPaid's transaction date is deterministic.
+vi.mock('$lib/utils', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('$lib/utils')>();
+  return { ...mod, today: () => '2026-08-09' };
+});
+
 import { db, DEFAULT_CATEGORIES } from './schema';
 import {
   seedIfEmpty,
   migrateCategoryIds,
   addTransaction,
+  addEmi,
+  markEmiPaid,
   getTransactions,
   addPgNeed,
   togglePgNeed,
@@ -30,10 +40,15 @@ async function clearDB() {
   await Promise.all([
     db.categories.clear(),
     db.transactions.clear(),
+    db.emis.clear(),
     db.settings.clear(),
     db.lends.clear(),
     db.pgneeds.clear(),
   ]);
+}
+
+function getCategoryById(id: string) {
+  return db.categories.get(id);
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -111,6 +126,23 @@ describe('migrateCategoryIds', () => {
     expect(updated?.categoryId).toBe(def.id);
   });
 
+  it('updates EMIs/subscriptions that reference the old category ID', async () => {
+    const def = DEFAULT_CATEGORIES.find(c => c.name === 'Entertainment')!;
+    const randomId = 'old-ent-id';
+
+    await db.categories.add({ ...def, id: randomId });
+    const emi = await addEmi({
+      type: 'subscription', name: 'Netflix', monthlyAmount: 199,
+      startDate: '2026-06-15', paidMonths: 0, nextDueDate: '2026-06-15',
+      categoryId: randomId,
+    });
+
+    await migrateCategoryIds();
+
+    const updated = await db.emis.get(emi.id);
+    expect(updated?.categoryId).toBe(def.id);
+  });
+
   it('fixes transactions when Firestore re-pulls both old-ID and stable-ID category on reload', async () => {
     // Scenario: migration ran once (stable cat + transaction pushed to Firestore),
     // but removeDoc for the old category failed — so Firestore still has the old-ID
@@ -153,6 +185,130 @@ describe('migrateCategoryIds', () => {
 
     const after = await db.categories.orderBy('sortOrder').toArray();
     expect(after.map(c => c.id)).toEqual(before.map(c => c.id));
+  });
+});
+
+// ── markEmiPaid + subscription category resolution ────────────────────────────
+
+describe('subscription payment → transaction category resolution', () => {
+  it('transaction created by markEmiPaid has a resolvable categoryId', async () => {
+    await seedIfEmpty();
+
+    const def = DEFAULT_CATEGORIES.find(c => c.name === 'Entertainment')!;
+    const sub = await addEmi({
+      type: 'subscription', name: 'Spotify', monthlyAmount: 119,
+      startDate: '2026-06-10', paidMonths: 0, nextDueDate: '2026-06-10',
+      categoryId: def.id,
+    });
+
+    const txId = await markEmiPaid(sub.id);
+    expect(txId).not.toBeNull();
+
+    const tx = await db.transactions.get(txId!);
+    expect(tx).toBeTruthy();
+    expect(tx!.categoryId).toBe(def.id);
+
+    // Simulates what the UI does: getCategoryById(tx.categoryId)
+    const cat = await getCategoryById(tx!.categoryId);
+    expect(cat).toBeTruthy();
+    expect(cat!.name).toBe('Entertainment');
+  });
+
+  it('cross-device: subscription with stable categoryId resolves after independent reseed', async () => {
+    // Device A: seeds and creates a subscription
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES.find(c => c.name === 'Entertainment')!;
+    const sub = await addEmi({
+      type: 'subscription', name: 'Netflix', monthlyAmount: 199,
+      startDate: '2026-06-10', paidMonths: 0, nextDueDate: '2026-06-10',
+      categoryId: def.id,
+    });
+
+    // Device B: clear categories and re-seed independently (stable IDs → same result)
+    await db.categories.clear();
+    await seedIfEmpty();
+
+    // Mark subscription paid — the categoryId in the EMI must still resolve
+    const txId = await markEmiPaid(sub.id);
+    const tx = await db.transactions.get(txId!);
+    const cat = await getCategoryById(tx!.categoryId);
+
+    expect(cat?.name).toBe('Entertainment');
+  });
+
+  it('no transaction is created when subscription has no category linked', async () => {
+    const sub = await addEmi({
+      type: 'subscription', name: 'Generic Sub', monthlyAmount: 99,
+      startDate: '2026-06-10', paidMonths: 0, nextDueDate: '2026-06-10',
+    });
+
+    const txId = await markEmiPaid(sub.id);
+    expect(txId).toBeNull();
+
+    const txs = await getTransactions();
+    expect(txs.length).toBe(0);
+  });
+
+  it('advances nextDueDate by one month when subscription is marked paid', async () => {
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const sub = await addEmi({
+      type: 'subscription', name: 'Test Sub', monthlyAmount: 100,
+      startDate: '2026-06-10', paidMonths: 0, nextDueDate: '2026-06-10',
+      categoryId: def.id,
+    });
+
+    await markEmiPaid(sub.id);
+
+    const updated = await db.emis.get(sub.id);
+    expect(updated?.nextDueDate).toBe('2026-07-10');
+  });
+
+  it('clamps a month-end due date to the target month\'s last day (Jan 31 → Feb 28)', async () => {
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const emi = await addEmi({
+      type: 'emi', name: 'Jan Loan', monthlyAmount: 1000, principal: 12000,
+      startDate: '2026-01-31', paidMonths: 0, nextDueDate: '2026-01-31', totalMonths: 12,
+      categoryId: def.id,
+    });
+
+    await markEmiPaid(emi.id);
+
+    const updated = await db.emis.get(emi.id);
+    expect(updated?.nextDueDate).toBe('2026-02-28');
+  });
+
+  it('does not skip a month when the next due date is the 29th', async () => {
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const emi = await addEmi({
+      type: 'emi', name: 'Feb Loan', monthlyAmount: 1000, principal: 12000,
+      startDate: '2026-02-28', paidMonths: 0, nextDueDate: '2026-02-28', totalMonths: 12,
+      categoryId: def.id,
+    });
+
+    await markEmiPaid(emi.id);
+
+    const updated = await db.emis.get(emi.id);
+    expect(updated?.nextDueDate).toBe('2026-03-28');
+  });
+
+  it('dates the auto-created transaction with the app today() (IST), not a UTC-derived date', async () => {
+    // today() is mocked to '2026-08-09' (the shared IST date helper). The
+    // transaction must use it verbatim instead of new Date().toISOString().
+    await seedIfEmpty();
+    const def = DEFAULT_CATEGORIES[0];
+    const sub = await addEmi({
+      type: 'subscription', name: 'IST Sub', monthlyAmount: 100,
+      startDate: '2026-08-01', paidMonths: 0, nextDueDate: '2026-08-01',
+      categoryId: def.id,
+    });
+
+    const txId = await markEmiPaid(sub.id);
+    const tx = await db.transactions.get(txId!);
+
+    expect(tx?.date).toBe('2026-08-09');
   });
 });
 
