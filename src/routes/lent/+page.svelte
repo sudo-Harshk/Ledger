@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app } from '$lib/stores/app.svelte';
   import { addLend, addRepayment, deleteLend } from '$lib/db/queries';
+  import { toast } from '$lib/stores/toast.svelte';
   import { formatINR, today } from '$lib/utils';
   import { Plus, Trash2, ChevronDown, ChevronUp, Check } from '@lucide/svelte';
   import { fly } from 'svelte/transition';
@@ -25,6 +26,8 @@
     if (newHasErrors) return;
     await addLend({ personName: newName.trim(), amount: +newAmount, date: newDate, note: newNote.trim() || undefined });
     await app.refreshLends();
+    await app.refreshTransactions();
+    toast.show(`Logged as expense — Lent to ${newName.trim()}`);
     adding = false; addAttempted = false;
     newName = ''; newAmount = ''; newNote = ''; newDate = today();
   }
@@ -42,14 +45,19 @@
   async function saveRepayment() {
     repayAttempted = true;
     if (!repayAmount || +repayAmount <= 0) return;
+    const person = app.lends.find(l => l.id === repayingId)?.personName ?? '';
     await addRepayment(repayingId!, { amount: +repayAmount, date: repayDate });
     await app.refreshLends();
+    await app.refreshTransactions();
+    toast.show(person ? `Logged as income — Repayment from ${person}` : 'Repayment recorded');
     repayingId = null;
   }
 
   async function remove(id: string) {
     await deleteLend(id);
     await app.refreshLends();
+    await app.refreshTransactions();
+    toast.show('Lend removed', 'info');
   }
 
   // ── Derived totals ────────────────────────────────────────────────────────

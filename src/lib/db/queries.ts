@@ -77,6 +77,7 @@ export async function seedIfEmpty() {
   await migratePhoneCategories();
   await migrateCategoryIds();
   await deduplicateCategories();
+  await backfillLendTransactions();
 
   const existing = new Set(
     (await db.categories.toArray()).map(c => c.name.toLowerCase().trim())
@@ -90,8 +91,12 @@ export async function seedIfEmpty() {
 
 // ── Transactions ─────────────────────────────────────────────────────────────
 
-export async function addTransaction(data: Omit<Transaction, 'id' | 'createdAt'>) {
-  const tx: Transaction = { ...data, id: nanoid(), createdAt: new Date().toISOString() };
+export async function addTransaction(
+  data: Omit<Transaction, 'id' | 'createdAt' | 'categoryId'> & { categoryId?: string }
+) {
+  // categoryId may be absent when the category no longer exists — the UI
+  // already renders such rows with an "Unknown" fallback.
+  const tx = { ...data, id: nanoid(), createdAt: new Date().toISOString() } as Transaction;
   await db.transactions.add(tx);
   pushDoc('transactions', tx).catch(() => {});
   return tx;
@@ -208,6 +213,13 @@ export async function deleteEmi(id: string) {
 
 // ── Lends ─────────────────────────────────────────────────────────────────────
 
+const LENT_CATEGORY_ID = 'cat-lent';
+
+async function lentCategoryId(): Promise<string | undefined> {
+  const cat = await db.categories.get(LENT_CATEGORY_ID);
+  return cat ? LENT_CATEGORY_ID : undefined;
+}
+
 export async function getLends(): Promise<Lend[]> {
   return db.lends.orderBy('createdAt').reverse().toArray();
 }
@@ -215,24 +227,111 @@ export async function getLends(): Promise<Lend[]> {
 export async function addLend(data: Omit<Lend, 'id' | 'createdAt' | 'repayments'>): Promise<Lend> {
   const lend: Lend = { ...data, id: nanoid(), repayments: [], createdAt: new Date().toISOString() };
   await db.lends.add(lend);
-  pushDoc('lends', lend).catch(() => {});
-  return lend;
+
+  // Money left the account — record it as an expense on the lend date
+  const catId = await lentCategoryId();
+  const tx = await addTransaction({
+    type: 'expense',
+    amount: lend.amount,
+    categoryId: catId,
+    paymentMode: 'upi',
+    date: lend.date,
+    note: `Lent to ${lend.personName}`,
+  });
+  const withTx: Lend = { ...lend, txId: tx.id };
+  await db.lends.update(lend.id, { txId: tx.id });
+  pushDoc('lends', withTx).catch(() => {});
+  return withTx;
 }
 
 export async function addRepayment(lendId: string, repayment: Omit<Repayment, 'id'>): Promise<void> {
   const lend = await db.lends.get(lendId);
   if (!lend) return;
+
+  // Money came back to the account — record it as income on the repayment date
+  const catId = await lentCategoryId();
+  const tx = await addTransaction({
+    type: 'income',
+    amount: repayment.amount,
+    categoryId: catId,
+    paymentMode: 'upi',
+    date: repayment.date,
+    note: `Repayment from ${lend.personName}`,
+  });
   const updated: Lend = {
     ...lend,
-    repayments: [...lend.repayments, { ...repayment, id: nanoid() }],
+    repayments: [...lend.repayments, { ...repayment, id: nanoid(), txId: tx.id }],
   };
   await db.lends.put(updated);
   pushDoc('lends', updated).catch(() => {});
 }
 
 export async function deleteLend(id: string): Promise<void> {
+  const lend = await db.lends.get(id);
+  if (lend) {
+    // Remove the full transaction trail: the expense + every repayment income
+    const txIds = [lend.txId, ...lend.repayments.map(r => r.txId)].filter((v): v is string => !!v);
+    await Promise.all(txIds.map(txId => deleteTransaction(txId)));
+  }
   await db.lends.delete(id);
   removeDoc('lends', id).catch(() => {});
+}
+
+// Backfills auto-created transactions for lends recorded before this feature
+// existed. Idempotent — skips any lend/repayment that already has a txId.
+// Safety net: if a matching transaction was logged manually under the Lent
+// Money category, it is linked instead of creating a duplicate.
+export async function backfillLendTransactions() {
+  const lends = await db.lends.toArray();
+  for (const lend of lends) {
+    let current: Lend = lend;
+    let changed = false;
+    const catId = await lentCategoryId();
+
+    if (!current.txId) {
+      const txId = (await findManualLentTx('expense', current.amount, current.date))?.id
+        ?? (await addTransaction({
+          type: 'expense',
+          amount: current.amount,
+          categoryId: catId,
+          paymentMode: 'upi',
+          date: current.date,
+          note: `Lent to ${current.personName}`,
+        })).id;
+      current = { ...current, txId };
+      changed = true;
+    }
+
+    const repayments = [...current.repayments];
+    for (let i = 0; i < repayments.length; i++) {
+      if (repayments[i].txId) continue;
+      const txId = (await findManualLentTx('income', repayments[i].amount, repayments[i].date))?.id
+        ?? (await addTransaction({
+          type: 'income',
+          amount: repayments[i].amount,
+          categoryId: catId,
+          paymentMode: 'upi',
+          date: repayments[i].date,
+          note: `Repayment from ${current.personName}`,
+        })).id;
+      repayments[i] = { ...repayments[i], txId };
+      changed = true;
+    }
+
+    if (changed) {
+      const updated = { ...current, repayments };
+      await db.lends.put(updated);
+      pushDoc('lends', updated).catch(() => {});
+    }
+  }
+}
+
+// Finds a transaction that was manually logged for a lend/repayment (same
+// amount, date, and Lent Money category) so the backfill links it instead of
+// duplicating it.
+async function findManualLentTx(type: TransactionType, amount: number, date: string): Promise<Transaction | undefined> {
+  const all = await db.transactions.toArray();
+  return all.find(t => t.type === type && t.amount === amount && t.date === date && t.categoryId === LENT_CATEGORY_ID);
 }
 
 // ── PG Needs (monthly shopping list) ──────────────────────────────────────────

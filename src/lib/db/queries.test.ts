@@ -28,6 +28,10 @@ import {
   togglePgNeed,
   deletePgNeed,
   getPgNeeds,
+  addLend,
+  addRepayment,
+  deleteLend,
+  backfillLendTransactions,
 } from './queries';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -305,6 +309,195 @@ describe('subscription payment → transaction category resolution', () => {
     const tx = await db.transactions.get(txId!);
 
     expect(tx?.date).toBe('2026-08-09');
+  });
+});
+
+// ── Lends → auto expense/income ──────────────────────────────────────────────
+
+describe('Lend auto-transactions', () => {
+  it('addLend creates an expense transaction on the lend date with the Lent Money category', async () => {
+    await seedIfEmpty();
+
+    await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-03', note: 'trip' });
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(1);
+    expect(txs[0]).toMatchObject({
+      type: 'expense',
+      amount: 5000,
+      categoryId: 'cat-lent',
+      date: '2026-08-03',
+      note: 'Lent to Ravi',
+      paymentMode: 'upi',
+    });
+  });
+
+  it('addLend stores the created transaction id on the lend record', async () => {
+    await seedIfEmpty();
+
+    const lend = await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-03' });
+
+    const stored = await db.lends.get(lend.id);
+    const tx = await db.transactions.get(lend.txId!);
+    expect(stored?.txId).toBe(lend.txId);
+    expect(tx?.amount).toBe(5000);
+  });
+
+  it('addLend still records the expense when the Lent Money category is missing', async () => {
+    // No seedIfEmpty — categories table is empty
+    await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-03' });
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(1);
+    expect(txs[0].categoryId).toBeUndefined();
+  });
+
+  it('addRepayment creates an income transaction on the repayment date', async () => {
+    await seedIfEmpty();
+    const lend = await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-03' });
+
+    await addRepayment(lend.id, { amount: 2000, date: '2026-08-10' });
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(2);
+    const income = txs.find(t => t.type === 'income');
+    expect(income).toMatchObject({
+      type: 'income',
+      amount: 2000,
+      categoryId: 'cat-lent',
+      date: '2026-08-10',
+      note: 'Repayment from Ravi',
+    });
+    const stored = await db.lends.get(lend.id);
+    expect(stored?.repayments[0].txId).toBe(income!.id);
+  });
+
+  it('deleteLend removes the expense and all repayment income transactions', async () => {
+    await seedIfEmpty();
+    const lend = await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-03' });
+    await addRepayment(lend.id, { amount: 2000, date: '2026-08-10' });
+    await addRepayment(lend.id, { amount: 3000, date: '2026-08-20' });
+
+    expect(await getTransactions()).toHaveLength(3);
+
+    await deleteLend(lend.id);
+
+    expect(await getTransactions()).toHaveLength(0);
+    expect(await db.lends.get(lend.id)).toBeUndefined();
+  });
+
+  it('backfillLendTransactions creates transactions for lends recorded before the feature', async () => {
+    await seedIfEmpty();
+    // Pre-feature lend: no txId, repayment with no txId
+    await db.lends.add({
+      id: 'lend-legacy', personName: 'Ravi', amount: 5000, date: '2026-08-01',
+      repayments: [{ id: 'repay-legacy', amount: 2000, date: '2026-08-05' }],
+      createdAt: '2026-08-01T10:00:00.000Z',
+    });
+
+    await backfillLendTransactions();
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(2);
+    const expense = txs.find(t => t.type === 'expense');
+    const income  = txs.find(t => t.type === 'income');
+    expect(expense).toMatchObject({ amount: 5000, date: '2026-08-01', categoryId: 'cat-lent', note: 'Lent to Ravi' });
+    expect(income).toMatchObject({ amount: 2000, date: '2026-08-05', note: 'Repayment from Ravi' });
+
+    // txIds persisted on the lend record
+    const stored = await db.lends.get('lend-legacy');
+    expect(stored?.txId).toBe(expense!.id);
+    expect(stored?.repayments[0].txId).toBe(income!.id);
+  });
+
+  it('backfillLendTransactions is idempotent — re-running creates nothing new', async () => {
+    await seedIfEmpty();
+    const lend = await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-01' });
+    await addRepayment(lend.id, { amount: 2000, date: '2026-08-05' });
+
+    await backfillLendTransactions();
+    await backfillLendTransactions();
+
+    expect(await getTransactions()).toHaveLength(2);
+  });
+
+  it('backfill links a manually-logged expense instead of duplicating it', async () => {
+    await seedIfEmpty();
+    // Manually logged before the feature existed (no txId on the lend)
+    await addTransaction({
+      type: 'expense', amount: 5000, categoryId: 'cat-lent',
+      paymentMode: 'upi', date: '2026-08-01', note: 'Lent to Ravi',
+    });
+    await db.lends.add({
+      id: 'lend-manual', personName: 'Ravi', amount: 5000, date: '2026-08-01',
+      repayments: [], createdAt: '2026-08-01T10:00:00.000Z',
+    });
+
+    await backfillLendTransactions();
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(1); // no duplicate
+    const stored = await db.lends.get('lend-manual');
+    expect(stored?.txId).toBe(txs[0].id);
+  });
+
+  it('backfill links a manually-logged repayment income instead of duplicating it', async () => {
+    await seedIfEmpty();
+    await addTransaction({
+      type: 'income', amount: 2000, categoryId: 'cat-lent',
+      paymentMode: 'upi', date: '2026-08-05', note: 'Repayment from Ravi',
+    });
+    await db.lends.add({
+      id: 'lend-manual-repay', personName: 'Ravi', amount: 5000, date: '2026-08-01',
+      repayments: [{ id: 'repay-manual', amount: 2000, date: '2026-08-05' }],
+      createdAt: '2026-08-01T10:00:00.000Z',
+    });
+
+    await backfillLendTransactions();
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(2); // expense (new) + income (linked, not duplicated)
+    const income = txs.filter(t => t.type === 'income');
+    expect(income).toHaveLength(1);
+    const stored = await db.lends.get('lend-manual-repay');
+    expect(stored?.repayments[0].txId).toBe(income[0].id);
+  });
+
+  it('backfill does not link a manual transaction logged under a different category', async () => {
+    await seedIfEmpty();
+    // Logged under Misc instead of Lent Money — not considered the lend's expense
+    await addTransaction({
+      type: 'expense', amount: 5000, categoryId: 'cat-misc',
+      paymentMode: 'upi', date: '2026-08-01', note: 'gave money',
+    });
+    await db.lends.add({
+      id: 'lend-misc', personName: 'Ravi', amount: 5000, date: '2026-08-01',
+      repayments: [], createdAt: '2026-08-01T10:00:00.000Z',
+    });
+
+    await backfillLendTransactions();
+
+    const txs = await getTransactions();
+    expect(txs).toHaveLength(2); // manual Misc expense + new Lent Money expense
+    const stored = await db.lends.get('lend-misc');
+    expect(stored?.txId).not.toBe('unset');
+    expect(txs.filter(t => t.categoryId === 'cat-lent')).toHaveLength(1);
+  });
+
+  it('cross-device: auto-transaction category resolves after an independent re-seed', async () => {
+    await seedIfEmpty();
+    const lend = await addLend({ personName: 'Ravi', amount: 5000, date: '2026-08-01' });
+
+    // Device B: categories wiped and re-seeded (stable IDs) — the stored
+    // categoryId 'cat-lent' must still resolve
+    await db.categories.clear();
+    await seedIfEmpty();
+
+    const cat = await db.categories.get('cat-lent');
+    expect(cat).toBeTruthy();
+    expect(cat!.name).toBe('Lent Money');
+    // seedIfEmpty also runs the backfill — no duplicates
+    expect(await getTransactions()).toHaveLength(1);
   });
 });
 

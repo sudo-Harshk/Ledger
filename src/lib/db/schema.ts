@@ -48,6 +48,7 @@ export interface Repayment {
   id: string;
   amount: number;
   date: string; // YYYY-MM-DD
+  txId?: string; // income transaction auto-created when the repayment is recorded
 }
 
 export interface Lend {
@@ -58,6 +59,7 @@ export interface Lend {
   note?: string;
   repayments: Repayment[];
   createdAt: string;
+  txId?: string;        // expense transaction auto-created when the lend is recorded
 }
 
 export interface PgNeed {

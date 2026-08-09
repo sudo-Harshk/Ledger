@@ -87,9 +87,12 @@ All charts support hover on desktop and tap-to-pin on mobile:
 
 ### Lent Money Tracker
 - Log money lent to a person with an optional note and date
-- Record partial or full repayments over time
+- Lending **auto-records an expense transaction** (Lent Money category, payment mode UPI, note "Lent to {name}") on the lend date — money has left your account
+- Record partial or full repayments over time; each repayment **auto-records an income transaction** (note "Repayment from {name}") on the repayment date
 - See total lent, total recovered, and outstanding balance at a glance
+- Deleting a lend removes its linked transactions too
 - Dashboard card shows outstanding count and amount when someone still owes you
+- Note: don't log lent money as a manual expense anymore — the app does it for you (existing lends from before this feature are backfilled automatically on app load; if you already logged one manually under the Lent Money category, the backfill links it instead of duplicating)
 
 ### PG Needs
 - Monthly checklist of things to buy for the PG — just a name and a checkbox
